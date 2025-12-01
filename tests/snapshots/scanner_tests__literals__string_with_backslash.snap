@@ -1,0 +1,10 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    String(
+        "path\\to\\file",
+    ),
+    Eof,
+]

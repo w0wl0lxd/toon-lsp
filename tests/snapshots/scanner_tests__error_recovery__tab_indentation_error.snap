@@ -1,0 +1,18 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Identifier(
+        "key",
+    ),
+    Colon,
+    Newline,
+    Error(
+        "Tabs not allowed in indentation",
+    ),
+    Identifier(
+        "value",
+    ),
+    Eof,
+]

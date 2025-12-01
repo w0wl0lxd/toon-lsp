@@ -1,0 +1,18 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Error(
+        "Unterminated string literal",
+    ),
+    Newline,
+    Identifier(
+        "valid",
+    ),
+    Colon,
+    Identifier(
+        "value",
+    ),
+    Eof,
+]

@@ -1,0 +1,31 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Newline,
+    Identifier(
+        "user",
+    ),
+    Colon,
+    Newline,
+    Indent,
+    Identifier(
+        "name",
+    ),
+    Colon,
+    String(
+        "Alice",
+    ),
+    Newline,
+    Identifier(
+        "age",
+    ),
+    Colon,
+    Number(
+        "30",
+    ),
+    Newline,
+    Dedent,
+    Eof,
+]
