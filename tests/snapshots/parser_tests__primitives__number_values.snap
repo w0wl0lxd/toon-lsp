@@ -1,0 +1,164 @@
+---
+source: tests/parser_tests.rs
+expression: ast
+---
+Document {
+    children: [
+        Object {
+            entries: [
+                ObjectEntry {
+                    key: "int",
+                    key_span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            column: 3,
+                            offset: 3,
+                        },
+                    },
+                    value: Number {
+                        value: PosInt(
+                            42,
+                        ),
+                        span: Span {
+                            start: Position {
+                                line: 0,
+                                column: 5,
+                                offset: 5,
+                            },
+                            end: Position {
+                                line: 0,
+                                column: 7,
+                                offset: 7,
+                            },
+                        },
+                    },
+                },
+                ObjectEntry {
+                    key: "negative",
+                    key_span: Span {
+                        start: Position {
+                            line: 1,
+                            column: 0,
+                            offset: 8,
+                        },
+                        end: Position {
+                            line: 1,
+                            column: 8,
+                            offset: 16,
+                        },
+                    },
+                    value: Number {
+                        value: NegInt(
+                            -17,
+                        ),
+                        span: Span {
+                            start: Position {
+                                line: 1,
+                                column: 10,
+                                offset: 18,
+                            },
+                            end: Position {
+                                line: 1,
+                                column: 13,
+                                offset: 21,
+                            },
+                        },
+                    },
+                },
+                ObjectEntry {
+                    key: "float",
+                    key_span: Span {
+                        start: Position {
+                            line: 2,
+                            column: 0,
+                            offset: 22,
+                        },
+                        end: Position {
+                            line: 2,
+                            column: 5,
+                            offset: 27,
+                        },
+                    },
+                    value: Number {
+                        value: Float(
+                            3.14,
+                        ),
+                        span: Span {
+                            start: Position {
+                                line: 2,
+                                column: 7,
+                                offset: 29,
+                            },
+                            end: Position {
+                                line: 2,
+                                column: 11,
+                                offset: 33,
+                            },
+                        },
+                    },
+                },
+                ObjectEntry {
+                    key: "scientific",
+                    key_span: Span {
+                        start: Position {
+                            line: 3,
+                            column: 0,
+                            offset: 34,
+                        },
+                        end: Position {
+                            line: 3,
+                            column: 10,
+                            offset: 44,
+                        },
+                    },
+                    value: Number {
+                        value: Float(
+                            10000000000.0,
+                        ),
+                        span: Span {
+                            start: Position {
+                                line: 3,
+                                column: 12,
+                                offset: 46,
+                            },
+                            end: Position {
+                                line: 3,
+                                column: 16,
+                                offset: 50,
+                            },
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 3,
+                    column: 16,
+                    offset: 50,
+                },
+            },
+        },
+    ],
+    span: Span {
+        start: Position {
+            line: 0,
+            column: 0,
+            offset: 0,
+        },
+        end: Position {
+            line: 3,
+            column: 16,
+            offset: 50,
+        },
+    },
+}
