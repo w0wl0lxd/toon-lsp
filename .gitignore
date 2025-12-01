@@ -1,1 +1,44 @@
+# Build artifacts
 /target
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Spec-kit
+.specify/
+.speckit/
+
+# Serena MCP
+.serena/
+
+# MCP configuration
+.mcp.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local development
+*.local
+*.local.*
+.env
+.env.*
+
+# Coverage reports
+*.profraw
+coverage/
+tarpaulin-report.html
+
+# Cargo lock for libraries (uncomment if this is a library)
+# Cargo.lock
+
+# Spec-kit specifications (local development)
+specs/

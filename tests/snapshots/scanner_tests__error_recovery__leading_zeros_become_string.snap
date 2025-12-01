@@ -1,0 +1,10 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    String(
+        "007",
+    ),
+    Eof,
+]

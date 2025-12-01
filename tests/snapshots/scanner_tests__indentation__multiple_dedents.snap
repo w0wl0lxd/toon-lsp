@@ -1,0 +1,29 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Identifier(
+        "a",
+    ),
+    Colon,
+    Newline,
+    Indent,
+    Identifier(
+        "b",
+    ),
+    Colon,
+    Newline,
+    Indent,
+    Identifier(
+        "c",
+    ),
+    Colon,
+    Newline,
+    Dedent,
+    Identifier(
+        "d",
+    ),
+    Colon,
+    Eof,
+]

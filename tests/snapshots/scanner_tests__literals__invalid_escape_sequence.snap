@@ -1,0 +1,19 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Error(
+        "Invalid escape sequence: \\x",
+    ),
+    Identifier(
+        "x",
+    ),
+    Identifier(
+        "invalid",
+    ),
+    Error(
+        "Unterminated string literal",
+    ),
+    Eof,
+]

@@ -1,0 +1,26 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Identifier(
+        "a",
+    ),
+    Colon,
+    Newline,
+    Indent,
+    Identifier(
+        "b",
+    ),
+    Colon,
+    Newline,
+    Error(
+        "Indentation mismatch: 2 spaces does not match any previous level",
+    ),
+    Dedent,
+    Identifier(
+        "c",
+    ),
+    Colon,
+    Eof,
+]

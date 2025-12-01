@@ -1,0 +1,40 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Newline,
+    Identifier(
+        "data",
+    ),
+    Colon,
+    Newline,
+    Indent,
+    Identifier(
+        "items",
+    ),
+    Colon,
+    Newline,
+    Indent,
+    Dash,
+    String(
+        "first",
+    ),
+    Newline,
+    Dash,
+    String(
+        "second",
+    ),
+    Newline,
+    Dedent,
+    Identifier(
+        "count",
+    ),
+    Colon,
+    Number(
+        "2",
+    ),
+    Newline,
+    Dedent,
+    Eof,
+]
