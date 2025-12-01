@@ -1,0 +1,112 @@
+---
+source: tests/parser_tests.rs
+expression: ast
+---
+Document {
+    children: [
+        Object {
+            entries: [
+                ObjectEntry {
+                    key: "items",
+                    key_span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            column: 5,
+                            offset: 5,
+                        },
+                    },
+                    value: Array {
+                        items: [
+                            String {
+                                value: "apple",
+                                span: Span {
+                                    start: Position {
+                                        line: 1,
+                                        column: 4,
+                                        offset: 11,
+                                    },
+                                    end: Position {
+                                        line: 1,
+                                        column: 9,
+                                        offset: 16,
+                                    },
+                                },
+                            },
+                            String {
+                                value: "banana",
+                                span: Span {
+                                    start: Position {
+                                        line: 2,
+                                        column: 4,
+                                        offset: 21,
+                                    },
+                                    end: Position {
+                                        line: 2,
+                                        column: 10,
+                                        offset: 27,
+                                    },
+                                },
+                            },
+                            String {
+                                value: "cherry",
+                                span: Span {
+                                    start: Position {
+                                        line: 3,
+                                        column: 4,
+                                        offset: 32,
+                                    },
+                                    end: Position {
+                                        line: 3,
+                                        column: 10,
+                                        offset: 38,
+                                    },
+                                },
+                            },
+                        ],
+                        span: Span {
+                            start: Position {
+                                line: 1,
+                                column: 2,
+                                offset: 9,
+                            },
+                            end: Position {
+                                line: 3,
+                                column: 10,
+                                offset: 38,
+                            },
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 3,
+                    column: 10,
+                    offset: 38,
+                },
+            },
+        },
+    ],
+    span: Span {
+        start: Position {
+            line: 0,
+            column: 0,
+            offset: 0,
+        },
+        end: Position {
+            line: 3,
+            column: 10,
+            offset: 38,
+        },
+    },
+}

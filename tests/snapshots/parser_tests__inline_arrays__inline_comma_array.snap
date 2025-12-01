@@ -1,0 +1,112 @@
+---
+source: tests/parser_tests.rs
+expression: ast
+---
+Document {
+    children: [
+        Object {
+            entries: [
+                ObjectEntry {
+                    key: "tags",
+                    key_span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            column: 4,
+                            offset: 4,
+                        },
+                    },
+                    value: Array {
+                        items: [
+                            String {
+                                value: "one",
+                                span: Span {
+                                    start: Position {
+                                        line: 0,
+                                        column: 9,
+                                        offset: 9,
+                                    },
+                                    end: Position {
+                                        line: 0,
+                                        column: 12,
+                                        offset: 12,
+                                    },
+                                },
+                            },
+                            String {
+                                value: "two",
+                                span: Span {
+                                    start: Position {
+                                        line: 0,
+                                        column: 13,
+                                        offset: 13,
+                                    },
+                                    end: Position {
+                                        line: 0,
+                                        column: 16,
+                                        offset: 16,
+                                    },
+                                },
+                            },
+                            String {
+                                value: "three",
+                                span: Span {
+                                    start: Position {
+                                        line: 0,
+                                        column: 17,
+                                        offset: 17,
+                                    },
+                                    end: Position {
+                                        line: 0,
+                                        column: 22,
+                                        offset: 22,
+                                    },
+                                },
+                            },
+                        ],
+                        span: Span {
+                            start: Position {
+                                line: 0,
+                                column: 0,
+                                offset: 0,
+                            },
+                            end: Position {
+                                line: 0,
+                                column: 22,
+                                offset: 22,
+                            },
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 0,
+                    column: 22,
+                    offset: 22,
+                },
+            },
+        },
+    ],
+    span: Span {
+        start: Position {
+            line: 0,
+            column: 0,
+            offset: 0,
+        },
+        end: Position {
+            line: 0,
+            column: 22,
+            offset: 22,
+        },
+    },
+}
