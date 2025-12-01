@@ -16,7 +16,11 @@ pub struct Position {
 impl Position {
     /// Create a new position.
     pub fn new(line: u32, column: u32, offset: u32) -> Self {
-        Self { line, column, offset }
+        Self {
+            line,
+            column,
+            offset,
+        }
     }
 
     /// Create position at start of file.
@@ -102,24 +106,15 @@ mod tests {
 
     #[test]
     fn test_span_contains() {
-        let span = Span::new(
-            Position::new(0, 0, 0),
-            Position::new(0, 10, 10),
-        );
+        let span = Span::new(Position::new(0, 0, 0), Position::new(0, 10, 10));
         assert!(span.contains(Position::new(0, 5, 5)));
         assert!(!span.contains(Position::new(0, 15, 15)));
     }
 
     #[test]
     fn test_span_merge() {
-        let span1 = Span::new(
-            Position::new(0, 0, 0),
-            Position::new(0, 5, 5),
-        );
-        let span2 = Span::new(
-            Position::new(0, 3, 3),
-            Position::new(0, 10, 10),
-        );
+        let span1 = Span::new(Position::new(0, 0, 0), Position::new(0, 5, 5));
+        let span2 = Span::new(Position::new(0, 3, 3), Position::new(0, 10, 10));
         let merged = span1.merge(span2);
         assert_eq!(merged.start.offset, 0);
         assert_eq!(merged.end.offset, 10);

@@ -41,8 +41,8 @@
 //! ```
 
 pub mod ast;
-pub mod parser;
 pub mod lsp;
+pub mod parser;
 
-pub use ast::{AstNode, Span, Position};
-pub use parser::{parse, ParseError};
+pub use ast::{AstNode, NumberValue, ObjectEntry, Position, Span};
+pub use parser::{ParseError, ParseErrorKind, parse, parse_with_errors};

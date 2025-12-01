@@ -1,0 +1,190 @@
+---
+source: tests/parser_tests.rs
+expression: ast
+---
+Document {
+    children: [
+        Object {
+            entries: [
+                ObjectEntry {
+                    key: "a",
+                    key_span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            column: 1,
+                            offset: 1,
+                        },
+                    },
+                    value: Object {
+                        entries: [
+                            ObjectEntry {
+                                key: "b",
+                                key_span: Span {
+                                    start: Position {
+                                        line: 1,
+                                        column: 2,
+                                        offset: 5,
+                                    },
+                                    end: Position {
+                                        line: 1,
+                                        column: 3,
+                                        offset: 6,
+                                    },
+                                },
+                                value: Object {
+                                    entries: [
+                                        ObjectEntry {
+                                            key: "c",
+                                            key_span: Span {
+                                                start: Position {
+                                                    line: 2,
+                                                    column: 4,
+                                                    offset: 12,
+                                                },
+                                                end: Position {
+                                                    line: 2,
+                                                    column: 5,
+                                                    offset: 13,
+                                                },
+                                            },
+                                            value: Object {
+                                                entries: [
+                                                    ObjectEntry {
+                                                        key: "d",
+                                                        key_span: Span {
+                                                            start: Position {
+                                                                line: 3,
+                                                                column: 6,
+                                                                offset: 21,
+                                                            },
+                                                            end: Position {
+                                                                line: 3,
+                                                                column: 7,
+                                                                offset: 22,
+                                                            },
+                                                        },
+                                                        value: Object {
+                                                            entries: [
+                                                                ObjectEntry {
+                                                                    key: "e",
+                                                                    key_span: Span {
+                                                                        start: Position {
+                                                                            line: 4,
+                                                                            column: 8,
+                                                                            offset: 32,
+                                                                        },
+                                                                        end: Position {
+                                                                            line: 4,
+                                                                            column: 9,
+                                                                            offset: 33,
+                                                                        },
+                                                                    },
+                                                                    value: String {
+                                                                        value: "deep",
+                                                                        span: Span {
+                                                                            start: Position {
+                                                                                line: 4,
+                                                                                column: 11,
+                                                                                offset: 35,
+                                                                            },
+                                                                            end: Position {
+                                                                                line: 4,
+                                                                                column: 15,
+                                                                                offset: 39,
+                                                                            },
+                                                                        },
+                                                                    },
+                                                                },
+                                                            ],
+                                                            span: Span {
+                                                                start: Position {
+                                                                    line: 4,
+                                                                    column: 0,
+                                                                    offset: 24,
+                                                                },
+                                                                end: Position {
+                                                                    line: 4,
+                                                                    column: 15,
+                                                                    offset: 39,
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                ],
+                                                span: Span {
+                                                    start: Position {
+                                                        line: 3,
+                                                        column: 0,
+                                                        offset: 15,
+                                                    },
+                                                    end: Position {
+                                                        line: 4,
+                                                        column: 15,
+                                                        offset: 39,
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    ],
+                                    span: Span {
+                                        start: Position {
+                                            line: 2,
+                                            column: 0,
+                                            offset: 8,
+                                        },
+                                        end: Position {
+                                            line: 4,
+                                            column: 15,
+                                            offset: 39,
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                        span: Span {
+                            start: Position {
+                                line: 1,
+                                column: 0,
+                                offset: 3,
+                            },
+                            end: Position {
+                                line: 4,
+                                column: 15,
+                                offset: 39,
+                            },
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 4,
+                    column: 15,
+                    offset: 39,
+                },
+            },
+        },
+    ],
+    span: Span {
+        start: Position {
+            line: 0,
+            column: 0,
+            offset: 0,
+        },
+        end: Position {
+            line: 4,
+            column: 15,
+            offset: 39,
+        },
+    },
+}
