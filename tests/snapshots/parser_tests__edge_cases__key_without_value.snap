@@ -1,0 +1,65 @@
+---
+source: tests/parser_tests.rs
+expression: ast
+---
+Document {
+    children: [
+        Object {
+            entries: [
+                ObjectEntry {
+                    key: "empty",
+                    key_span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            column: 5,
+                            offset: 5,
+                        },
+                    },
+                    value: Null {
+                        span: Span {
+                            start: Position {
+                                line: 0,
+                                column: 6,
+                                offset: 6,
+                            },
+                            end: Position {
+                                line: 0,
+                                column: 6,
+                                offset: 6,
+                            },
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 0,
+                    column: 6,
+                    offset: 6,
+                },
+            },
+        },
+    ],
+    span: Span {
+        start: Position {
+            line: 0,
+            column: 0,
+            offset: 0,
+        },
+        end: Position {
+            line: 0,
+            column: 6,
+            offset: 6,
+        },
+    },
+}
