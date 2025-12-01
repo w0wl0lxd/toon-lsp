@@ -14,16 +14,19 @@ TOON is a compact, human-readable encoding of the JSON data model designed for L
 
 ### Parser
 - [x] Lexer/Scanner with position tracking
-- [ ] Full TOON spec parser
-- [ ] Error recovery for partial documents
-- [ ] AST with complete span information
+- [x] Full TOON spec parser (objects, arrays, primitives)
+- [x] Expanded arrays (dash-prefixed items)
+- [x] Inline arrays (`key[count]: val1,val2,val3`)
+- [x] Tabular arrays (`key[count]{col1,col2}:`)
+- [x] Error recovery for partial documents
+- [x] AST with complete span information
 
 ### LSP Features
-- [ ] Diagnostics (syntax errors)
-- [ ] Document symbols (outline)
-- [ ] Hover information
-- [ ] Go to definition
-- [ ] Completions
+- [x] Diagnostics (syntax errors with recovery)
+- [x] Document symbols (outline with hierarchy)
+- [x] Hover information (type and path display)
+- [x] Go to definition (duplicate key navigation)
+- [x] Completions (sibling keys, boolean values)
 - [ ] Formatting
 
 ## Installation
@@ -70,16 +73,8 @@ println!("Parsed: {:?}", ast);
 ## Architecture
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Scanner   │ ──▶ │   Parser    │ ──▶ │     AST     │
-│  (Lexer)    │     │             │     │ (with Spans)│
-└─────────────┘     └─────────────┘     └─────────────┘
-                                               │
-                                               ▼
-                                        ┌─────────────┐
-                                        │ LSP Server  │
-                                        │ (tower-lsp) │
-                                        └─────────────┘
+Scanner ──▶ Parser ──▶ AST ──▶ LSP Server
+(Lexer)              (Spans)   (tower-lsp)
 ```
 
 ## Related Projects
@@ -90,4 +85,11 @@ println!("Parsed: {:?}", ast);
 
 ## License
 
-MIT
+**Dual Licensed**: AGPL-3.0-only OR Commercial
+
+- **Open Source**: [AGPL-3.0](LICENSE) - Free for open source and personal use
+- **Commercial**: Available for proprietary use - See [LICENSING.md](LICENSING.md)
+
+Individual developers using locally: **Free under AGPL**
+
+Cloud providers / proprietary embedding: **Commercial license required**
