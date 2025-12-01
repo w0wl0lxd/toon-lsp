@@ -1,0 +1,128 @@
+---
+source: tests/parser_tests.rs
+expression: ast
+---
+Document {
+    children: [
+        Object {
+            entries: [
+                ObjectEntry {
+                    key: "name",
+                    key_span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            column: 4,
+                            offset: 4,
+                        },
+                    },
+                    value: String {
+                        value: "Alice",
+                        span: Span {
+                            start: Position {
+                                line: 0,
+                                column: 6,
+                                offset: 6,
+                            },
+                            end: Position {
+                                line: 0,
+                                column: 11,
+                                offset: 11,
+                            },
+                        },
+                    },
+                },
+                ObjectEntry {
+                    key: "age",
+                    key_span: Span {
+                        start: Position {
+                            line: 1,
+                            column: 0,
+                            offset: 12,
+                        },
+                        end: Position {
+                            line: 1,
+                            column: 3,
+                            offset: 15,
+                        },
+                    },
+                    value: Number {
+                        value: PosInt(
+                            30,
+                        ),
+                        span: Span {
+                            start: Position {
+                                line: 1,
+                                column: 5,
+                                offset: 17,
+                            },
+                            end: Position {
+                                line: 1,
+                                column: 7,
+                                offset: 19,
+                            },
+                        },
+                    },
+                },
+                ObjectEntry {
+                    key: "city",
+                    key_span: Span {
+                        start: Position {
+                            line: 2,
+                            column: 0,
+                            offset: 20,
+                        },
+                        end: Position {
+                            line: 2,
+                            column: 4,
+                            offset: 24,
+                        },
+                    },
+                    value: String {
+                        value: "NYC",
+                        span: Span {
+                            start: Position {
+                                line: 2,
+                                column: 6,
+                                offset: 26,
+                            },
+                            end: Position {
+                                line: 2,
+                                column: 9,
+                                offset: 29,
+                            },
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 2,
+                    column: 9,
+                    offset: 29,
+                },
+            },
+        },
+    ],
+    span: Span {
+        start: Position {
+            line: 0,
+            column: 0,
+            offset: 0,
+        },
+        end: Position {
+            line: 2,
+            column: 9,
+            offset: 29,
+        },
+    },
+}
