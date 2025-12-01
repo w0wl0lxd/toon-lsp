@@ -1,0 +1,9 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    True,
+    False,
+    Eof,
+]

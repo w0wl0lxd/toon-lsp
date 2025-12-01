@@ -1,0 +1,16 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Identifier(
+        "foo",
+    ),
+    Error(
+        "Invalid control character: U+0000",
+    ),
+    Identifier(
+        "bar",
+    ),
+    Eof,
+]
