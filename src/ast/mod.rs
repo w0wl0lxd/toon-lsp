@@ -6,7 +6,7 @@
 mod node;
 mod span;
 
-pub use node::AstNode;
+pub use node::{AstNode, NumberValue, ObjectEntry};
 pub use span::{Position, Span};
 
 // TODO: Implement AST types based on TOON spec
