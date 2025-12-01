@@ -1,0 +1,106 @@
+---
+source: tests/parser_tests.rs
+expression: "(ast, errors)"
+---
+(
+    Some(
+        Document {
+            children: [
+                Object {
+                    entries: [
+                        ObjectEntry {
+                            key: "age",
+                            key_span: Span {
+                                start: Position {
+                                    line: 1,
+                                    column: 0,
+                                    offset: 11,
+                                },
+                                end: Position {
+                                    line: 1,
+                                    column: 3,
+                                    offset: 14,
+                                },
+                            },
+                            value: Number {
+                                value: PosInt(
+                                    30,
+                                ),
+                                span: Span {
+                                    start: Position {
+                                        line: 1,
+                                        column: 5,
+                                        offset: 16,
+                                    },
+                                    end: Position {
+                                        line: 1,
+                                        column: 7,
+                                        offset: 18,
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                    span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            column: 7,
+                            offset: 18,
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 1,
+                    column: 7,
+                    offset: 18,
+                },
+            },
+        },
+    ),
+    [
+        ParseError {
+            kind: ExpectedColon,
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 5,
+                    offset: 5,
+                },
+                end: Position {
+                    line: 0,
+                    column: 10,
+                    offset: 10,
+                },
+            },
+            context: None,
+        },
+        ParseError {
+            kind: ExpectedColon,
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 5,
+                    offset: 5,
+                },
+                end: Position {
+                    line: 0,
+                    column: 10,
+                    offset: 10,
+                },
+            },
+            context: None,
+        },
+    ],
+)
