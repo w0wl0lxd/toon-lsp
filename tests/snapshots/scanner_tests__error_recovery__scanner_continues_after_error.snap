@@ -1,0 +1,17 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Error(
+        "Unexpected character: @",
+    ),
+    Identifier(
+        "valid",
+    ),
+    Colon,
+    Identifier(
+        "value",
+    ),
+    Eof,
+]

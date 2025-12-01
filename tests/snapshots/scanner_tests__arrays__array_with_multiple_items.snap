@@ -1,0 +1,21 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Dash,
+    Identifier(
+        "first",
+    ),
+    Newline,
+    Dash,
+    Identifier(
+        "second",
+    ),
+    Newline,
+    Dash,
+    Identifier(
+        "third",
+    ),
+    Eof,
+]
