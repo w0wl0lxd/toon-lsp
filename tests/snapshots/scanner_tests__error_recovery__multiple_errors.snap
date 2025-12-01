@@ -1,0 +1,19 @@
+---
+source: tests/scanner_tests.rs
+expression: token_kinds(&tokens)
+---
+[
+    Error(
+        "Unexpected character: @",
+    ),
+    Error(
+        "Unexpected character: #",
+    ),
+    Error(
+        "Unexpected character: $",
+    ),
+    Error(
+        "Unexpected character: %",
+    ),
+    Eof,
+]
