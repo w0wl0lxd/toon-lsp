@@ -1,0 +1,66 @@
+---
+source: tests/parser_tests.rs
+expression: ast
+---
+Document {
+    children: [
+        Object {
+            entries: [
+                ObjectEntry {
+                    key: "message",
+                    key_span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            column: 7,
+                            offset: 7,
+                        },
+                    },
+                    value: String {
+                        value: "Hello world without quotes",
+                        span: Span {
+                            start: Position {
+                                line: 0,
+                                column: 9,
+                                offset: 9,
+                            },
+                            end: Position {
+                                line: 0,
+                                column: 35,
+                                offset: 35,
+                            },
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 0,
+                    column: 35,
+                    offset: 35,
+                },
+            },
+        },
+    ],
+    span: Span {
+        start: Position {
+            line: 0,
+            column: 0,
+            offset: 0,
+        },
+        end: Position {
+            line: 0,
+            column: 35,
+            offset: 35,
+        },
+    },
+}

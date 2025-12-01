@@ -1,0 +1,97 @@
+---
+source: tests/parser_tests.rs
+expression: ast
+---
+Document {
+    children: [
+        Object {
+            entries: [
+                ObjectEntry {
+                    key: "items",
+                    key_span: Span {
+                        start: Position {
+                            line: 0,
+                            column: 0,
+                            offset: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            column: 5,
+                            offset: 5,
+                        },
+                    },
+                    value: Array {
+                        items: [
+                            String {
+                                value: "a,b",
+                                span: Span {
+                                    start: Position {
+                                        line: 0,
+                                        column: 10,
+                                        offset: 10,
+                                    },
+                                    end: Position {
+                                        line: 0,
+                                        column: 15,
+                                        offset: 15,
+                                    },
+                                },
+                            },
+                            String {
+                                value: "c,d",
+                                span: Span {
+                                    start: Position {
+                                        line: 0,
+                                        column: 16,
+                                        offset: 16,
+                                    },
+                                    end: Position {
+                                        line: 0,
+                                        column: 21,
+                                        offset: 21,
+                                    },
+                                },
+                            },
+                        ],
+                        span: Span {
+                            start: Position {
+                                line: 0,
+                                column: 0,
+                                offset: 0,
+                            },
+                            end: Position {
+                                line: 0,
+                                column: 21,
+                                offset: 21,
+                            },
+                        },
+                    },
+                },
+            ],
+            span: Span {
+                start: Position {
+                    line: 0,
+                    column: 0,
+                    offset: 0,
+                },
+                end: Position {
+                    line: 0,
+                    column: 21,
+                    offset: 21,
+                },
+            },
+        },
+    ],
+    span: Span {
+        start: Position {
+            line: 0,
+            column: 0,
+            offset: 0,
+        },
+        end: Position {
+            line: 0,
+            column: 21,
+            offset: 21,
+        },
+    },
+}
