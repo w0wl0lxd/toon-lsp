@@ -1,0 +1,10 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 8080
+  },
+  "database": {
+    "name": "myapp",
+    "pool_size": 10
+  }
+}
