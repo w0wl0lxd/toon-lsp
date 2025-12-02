@@ -7,8 +7,9 @@ A Language Server Protocol (LSP) implementation for [TOON](https://github.com/to
 TOON is a compact, human-readable encoding of the JSON data model designed for LLM prompts. This project provides:
 
 - **Full AST with source positions** - Parse TOON into an abstract syntax tree with span information
-- **LSP Server** - Complete language server for IDE integration
+- **LSP Server** - Complete language server for IDE integration with 9 LSP features
 - **Error recovery** - Partial parsing for better IDE experience
+- **Comprehensive tests** - 248 tests covering scanner, parser, and all LSP features
 
 ## Features
 
@@ -27,7 +28,10 @@ TOON is a compact, human-readable encoding of the JSON data model designed for L
 - [x] Hover information (type and path display)
 - [x] Go to definition (duplicate key navigation)
 - [x] Completions (sibling keys, boolean values)
-- [ ] Formatting
+- [x] Semantic tokens (syntax highlighting)
+- [x] Find references (key usage navigation)
+- [x] Rename symbol (refactor keys across document)
+- [x] Formatting (configurable indentation)
 
 ## Installation
 
@@ -75,6 +79,22 @@ println!("Parsed: {:?}", ast);
 ```
 Scanner ──▶ Parser ──▶ AST ──▶ LSP Server
 (Lexer)              (Spans)   (tower-lsp)
+                                   │
+                    ┌──────────────┼──────────────┐
+                    ▼              ▼              ▼
+               Diagnostics    Symbols      Semantic Tokens
+               Hover          References   Formatting
+               Completion     Rename       Go-to-Definition
+```
+
+## Development
+
+```bash
+cargo build                      # Build the project
+cargo test                       # Run all 248 tests
+cargo clippy -- -D warnings      # Lint with warnings as errors
+cargo fmt --check                # Check formatting
+RUST_LOG=debug cargo run         # Run LSP server with debug logging
 ```
 
 ## Related Projects
