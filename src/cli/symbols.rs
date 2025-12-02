@@ -506,12 +506,8 @@ mod tests {
             children: Vec::new(),
         }];
 
-        let args = SymbolsArgs {
-            input: None,
-            format: SymbolsFormat::Tree,
-            types: true,
-            positions: false,
-        };
+        let args =
+            SymbolsArgs { input: None, format: SymbolsFormat::Tree, types: true, positions: false };
 
         let output = format_tree(&symbols, &args, 0);
         assert_eq!(output, "name [string]\n");
@@ -528,12 +524,8 @@ mod tests {
             children: Vec::new(),
         }];
 
-        let args = SymbolsArgs {
-            input: None,
-            format: SymbolsFormat::Tree,
-            types: false,
-            positions: true,
-        };
+        let args =
+            SymbolsArgs { input: None, format: SymbolsFormat::Tree, types: false, positions: true };
 
         let output = format_tree(&symbols, &args, 0);
         assert_eq!(output, "age  (L5:C10)\n");
@@ -550,12 +542,8 @@ mod tests {
             children: Vec::new(),
         }];
 
-        let args = SymbolsArgs {
-            input: None,
-            format: SymbolsFormat::Tree,
-            types: true,
-            positions: true,
-        };
+        let args =
+            SymbolsArgs { input: None, format: SymbolsFormat::Tree, types: true, positions: true };
 
         let output = format_tree(&symbols, &args, 0);
         assert_eq!(output, "enabled [boolean]  (L7:C3)\n");
@@ -611,12 +599,8 @@ mod tests {
             children: Vec::new(),
         }];
 
-        let args = SymbolsArgs {
-            input: None,
-            format: SymbolsFormat::Flat,
-            types: true,
-            positions: false,
-        };
+        let args =
+            SymbolsArgs { input: None, format: SymbolsFormat::Flat, types: true, positions: false };
 
         let output = format_flat(&symbols, &args);
         assert_eq!(output, "config [object]\n");

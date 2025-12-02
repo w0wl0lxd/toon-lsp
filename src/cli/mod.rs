@@ -21,12 +21,12 @@ use std::path::PathBuf;
 pub mod check;
 pub mod convert;
 pub mod decode;
+pub mod diagnose;
 pub mod encode;
 pub mod error;
 pub mod format;
 pub mod io_utils;
 pub mod symbols;
-pub mod diagnose;
 
 /// TOON Language Server and CLI tools
 #[derive(Debug, Parser)]
@@ -250,7 +250,6 @@ pub enum OutputFormat {
     /// YAML output
     Yaml,
 }
-
 
 #[cfg(test)]
 mod tests {

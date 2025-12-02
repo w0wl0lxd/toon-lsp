@@ -24,9 +24,7 @@ use tempfile::tempdir;
 
 /// Path to fixtures directory
 fn fixtures_dir() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures")
 }
 
 /// Get a command for the toon-lsp binary
@@ -80,11 +78,8 @@ fn test_symbols_tree_format_nested_structure() {
     // Given: TOON with nested structure
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("nested.toon");
-    fs::write(
-        &toon_path,
-        "server:\n  host: localhost\n  port: 8080\ndatabase:\n  name: mydb\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "server:\n  host: localhost\n  port: 8080\ndatabase:\n  name: mydb\n")
+        .expect("write file");
 
     // When: User runs `toon-lsp symbols file.toon` (tree format is default)
     let mut cmd = toon_lsp();
@@ -102,23 +97,14 @@ fn test_symbols_tree_format_explicit() {
     // Given: TOON with nested structure
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("nested.toon");
-    fs::write(
-        &toon_path,
-        "app:\n  name: MyApp\n  version: 1.0\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "app:\n  name: MyApp\n  version: 1.0\n").expect("write file");
 
     // When: User runs `toon-lsp symbols --format tree file.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--format")
-        .arg("tree")
-        .arg(&toon_path);
+    cmd.arg("symbols").arg("--format").arg("tree").arg(&toon_path);
 
     // Then: Output is in tree format
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("app"));
+    cmd.assert().success().stdout(predicate::str::contains("app"));
 }
 
 // =============================================================================
@@ -132,10 +118,7 @@ fn test_symbols_json_format_output() {
 
     // When: User runs `toon-lsp symbols --format json file.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--format")
-        .arg("json")
-        .arg(&fixture);
+    cmd.arg("symbols").arg("--format").arg("json").arg(&fixture);
 
     // Then: Output is valid JSON array with symbol objects
     cmd.assert()
@@ -153,10 +136,7 @@ fn test_symbols_json_format_contains_keys() {
 
     // When: User runs symbols with JSON format
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--format")
-        .arg("json")
-        .arg(&toon_path);
+    cmd.arg("symbols").arg("--format").arg("json").arg(&toon_path);
 
     // Then: JSON output contains symbol names
     cmd.assert()
@@ -198,23 +178,14 @@ fn test_symbols_flat_format_output() {
     // Given: Nested TOON file
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("nested.toon");
-    fs::write(
-        &toon_path,
-        "server:\n  host: localhost\n  port: 8080\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "server:\n  host: localhost\n  port: 8080\n").expect("write file");
 
     // When: User runs `toon-lsp symbols --format flat file.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--format")
-        .arg("flat")
-        .arg(&toon_path);
+    cmd.arg("symbols").arg("--format").arg("flat").arg(&toon_path);
 
     // Then: Output shows dot-notation paths
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("server"));
+    cmd.assert().success().stdout(predicate::str::contains("server"));
 }
 
 #[test]
@@ -222,18 +193,12 @@ fn test_symbols_flat_format_dot_notation() {
     // Given: Deeply nested TOON
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("deep.toon");
-    fs::write(
-        &toon_path,
-        "database:\n  connection:\n    host: db.example.com\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "database:\n  connection:\n    host: db.example.com\n")
+        .expect("write file");
 
     // When: User runs symbols in flat format
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--format")
-        .arg("flat")
-        .arg(&toon_path);
+    cmd.arg("symbols").arg("--format").arg("flat").arg(&toon_path);
 
     // Then: Output shows flattened paths
     cmd.assert().success();
@@ -253,9 +218,7 @@ fn test_symbols_with_positions() {
     cmd.arg("symbols").arg("--positions").arg(&fixture);
 
     // Then: Each symbol shows (Ln:Col) position
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("name"));
+    cmd.assert().success().stdout(predicate::str::contains("name"));
 }
 
 #[test]
@@ -263,17 +226,11 @@ fn test_symbols_positions_multiline() {
     // Given: TOON with symbols on different lines
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("positions.toon");
-    fs::write(
-        &toon_path,
-        "first: 1\nsecond: 2\nthird: 3\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "first: 1\nsecond: 2\nthird: 3\n").expect("write file");
 
     // When: User runs symbols with positions
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--positions")
-        .arg(&toon_path);
+    cmd.arg("symbols").arg("--positions").arg(&toon_path);
 
     // Then: Output shows position information
     cmd.assert().success();
@@ -288,20 +245,14 @@ fn test_symbols_with_types() {
     // Given: TOON with various value types
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("typed.toon");
-    fs::write(
-        &toon_path,
-        "name: Alice\nage: 30\nactive: true\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "name: Alice\nage: 30\nactive: true\n").expect("write file");
 
     // When: User runs `toon-lsp symbols --types file.toon`
     let mut cmd = toon_lsp();
     cmd.arg("symbols").arg("--types").arg(&toon_path);
 
     // Then: Each symbol shows type annotation
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("name"));
+    cmd.assert().success().stdout(predicate::str::contains("name"));
 }
 
 #[test]
@@ -334,10 +285,7 @@ fn test_symbols_combined_flags_types_positions() {
 
     // When: User runs `toon-lsp symbols --types --positions file.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--types")
-        .arg("--positions")
-        .arg(&fixture);
+    cmd.arg("symbols").arg("--types").arg("--positions").arg(&fixture);
 
     // Then: Output shows all metadata
     cmd.assert().success();
@@ -348,11 +296,8 @@ fn test_symbols_combined_all_flags() {
     // Given: TOON file
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("combo.toon");
-    fs::write(
-        &toon_path,
-        "app:\n  name: MyApp\n  version: 1.0\n  active: true\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "app:\n  name: MyApp\n  version: 1.0\n  active: true\n")
+        .expect("write file");
 
     // When: User runs with all flags: types, positions, flat format
     let mut cmd = toon_lsp();
@@ -374,11 +319,7 @@ fn test_symbols_combined_json_format_with_types() {
 
     // When: User runs symbols with JSON format and types
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--format")
-        .arg("json")
-        .arg("--types")
-        .arg(&fixture);
+    cmd.arg("symbols").arg("--format").arg("json").arg("--types").arg(&fixture);
 
     // Then: JSON output includes type information
     cmd.assert().success();
@@ -414,9 +355,7 @@ fn test_symbols_from_stdin_nested() {
     cmd.arg("symbols").arg("-").write_stdin(toon_input);
 
     // Then: Symbols are extracted
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("server"));
+    cmd.assert().success().stdout(predicate::str::contains("server"));
 }
 
 #[test]
@@ -426,12 +365,7 @@ fn test_symbols_from_stdin_with_flags() {
 
     // When: User runs symbols with stdin and types flag
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--types")
-        .arg("--format")
-        .arg("json")
-        .arg("-")
-        .write_stdin(toon_input);
+    cmd.arg("symbols").arg("--types").arg("--format").arg("json").arg("-").write_stdin(toon_input);
 
     // Then: Symbols are extracted with metadata
     cmd.assert().success();
@@ -465,9 +399,7 @@ fn test_symbols_invalid_toon_fails() {
 
     // Then: Exit code 0 (graceful degradation), but error messages on stderr
     // The command extracts what symbols it can and reports parse errors
-    cmd.assert()
-        .success()
-        .stderr(predicate::str::contains("Parse error"));
+    cmd.assert().success().stderr(predicate::str::contains("Parse error"));
 }
 
 #[test]
@@ -493,9 +425,7 @@ fn test_symbols_nonexistent_file_fails() {
     cmd.arg("symbols").arg(nonexistent);
 
     // Then: Exit code 1 (I/O error)
-    cmd.assert()
-        .code(1)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(1).stderr(predicate::str::is_empty().not());
 }
 
 #[test]
@@ -539,10 +469,7 @@ fn test_symbols_empty_file_tree_format() {
 
     // When: User runs symbols in tree format
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--format")
-        .arg("tree")
-        .arg(&toon_path);
+    cmd.arg("symbols").arg("--format").arg("tree").arg(&toon_path);
 
     // Then: Exit code 0
     cmd.assert().success();
@@ -557,10 +484,7 @@ fn test_symbols_empty_file_json_format() {
 
     // When: User runs symbols in JSON format
     let mut cmd = toon_lsp();
-    cmd.arg("symbols")
-        .arg("--format")
-        .arg("json")
-        .arg(&toon_path);
+    cmd.arg("symbols").arg("--format").arg("json").arg(&toon_path);
 
     // Then: Exit code 0, valid JSON (empty array)
     cmd.assert()
@@ -593,20 +517,14 @@ fn test_symbols_array_expanded_form() {
     // Given: TOON with expanded array
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("arrays.toon");
-    fs::write(
-        &toon_path,
-        "items:\n  - one\n  - two\n  - three\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "items:\n  - one\n  - two\n  - three\n").expect("write file");
 
     // When: User runs `toon-lsp symbols arrays.toon`
     let mut cmd = toon_lsp();
     cmd.arg("symbols").arg(&toon_path);
 
     // Then: Array elements shown appropriately
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("items"));
+    cmd.assert().success().stdout(predicate::str::contains("items"));
 }
 
 #[test]
@@ -621,9 +539,7 @@ fn test_symbols_array_inline_form() {
     cmd.arg("symbols").arg(&toon_path);
 
     // Then: Array symbol is shown
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("colors"));
+    cmd.assert().success().stdout(predicate::str::contains("colors"));
 }
 
 #[test]
@@ -631,11 +547,7 @@ fn test_symbols_array_with_types() {
     // Given: TOON with arrays
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("arrays.toon");
-    fs::write(
-        &toon_path,
-        "numbers:\n  - 1\n  - 2\nstatus: active\n",
-    )
-    .expect("write file");
+    fs::write(&toon_path, "numbers:\n  - 1\n  - 2\nstatus: active\n").expect("write file");
 
     // When: User runs symbols with types
     let mut cmd = toon_lsp();
@@ -676,7 +588,5 @@ fn test_symbols_nested_arrays_in_objects() {
     cmd.arg("symbols").arg(&toon_path);
 
     // Then: All nested symbols shown
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("config"));
+    cmd.assert().success().stdout(predicate::str::contains("config"));
 }

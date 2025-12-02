@@ -24,9 +24,7 @@ use tempfile::tempdir;
 
 /// Path to fixtures directory
 fn fixtures_dir() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures")
 }
 
 /// Get a command for the toon-lsp binary
@@ -94,9 +92,7 @@ fn test_check_invalid_file_fails() {
     cmd.arg("check").arg(&fixture);
 
     // Then: Errors are displayed and exit code is 2
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(2).stderr(predicate::str::is_empty().not());
 }
 
 #[test]
@@ -111,9 +107,7 @@ fn test_check_syntax_error_shows_location() {
     cmd.arg("check").arg(&bad_path);
 
     // Then: Error shows line/column info
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::contains("line").or(predicate::str::contains("1")));
+    cmd.assert().code(2).stderr(predicate::str::contains("line").or(predicate::str::contains("1")));
 }
 
 #[test]
@@ -126,9 +120,7 @@ fn test_check_nonexistent_file_fails() {
     cmd.arg("check").arg(nonexistent);
 
     // Then: Exit code is 1 (I/O error)
-    cmd.assert()
-        .code(1)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(1).stderr(predicate::str::is_empty().not());
 }
 
 // =============================================================================
@@ -142,9 +134,7 @@ fn test_check_github_format_valid() {
 
     // When: User runs `toon-lsp check --format github file.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("check")
-        .arg(&fixture)
-        .args(["-f", "github"]);
+    cmd.arg("check").arg(&fixture).args(["-f", "github"]);
 
     // Then: Exit code is 0 (no output for valid file)
     cmd.assert().success();
@@ -157,14 +147,10 @@ fn test_check_github_format_invalid() {
 
     // When: User runs check with github format
     let mut cmd = toon_lsp();
-    cmd.arg("check")
-        .arg(&fixture)
-        .args(["-f", "github"]);
+    cmd.arg("check").arg(&fixture).args(["-f", "github"]);
 
     // Then: Output uses GitHub Actions annotation format (::error)
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::contains("::error"));
+    cmd.assert().code(2).stderr(predicate::str::contains("::error"));
 }
 
 #[test]
@@ -174,14 +160,10 @@ fn test_check_json_format() {
 
     // When: User runs check with json format
     let mut cmd = toon_lsp();
-    cmd.arg("check")
-        .arg(&fixture)
-        .args(["-f", "json"]);
+    cmd.arg("check").arg(&fixture).args(["-f", "json"]);
 
     // Then: Output is JSON formatted
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::contains("{").and(predicate::str::contains("}")));
+    cmd.assert().code(2).stderr(predicate::str::contains("{").and(predicate::str::contains("}")));
 }
 
 // =============================================================================
@@ -199,9 +181,7 @@ fn test_check_multiple_valid_files() {
 
     // When: User runs check on multiple files
     let mut cmd = toon_lsp();
-    cmd.arg("check")
-        .arg(&file1)
-        .arg(&file2);
+    cmd.arg("check").arg(&file1).arg(&file2);
 
     // Then: Exit code is 0
     cmd.assert().success();
@@ -218,14 +198,10 @@ fn test_check_mixed_valid_invalid_files() {
 
     // When: User runs check on both
     let mut cmd = toon_lsp();
-    cmd.arg("check")
-        .arg(&valid_file)
-        .arg(&invalid_file);
+    cmd.arg("check").arg(&valid_file).arg(&invalid_file);
 
     // Then: Exit code is 2 (at least one failed), both files are processed
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::contains("invalid.toon"));
+    cmd.assert().code(2).stderr(predicate::str::contains("invalid.toon"));
 }
 
 #[test]
@@ -239,9 +215,7 @@ fn test_check_batch_reports_all_errors() {
 
     // When: User runs check on all
     let mut cmd = toon_lsp();
-    cmd.arg("check")
-        .arg(&bad1)
-        .arg(&bad2);
+    cmd.arg("check").arg(&bad1).arg(&bad2);
 
     // Then: All errors are reported (not fail-fast)
     cmd.assert()
@@ -261,9 +235,7 @@ fn test_check_from_stdin() {
 
     // When: User runs check with stdin
     let mut cmd = toon_lsp();
-    cmd.arg("check")
-        .arg("-")
-        .write_stdin(valid_toon);
+    cmd.arg("check").arg("-").write_stdin(valid_toon);
 
     // Then: Exit code is 0
     cmd.assert().success();
@@ -276,9 +248,7 @@ fn test_check_from_stdin_invalid() {
 
     // When: User runs check with stdin
     let mut cmd = toon_lsp();
-    cmd.arg("check")
-        .arg("-")
-        .write_stdin(invalid_toon);
+    cmd.arg("check").arg("-").write_stdin(invalid_toon);
 
     // Then: Exit code is 2
     cmd.assert().code(2);

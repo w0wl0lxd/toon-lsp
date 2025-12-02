@@ -20,10 +20,10 @@
 //! - Consistent spacing around colons
 //! - Check mode for CI verification
 
+use super::FormatArgs;
 use super::error::{CliError, CliResult, ExitCode};
 use super::io_utils::{read_file, read_stdin, write_output as write_output_impl};
-use super::FormatArgs;
-use crate::lsp::formatting::{format_document, ToonFormattingOptions};
+use crate::lsp::formatting::{ToonFormattingOptions, format_document};
 use crate::parser;
 
 /// Execute the format command.
@@ -44,21 +44,16 @@ pub fn execute(args: &FormatArgs) -> CliResult<()> {
 
     // Fail on parse errors
     if !errors.is_empty() {
-        let error_msg = errors
-            .iter()
-            .map(|e| e.kind.to_string())
-            .collect::<Vec<_>>()
-            .join("; ");
+        let error_msg = errors.iter().map(|e| e.kind.to_string()).collect::<Vec<_>>().join("; ");
         return Err(CliError::Validation(error_msg));
     }
 
     // Get AST node (parse_with_errors returns Option<AstNode>)
-    let ast_node = ast.ok_or_else(|| CliError::Validation("Failed to parse document".to_string()))?;
+    let ast_node =
+        ast.ok_or_else(|| CliError::Validation("Failed to parse document".to_string()))?;
 
     // Format the AST
-    let options = ToonFormattingOptions {
-        indent_size: args.indent as u32,
-    };
+    let options = ToonFormattingOptions { indent_size: args.indent as u32 };
     let formatted = format_document(&ast_node, options)
         .ok_or_else(|| CliError::Format("Failed to format document".to_string()))?;
 
