@@ -1,0 +1,7 @@
+user:
+  id: 1
+  name: Bob
+  email: bob@example.com
+preferences:
+  theme: dark
+  notifications: true
