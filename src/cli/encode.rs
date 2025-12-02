@@ -154,6 +154,17 @@ fn write_output(args: &EncodeArgs, toon: &str) -> CliResult<()> {
     Ok(())
 }
 
+/// Get exit code for encode errors.
+///
+/// JSON/YAML parse errors return exit code 2 (validation failure).
+pub fn error_exit_code(error: &super::error::CliError) -> super::error::ExitCode {
+    use super::error::{CliError, ExitCode};
+    match error {
+        CliError::Parse(_) | CliError::Encode(_) => ExitCode::ValidationFailed,
+        _ => error.exit_code(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,5 +222,23 @@ mod tests {
         let args = make_encode_args(None, InputFormat::Yaml);
         let format = detect_input_format(&args).expect("detect format");
         assert_eq!(format, InputFormat::Yaml);
+    }
+
+    #[test]
+    fn test_error_exit_code() {
+        use super::super::error::{CliError, ExitCode};
+        use std::io;
+
+        // Parse errors should return ValidationFailed (exit code 2)
+        let parse_err = CliError::Parse("invalid JSON".to_string());
+        assert_eq!(error_exit_code(&parse_err), ExitCode::ValidationFailed);
+
+        // Encode errors should return ValidationFailed (exit code 2)
+        let encode_err = CliError::Encode("encoding failed".to_string());
+        assert_eq!(error_exit_code(&encode_err), ExitCode::ValidationFailed);
+
+        // IO errors should return Error (exit code 1)
+        let io_err = CliError::Io(io::Error::new(io::ErrorKind::NotFound, "not found"));
+        assert_eq!(error_exit_code(&io_err), ExitCode::Error);
     }
 }
