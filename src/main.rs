@@ -66,7 +66,7 @@ async fn main() {
         Some(Command::Encode(args)) => {
             if let Err(e) = encode::execute(&args) {
                 eprintln!("Error: {e}");
-                std::process::exit(i32::from(e.exit_code()));
+                std::process::exit(i32::from(encode::error_exit_code(&e)));
             }
         }
         Some(Command::Decode(args)) => {
@@ -98,11 +98,6 @@ async fn main() {
                 eprintln!("Error: {e}");
                 std::process::exit(i32::from(diagnose::error_exit_code(&e)));
             }
-        }
-        #[allow(unreachable_patterns)]
-        Some(_) => {
-            eprintln!("Unknown command");
-            std::process::exit(1);
         }
     }
 }
