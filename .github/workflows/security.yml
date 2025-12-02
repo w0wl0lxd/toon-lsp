@@ -38,17 +38,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install cargo-deny
+      - name: Run cargo-deny
         uses: EmbarkStudios/cargo-deny-action@v2
-
-      - name: Check licenses
-        run: cargo deny check licenses
-
-      - name: Check bans
-        run: cargo deny check bans
-
-      - name: Check advisories
-        run: cargo deny check advisories
-
-      - name: Check sources
-        run: cargo deny check sources
