@@ -36,6 +36,7 @@ fn fixtures_dir() -> std::path::PathBuf {
 }
 
 /// Get a command for the toon-lsp binary
+#[allow(deprecated)]
 fn toon_lsp() -> Command {
     Command::cargo_bin("toon-lsp").expect("Failed to find toon-lsp binary")
 }
