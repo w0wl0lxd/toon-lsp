@@ -252,7 +252,7 @@ fn test_encode_stdin_to_output_file() {
 }
 
 // =============================================================================
-// T016: Integration test for encode with invalid JSON (exit code 1)
+// T016: Integration test for encode with invalid JSON (exit code 2)
 // =============================================================================
 
 #[test]
@@ -266,9 +266,9 @@ fn test_encode_invalid_json_file_fails() {
     let mut cmd = toon_lsp();
     cmd.arg("encode").arg(&invalid_path);
 
-    // Then: Error message is displayed and exit code is 1
+    // Then: Error message is displayed and exit code is 2 (validation failure)
     cmd.assert()
-        .code(1)
+        .code(2)
         .stderr(predicate::str::contains("error").or(predicate::str::contains("Error")));
 }
 
@@ -283,9 +283,9 @@ fn test_encode_invalid_stdin_fails() {
         .arg("-")
         .write_stdin(invalid_json);
 
-    // Then: Exit code is 1
+    // Then: Exit code is 2 (validation failure)
     cmd.assert()
-        .code(1)
+        .code(2)
         .stderr(predicate::str::contains("error").or(predicate::str::contains("Error")));
 }
 
@@ -317,9 +317,9 @@ fn test_encode_invalid_yaml_fails() {
         .arg(&invalid_path)
         .args(["-f", "yaml"]);
 
-    // Then: Exit code is 1
+    // Then: Exit code is 2 (validation failure)
     cmd.assert()
-        .code(1)
+        .code(2)
         .stderr(predicate::str::is_empty().not());
 }
 
