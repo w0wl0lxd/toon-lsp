@@ -179,6 +179,7 @@ Document {
                                 },
                             },
                         ],
+                        form: Tabular,
                         span: Span {
                             start: Position {
                                 line: 0,
