@@ -121,26 +121,14 @@ impl SemanticToken {
         token_type: ToonTokenType,
         modifiers: ToonTokenModifier,
     ) -> Self {
-        Self {
-            line,
-            start_col,
-            length,
-            token_type,
-            modifiers,
-        }
+        Self { line, start_col, length, token_type, modifiers }
     }
 
     /// Create a semantic token from a span.
     #[must_use]
     pub fn from_span(span: &Span, token_type: ToonTokenType, modifiers: ToonTokenModifier) -> Self {
         let length = span.end.offset - span.start.offset;
-        Self {
-            line: span.start.line,
-            start_col: span.start.column,
-            length,
-            token_type,
-            modifiers,
-        }
+        Self { line: span.start.line, start_col: span.start.column, length, token_type, modifiers }
     }
 
     /// Check if this token has a specific modifier.
@@ -289,11 +277,7 @@ pub fn encode_tokens(
 
         // Convert UTF-8 positions to UTF-16 for LSP compliance
         let line_idx = token.line as usize;
-        let line_text = if line_idx < lines.len() {
-            lines[line_idx]
-        } else {
-            ""
-        };
+        let line_text = if line_idx < lines.len() { lines[line_idx] } else { "" };
 
         let utf16_col = super::utf16::utf8_to_utf16_col(line_text, token.start_col);
         let utf16_length =
@@ -390,13 +374,8 @@ mod tests {
     #[test]
     fn test_semantic_token_new() {
         // Test creating a semantic token
-        let token = SemanticToken::new(
-            5,
-            10,
-            4,
-            ToonTokenType::Property,
-            ToonTokenModifier::DEFINITION,
-        );
+        let token =
+            SemanticToken::new(5, 10, 4, ToonTokenType::Property, ToonTokenModifier::DEFINITION);
 
         assert_eq!(token.line, 5);
         assert_eq!(token.start_col, 10);
@@ -466,10 +445,8 @@ mod tests {
         let tokens = collect_semantic_tokens(&ast);
 
         // Should find 2 Property tokens: "name" and "age"
-        let properties: Vec<_> = tokens
-            .iter()
-            .filter(|t| t.token_type == ToonTokenType::Property)
-            .collect();
+        let properties: Vec<_> =
+            tokens.iter().filter(|t| t.token_type == ToonTokenType::Property).collect();
 
         assert_eq!(
             properties.len(),
@@ -502,10 +479,8 @@ mod tests {
         let tokens = collect_semantic_tokens(&ast);
 
         // Should find 2 String tokens: "Alice" and "Hello World"
-        let strings: Vec<_> = tokens
-            .iter()
-            .filter(|t| t.token_type == ToonTokenType::String)
-            .collect();
+        let strings: Vec<_> =
+            tokens.iter().filter(|t| t.token_type == ToonTokenType::String).collect();
 
         assert_eq!(
             strings.len(),
@@ -544,10 +519,8 @@ mod tests {
         let tokens = collect_semantic_tokens(&ast);
 
         // Should find 3 Number tokens: 42, 19.99, -5
-        let numbers: Vec<_> = tokens
-            .iter()
-            .filter(|t| t.token_type == ToonTokenType::Number)
-            .collect();
+        let numbers: Vec<_> =
+            tokens.iter().filter(|t| t.token_type == ToonTokenType::Number).collect();
 
         assert_eq!(
             numbers.len(),
@@ -586,10 +559,8 @@ mod tests {
         let tokens = collect_semantic_tokens(&ast);
 
         // Should find 3 Keyword tokens: true, false, null
-        let keywords: Vec<_> = tokens
-            .iter()
-            .filter(|t| t.token_type == ToonTokenType::Keyword)
-            .collect();
+        let keywords: Vec<_> =
+            tokens.iter().filter(|t| t.token_type == ToonTokenType::Keyword).collect();
 
         assert_eq!(
             keywords.len(),
@@ -636,10 +607,8 @@ mod tests {
         let tokens = collect_semantic_tokens(&ast);
 
         // Should find 3 property tokens: "user", "name", "tags"
-        let properties: Vec<_> = tokens
-            .iter()
-            .filter(|t| t.token_type == ToonTokenType::Property)
-            .collect();
+        let properties: Vec<_> =
+            tokens.iter().filter(|t| t.token_type == ToonTokenType::Property).collect();
 
         assert_eq!(
             properties.len(),
@@ -649,10 +618,8 @@ mod tests {
         );
 
         // Should find 3 string tokens: "Bob", "admin", "user"
-        let strings: Vec<_> = tokens
-            .iter()
-            .filter(|t| t.token_type == ToonTokenType::String)
-            .collect();
+        let strings: Vec<_> =
+            tokens.iter().filter(|t| t.token_type == ToonTokenType::String).collect();
 
         assert_eq!(
             strings.len(),
@@ -664,15 +631,9 @@ mod tests {
         // Verify nested property positions
         assert_eq!(properties[0].line, 0, "user should be on line 0");
         assert_eq!(properties[1].line, 1, "name should be on line 1");
-        assert_eq!(
-            properties[1].start_col, 2,
-            "name should be indented 2 spaces"
-        );
+        assert_eq!(properties[1].start_col, 2, "name should be indented 2 spaces");
         assert_eq!(properties[2].line, 2, "tags should be on line 2");
-        assert_eq!(
-            properties[2].start_col, 2,
-            "tags should be indented 2 spaces"
-        );
+        assert_eq!(properties[2].start_col, 2, "tags should be indented 2 spaces");
     }
 
     /// T015: Test encode_tokens produces correct relative positions
@@ -691,27 +652,15 @@ mod tests {
         let encoded = encode_tokens(&tokens, source);
 
         // Should have at least 4 tokens: "foo", "bar", "baz", "123"
-        assert!(
-            encoded.len() >= 4,
-            "Should have at least 4 tokens (foo, bar, baz, 123)"
-        );
+        assert!(encoded.len() >= 4, "Should have at least 4 tokens (foo, bar, baz, 123)");
 
         // First token: "foo" at line 0, col 0
-        assert_eq!(
-            encoded[0].delta_line, 0,
-            "First token delta_line should be 0"
-        );
-        assert_eq!(
-            encoded[0].delta_start, 0,
-            "First token delta_start should be 0"
-        );
+        assert_eq!(encoded[0].delta_line, 0, "First token delta_line should be 0");
+        assert_eq!(encoded[0].delta_start, 0, "First token delta_start should be 0");
 
         // Second token on same line: "bar" at col 5
         if encoded.len() >= 2 {
-            assert_eq!(
-                encoded[1].delta_line, 0,
-                "Same line token delta_line should be 0"
-            );
+            assert_eq!(encoded[1].delta_line, 0, "Same line token delta_line should be 0");
             assert!(
                 encoded[1].delta_start > 0,
                 "Same line token delta_start should be offset from previous"
@@ -720,10 +669,7 @@ mod tests {
 
         // Third token on new line: "baz" at line 1, col 0
         if encoded.len() >= 3 {
-            assert_eq!(
-                encoded[2].delta_line, 1,
-                "New line token delta_line should be 1"
-            );
+            assert_eq!(encoded[2].delta_line, 1, "New line token delta_line should be 1");
             assert_eq!(
                 encoded[2].delta_start, 0,
                 "New line token delta_start resets to absolute position"
@@ -752,10 +698,7 @@ mod tests {
         } else {
             // If parser returned no AST due to errors, that's also acceptable
             // The test validates we don't panic on error cases
-            assert!(
-                !errors.is_empty(),
-                "If no AST returned, should have parse errors"
-            );
+            assert!(!errors.is_empty(), "If no AST returned, should have parse errors");
         }
     }
 

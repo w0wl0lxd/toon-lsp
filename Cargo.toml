@@ -43,6 +43,30 @@ insta = { version = "1.34", features = ["json"] }
 tempfile = "3.10"
 proptest = "1.4"
 
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Allow specific noisy lints
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+cast_precision_loss = "allow"        # f64 mantissa precision is acceptable for our use case
+cast_possible_truncation = "allow"   # UTF-16/UTF-8 positions fit in u32 by LSP spec
+doc_markdown = "allow"               # Too noisy for identifiers in docs
+uninlined_format_args = "allow"      # Readability over inline format args
+manual_let_else = "allow"            # Match pattern more readable in these cases
+wildcard_imports = "allow"           # tower_lsp lsp_types wildcard is conventional
+return_self_not_must_use = "allow"  # Builder pattern doesn't require must_use
+comparison_chain = "allow"           # If-else more readable for indent logic
+needless_lifetimes = "allow"         # Explicit lifetimes for clarity
+elidable_lifetime_names = "allow"    # Explicit lifetimes for documentation
+unnecessary_wraps = "allow"          # Consistent error handling interface
+match_same_arms = "allow"            # Different semantic meaning despite identical code
+redundant_closure_for_method_calls = "allow"  # Explicit closures for readability
+
 [profile.release]
 lto = true
 codegen-units = 1

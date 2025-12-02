@@ -107,11 +107,7 @@ pub fn find_references_at_position(
         .map(|(key, span)| {
             // Determine if this is a definition (first occurrence at nesting level)
             // For now, mark all as definitions - will refine later if needed
-            KeyReference {
-                key_name: key.clone(),
-                span,
-                is_definition: true,
-            }
+            KeyReference { key_name: key.clone(), span, is_definition: true }
         })
         .collect();
 
@@ -155,18 +151,12 @@ mod tests {
         // First occurrence
         assert_eq!(refs[0].key_name, "name");
         assert_eq!(refs[0].span.start.line, 0);
-        assert!(
-            refs[0].is_definition,
-            "First occurrence should be definition"
-        );
+        assert!(refs[0].is_definition, "First occurrence should be definition");
 
         // Second occurrence
         assert_eq!(refs[1].key_name, "name");
         assert_eq!(refs[1].span.start.line, 2);
-        assert!(
-            refs[1].is_definition,
-            "First at this nesting level should be definition"
-        );
+        assert!(refs[1].is_definition, "First at this nesting level should be definition");
     }
 
     #[test]
@@ -233,23 +223,12 @@ mod tests {
         // Position on first "id" at line 0, col 0
         // With include_declaration=true: return both
         let refs_with = find_references_at_position(&ast, source, 0, 0, true);
-        assert_eq!(
-            refs_with.len(),
-            2,
-            "With include_declaration=true, should find 2"
-        );
+        assert_eq!(refs_with.len(), 2, "With include_declaration=true, should find 2");
 
         // With include_declaration=false: exclude the one at cursor
         let refs_without = find_references_at_position(&ast, source, 0, 0, false);
-        assert_eq!(
-            refs_without.len(),
-            1,
-            "With include_declaration=false, should find 1"
-        );
-        assert_eq!(
-            refs_without[0].span.start.line, 2,
-            "Should only return the other 'id'"
-        );
+        assert_eq!(refs_without.len(), 1, "With include_declaration=false, should find 1");
+        assert_eq!(refs_without[0].span.start.line, 2, "Should only return the other 'id'");
     }
 
     #[test]
@@ -266,11 +245,7 @@ mod tests {
         let refs = find_references_at_position(&ast, source, 2, 4, true);
 
         // Should find both "name" keys in the array items
-        assert_eq!(
-            refs.len(),
-            2,
-            "Should find 2 references to 'name' in array objects"
-        );
+        assert_eq!(refs.len(), 2, "Should find 2 references to 'name' in array objects");
         assert_eq!(refs[0].key_name, "name");
         assert_eq!(refs[0].span.start.line, 2);
         assert_eq!(refs[1].key_name, "name");

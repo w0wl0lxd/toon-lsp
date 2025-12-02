@@ -31,11 +31,7 @@ pub struct Position {
 impl Position {
     /// Create a new position.
     pub fn new(line: u32, column: u32, offset: u32) -> Self {
-        Self {
-            line,
-            column,
-            offset,
-        }
+        Self { line, column, offset }
     }
 
     /// Create position at start of file.
@@ -71,26 +67,21 @@ impl Span {
     }
 
     /// Check if this span contains a position.
+    #[must_use]
     pub fn contains(&self, pos: Position) -> bool {
         pos.offset >= self.start.offset && pos.offset < self.end.offset
     }
 
     /// Merge two spans into one that covers both.
+    #[must_use]
     pub fn merge(self, other: Span) -> Span {
-        let start = if self.start.offset <= other.start.offset {
-            self.start
-        } else {
-            other.start
-        };
-        let end = if self.end.offset >= other.end.offset {
-            self.end
-        } else {
-            other.end
-        };
+        let start = if self.start.offset <= other.start.offset { self.start } else { other.start };
+        let end = if self.end.offset >= other.end.offset { self.end } else { other.end };
         Span::new(start, end)
     }
 
     /// Get the length of this span in bytes.
+    #[must_use]
     pub fn len(&self) -> u32 {
         self.end.offset.saturating_sub(self.start.offset)
     }

@@ -52,10 +52,7 @@ pub struct ToonFormattingOptions {
 /// Default formatting options: 2-space indentation, no tabs.
 impl Default for ToonFormattingOptions {
     fn default() -> Self {
-        Self {
-            indent_size: 2,
-            use_tabs: false,
-        }
+        Self { indent_size: 2, use_tabs: false }
     }
 }
 
@@ -90,11 +87,7 @@ struct FormattingContext {
 impl FormattingContext {
     /// Create a new formatting context with the given options.
     fn new(options: ToonFormattingOptions) -> Self {
-        Self {
-            options,
-            indent_level: 0,
-            output: String::new(),
-        }
+        Self { options, indent_level: 0, output: String::new() }
     }
 
     /// Generate indentation string for current nesting level.
@@ -240,10 +233,7 @@ fn format_object_entry(entry: &ObjectEntry, ctx: &mut FormattingContext) {
             format_node(&entry.value, ctx, false);
             ctx.indent_level -= 1;
         }
-        AstNode::Array {
-            form: ArrayForm::Expanded | ArrayForm::Tabular,
-            ..
-        } => {
+        AstNode::Array { form: ArrayForm::Expanded | ArrayForm::Tabular, .. } => {
             ctx.newline();
             ctx.indent_level += 1;
             format_node(&entry.value, ctx, true);
@@ -395,11 +385,7 @@ fn format_number(value: NumberValue) -> String {
         NumberValue::NegInt(n) => n.to_string(),
         NumberValue::Float(n) => {
             // Format floats with minimal precision
-            if n.fract() == 0.0 && n.is_finite() {
-                format!("{:.1}", n)
-            } else {
-                n.to_string()
-            }
+            if n.fract() == 0.0 && n.is_finite() { format!("{:.1}", n) } else { n.to_string() }
         }
     }
 }
@@ -420,23 +406,14 @@ mod tests {
     fn test_format_2_space_indent() {
         let source = "user:\n    name: Alice\n    age: 30"; // 4-space input
         let ast = parse(source);
-        let opts = ToonFormattingOptions {
-            indent_size: 2,
-            use_tabs: false,
-        };
+        let opts = ToonFormattingOptions { indent_size: 2, use_tabs: false };
 
         let result = format_document(&ast, opts).expect("Formatting failed");
 
         // Should convert 4-space to 2-space indentation
         assert!(result.contains("user:"), "Missing 'user:' key");
-        assert!(
-            result.contains("  name: Alice"),
-            "Expected 2-space indent for 'name'"
-        );
-        assert!(
-            result.contains("  age: 30"),
-            "Expected 2-space indent for 'age'"
-        );
+        assert!(result.contains("  name: Alice"), "Expected 2-space indent for 'name'");
+        assert!(result.contains("  age: 30"), "Expected 2-space indent for 'age'");
     }
 
     // T049: Test format with 4-space indentation
@@ -444,23 +421,14 @@ mod tests {
     fn test_format_4_space_indent() {
         let source = "user:\n  name: Alice\n  age: 30"; // 2-space input
         let ast = parse(source);
-        let opts = ToonFormattingOptions {
-            indent_size: 4,
-            use_tabs: false,
-        };
+        let opts = ToonFormattingOptions { indent_size: 4, use_tabs: false };
 
         let result = format_document(&ast, opts).expect("Formatting failed");
 
         // Should convert 2-space to 4-space indentation
         assert!(result.contains("user:"), "Missing 'user:' key");
-        assert!(
-            result.contains("    name: Alice"),
-            "Expected 4-space indent for 'name'"
-        );
-        assert!(
-            result.contains("    age: 30"),
-            "Expected 4-space indent for 'age'"
-        );
+        assert!(result.contains("    name: Alice"), "Expected 4-space indent for 'name'");
+        assert!(result.contains("    age: 30"), "Expected 4-space indent for 'age'");
     }
 
     // T050: Test format with tab indentation
@@ -468,23 +436,14 @@ mod tests {
     fn test_format_tab_indent() {
         let source = "user:\n  name: Alice\n  age: 30"; // 2-space input
         let ast = parse(source);
-        let opts = ToonFormattingOptions {
-            indent_size: 2,
-            use_tabs: true,
-        };
+        let opts = ToonFormattingOptions { indent_size: 2, use_tabs: true };
 
         let result = format_document(&ast, opts).expect("Formatting failed");
 
         // Should use tabs for indentation
         assert!(result.contains("user:"), "Missing 'user:' key");
-        assert!(
-            result.contains("\tname: Alice"),
-            "Expected tab indent for 'name'"
-        );
-        assert!(
-            result.contains("\tage: 30"),
-            "Expected tab indent for 'age'"
-        );
+        assert!(result.contains("\tname: Alice"), "Expected tab indent for 'name'");
+        assert!(result.contains("\tage: 30"), "Expected tab indent for 'age'");
     }
 
     // T051: Test format preserves inline array form
@@ -515,18 +474,9 @@ mod tests {
 
         // Should preserve expanded array format
         assert!(result.contains("items:"), "Missing 'items:' key");
-        assert!(
-            result.contains("  - first"),
-            "Expected expanded format for 'first'"
-        );
-        assert!(
-            result.contains("  - second"),
-            "Expected expanded format for 'second'"
-        );
-        assert!(
-            result.contains("  - third"),
-            "Expected expanded format for 'third'"
-        );
+        assert!(result.contains("  - first"), "Expected expanded format for 'first'");
+        assert!(result.contains("  - second"), "Expected expanded format for 'second'");
+        assert!(result.contains("  - third"), "Expected expanded format for 'third'");
     }
 
     // T053: Test format preserves tabular array form
@@ -542,10 +492,7 @@ mod tests {
         // Should preserve tabular array format (formatted as objects with pipe delimiters)
         assert!(result.contains("data"), "Missing 'data' key");
         // Tabular arrays are converted to objects by parser, formatted with pipes
-        assert!(
-            result.contains("|"),
-            "Expected pipe delimiters in tabular format"
-        );
+        assert!(result.contains("|"), "Expected pipe delimiters in tabular format");
         assert!(result.contains("1"), "Expected value '1'");
         assert!(result.contains("2"), "Expected value '2'");
         assert!(result.contains("3"), "Expected value '3'");
@@ -563,11 +510,7 @@ mod tests {
 
         // Parse the formatted output and compare ASTs (ignoring spans)
         let (new_ast_opt, errors) = parse_with_errors(&formatted);
-        assert!(
-            errors.is_empty(),
-            "Formatted output has parse errors: {:?}",
-            errors
-        );
+        assert!(errors.is_empty(), "Formatted output has parse errors: {:?}", errors);
         let new_ast = new_ast_opt.expect("Expected valid AST");
 
         // Compare structure (this is a simplified check)
