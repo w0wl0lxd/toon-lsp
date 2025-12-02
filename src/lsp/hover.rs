@@ -18,7 +18,7 @@
 //! This module provides functions to generate hover information for TOON
 //! document elements including keys, values, and arrays.
 
-use super::ast_utils::{NodePathEntry, find_node_at_position};
+use super::ast_utils::{NodePathEntry, calculate_offset, find_node_at_position};
 use crate::ast::{AstNode, NumberValue, ObjectEntry, Position};
 
 /// Hover information result.
@@ -197,37 +197,6 @@ fn describe_value(value: &AstNode) -> String {
         AstNode::Bool { value, .. } => format!("Boolean {}", value),
         AstNode::Null { .. } => "Null".to_string(),
         AstNode::Document { .. } => "Document".to_string(),
-    }
-}
-
-/// Calculate byte offset from line and column.
-fn calculate_offset(source: &str, line: u32, column: u32) -> Option<u32> {
-    let mut current_line = 0u32;
-    let mut offset = 0u32;
-
-    for (idx, ch) in source.char_indices() {
-        if current_line == line {
-            let col_offset = idx as u32 - offset;
-            if col_offset >= column {
-                return Some(idx as u32);
-            }
-        }
-
-        if ch == '\n' {
-            if current_line == line {
-                // Column is past end of line
-                return None;
-            }
-            current_line += 1;
-            offset = idx as u32 + 1;
-        }
-    }
-
-    // Handle position at end of file or last line
-    if current_line == line {
-        Some(source.len() as u32)
-    } else {
-        None
     }
 }
 
