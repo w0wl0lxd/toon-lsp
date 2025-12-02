@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-12-01
+
+### Changed
+- Improved library examples with idiomatic Rust patterns
+- Fixed CI workflow for cargo-deny action
+
 ## [0.1.0] - 2025-12-01
 
 ### Added
@@ -39,5 +45,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zero unsafe code
 - AGPL-3.0-only license with commercial licensing available
 
-[unreleased]: https://github.com/w0wl0lxd/toon-lsp/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/w0wl0lxd/toon-lsp/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/w0wl0lxd/toon-lsp/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/w0wl0lxd/toon-lsp/releases/tag/v0.1.0
