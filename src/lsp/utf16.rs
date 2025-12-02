@@ -95,14 +95,8 @@ pub fn span_to_range(span: &Span, source: &str) -> Range {
     };
 
     Range {
-        start: Position {
-            line: span.start.line,
-            character: start_col,
-        },
-        end: Position {
-            line: span.end.line,
-            character: end_col,
-        },
+        start: Position { line: span.start.line, character: start_col },
+        end: Position { line: span.end.line, character: end_col },
     }
 }
 
