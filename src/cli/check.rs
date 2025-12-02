@@ -48,13 +48,7 @@ pub struct Diagnostic {
 impl Diagnostic {
     /// Format as text (human-readable).
     pub fn format_text(&self) -> String {
-        format!(
-            "{}:{}:{}: error: {}",
-            self.file.display(),
-            self.line,
-            self.column,
-            self.message
-        )
+        format!("{}:{}:{}: error: {}", self.file.display(), self.line, self.column, self.message)
     }
 
     /// Format as GitHub Actions annotation.
@@ -65,11 +59,8 @@ impl Diagnostic {
     /// - `\n` -> `%0A`
     pub fn format_github(&self) -> String {
         // URL-encode special characters in message
-        let encoded_message = self
-            .message
-            .replace('%', "%25")
-            .replace('\r', "%0D")
-            .replace('\n', "%0A");
+        let encoded_message =
+            self.message.replace('%', "%25").replace('\r', "%0D").replace('\n', "%0A");
         format!(
             "::error file={},line={},col={}::{}",
             self.file.display(),
@@ -117,18 +108,12 @@ pub fn execute(args: &CheckArgs) -> CliResult<()> {
     let results = check_files(args)?;
 
     // Collect all diagnostics
-    let all_diagnostics: Vec<&Diagnostic> = results
-        .iter()
-        .flat_map(|r| &r.diagnostics)
-        .collect();
+    let all_diagnostics: Vec<&Diagnostic> = results.iter().flat_map(|r| &r.diagnostics).collect();
 
     // If there are errors, report them and fail
     if !all_diagnostics.is_empty() {
         report_diagnostics(&all_diagnostics, args.format);
-        return Err(CliError::Validation(format!(
-            "{} error(s) found",
-            all_diagnostics.len()
-        )));
+        return Err(CliError::Validation(format!("{} error(s) found", all_diagnostics.len())));
     }
 
     Ok(())
@@ -140,10 +125,7 @@ fn check_files(args: &CheckArgs) -> CliResult<Vec<CheckResult>> {
     if args.input.is_empty() || (args.input.len() == 1 && args.input[0].as_os_str() == "-") {
         let content = read_stdin()?;
         let diagnostics = check_content(&content, Path::new("<stdin>"));
-        return Ok(vec![CheckResult {
-            file: PathBuf::from("<stdin>"),
-            diagnostics,
-        }]);
+        return Ok(vec![CheckResult { file: PathBuf::from("<stdin>"), diagnostics }]);
     }
 
     // Check all provided files
@@ -158,10 +140,7 @@ fn check_files(args: &CheckArgs) -> CliResult<Vec<CheckResult>> {
 fn check_single_file(path: &Path) -> CliResult<CheckResult> {
     let content = read_file(path)?;
     let diagnostics = check_content(&content, path);
-    Ok(CheckResult {
-        file: path.to_path_buf(),
-        diagnostics,
-    })
+    Ok(CheckResult { file: path.to_path_buf(), diagnostics })
 }
 
 /// Check TOON content and return diagnostics.
