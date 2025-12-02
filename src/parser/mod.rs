@@ -541,6 +541,7 @@ impl Parser {
 
         Ok(AstNode::Array {
             items,
+            form: crate::ast::ArrayForm::Expanded,
             span: Self::merge_spans(start_span, end_span),
         })
     }
@@ -643,6 +644,7 @@ impl Parser {
         ) {
             return Ok(AstNode::Array {
                 items,
+                form: crate::ast::ArrayForm::Inline,
                 span: start_span,
             });
         }
@@ -710,6 +712,7 @@ impl Parser {
 
         Ok(AstNode::Array {
             items,
+            form: crate::ast::ArrayForm::Inline,
             span: Self::merge_spans(start_span, end_span),
         })
     }
@@ -758,6 +761,7 @@ impl Parser {
 
         Ok(AstNode::Array {
             items,
+            form: crate::ast::ArrayForm::Tabular,
             span: Self::merge_spans(start_span, end_span),
         })
     }
