@@ -39,7 +39,7 @@ pub struct Symbol {
     /// Column number (1-based)
     pub column: usize,
     /// Child symbols for objects and arrays
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<Symbol>,
 }
 
@@ -236,18 +236,20 @@ fn format_tree(symbols: &[Symbol], args: &SymbolsArgs, depth: usize) -> String {
 
 /// Format symbols as JSON.
 ///
+/// Preserves the hierarchical tree structure in the JSON output.
+/// Children are nested under their parent symbols.
+///
 /// # Arguments
 ///
-/// - `symbols`: Symbols to format
+/// - `symbols`: Symbols to format (with hierarchy preserved)
 /// - `args`: Command arguments (unused, for API consistency)
 ///
 /// # Returns
 ///
-/// JSON-formatted string
+/// JSON-formatted string with tree structure
 fn format_json(symbols: &[Symbol], _args: &SymbolsArgs) -> String {
-    // Flatten the symbol tree for JSON output
-    let flat_symbols = flatten_symbols(symbols);
-    serde_json::to_string_pretty(&flat_symbols).unwrap_or_else(|e| {
+    // Preserve tree structure in JSON output
+    serde_json::to_string_pretty(symbols).unwrap_or_else(|e| {
         eprintln!("JSON serialization error: {e}");
         "[]".to_string()
     })
@@ -644,6 +646,43 @@ mod tests {
         assert!(output.contains("\"path\": \"key\""));
         assert!(output.contains("\"line\": 1"));
         assert!(output.contains("\"column\": 1"));
+    }
+
+    #[test]
+    fn test_format_json_preserves_tree_structure() {
+        let symbols = vec![Symbol {
+            name: "server".to_string(),
+            kind: SymbolKind::Object,
+            path: "server".to_string(),
+            line: 1,
+            column: 1,
+            children: vec![Symbol {
+                name: "host".to_string(),
+                kind: SymbolKind::String,
+                path: "server.host".to_string(),
+                line: 2,
+                column: 3,
+                children: Vec::new(),
+            }],
+        }];
+
+        let args = SymbolsArgs {
+            input: None,
+            format: SymbolsFormat::Json,
+            types: false,
+            positions: false,
+        };
+
+        let output = format_json(&symbols, &args);
+        // Should contain nested children in JSON
+        assert!(output.contains("\"children\":"));
+        assert!(output.contains("\"name\": \"server\""));
+        assert!(output.contains("\"name\": \"host\""));
+        // Verify it's nested (host is inside children array)
+        let parsed: Vec<Symbol> = serde_json::from_str(&output).expect("valid JSON");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].children.len(), 1);
+        assert_eq!(parsed[0].children[0].name, "host");
     }
 
     #[test]

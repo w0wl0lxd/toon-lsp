@@ -44,7 +44,6 @@ pub struct Cli {
 
 /// Available CLI commands
 #[derive(Debug, Subcommand)]
-#[non_exhaustive]
 pub enum Command {
     /// Convert JSON or YAML to TOON format
     Encode(EncodeArgs),
@@ -143,7 +142,7 @@ pub struct FormatArgs {
     #[arg(value_name = "FILE")]
     pub input: Option<PathBuf>,
 
-    /// Output file, or stdout if omitted (overwrites input if omitted)
+    /// Output file, or stdout if omitted
     #[arg(short, long, value_name = "FILE")]
     pub output: Option<PathBuf>,
 

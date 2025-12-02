@@ -331,8 +331,38 @@ fn format_json(report: &DiagnosticReport) -> CliResult<String> {
     serde_json::to_string_pretty(report).map_err(CliError::from)
 }
 
+/// Convert a file path to a file:// URI.
+///
+/// For absolute paths, returns `file:///path/to/file` (Unix) or `file:///C:/path/to/file` (Windows).
+/// For relative paths or "stdin", returns the path unchanged.
+fn path_to_file_uri(path: &str) -> String {
+    use std::path::Path;
+
+    // Handle stdin specially
+    if path == "stdin" || path == "<stdin>" {
+        return path.to_string();
+    }
+
+    let p = Path::new(path);
+    if p.is_absolute() {
+        // Convert to file:// URI
+        // On Windows, paths like C:\foo become file:///C:/foo
+        let normalized = path.replace('\\', "/");
+        if normalized.starts_with('/') {
+            format!("file://{normalized}")
+        } else {
+            format!("file:///{normalized}")
+        }
+    } else {
+        // Relative paths stay as-is
+        path.to_string()
+    }
+}
+
 /// Format diagnostics as SARIF 2.1.0.
 fn format_sarif(report: &DiagnosticReport, file_path: &str) -> CliResult<String> {
+    let artifact_uri = path_to_file_uri(file_path);
+
     let results: Vec<SarifResult> = report
         .diagnostics
         .iter()
@@ -353,7 +383,7 @@ fn format_sarif(report: &DiagnosticReport, file_path: &str) -> CliResult<String>
                 locations: vec![SarifLocation {
                     physical_location: SarifPhysicalLocation {
                         artifact_location: SarifArtifactLocation {
-                            uri: file_path.to_string(),
+                            uri: artifact_uri.clone(),
                         },
                         region: SarifRegion {
                             start_line: diag.range.start.line + 1, // SARIF is 1-based
@@ -671,5 +701,65 @@ mod tests {
 
         let err = CliError::validation("validation failed");
         assert_eq!(error_exit_code(&err), ExitCode::ValidationFailed);
+    }
+
+    #[test]
+    fn test_path_to_file_uri_relative() {
+        // Relative paths should stay as-is
+        assert_eq!(path_to_file_uri("test.toon"), "test.toon");
+        assert_eq!(path_to_file_uri("src/config.toon"), "src/config.toon");
+    }
+
+    #[test]
+    fn test_path_to_file_uri_stdin() {
+        // stdin should stay as-is
+        assert_eq!(path_to_file_uri("stdin"), "stdin");
+        assert_eq!(path_to_file_uri("<stdin>"), "<stdin>");
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_path_to_file_uri_unix_absolute() {
+        // Unix absolute paths get file:// prefix
+        assert_eq!(
+            path_to_file_uri("/home/user/test.toon"),
+            "file:///home/user/test.toon"
+        );
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn test_path_to_file_uri_windows_absolute() {
+        // Windows absolute paths get file:/// prefix and backslash conversion
+        let uri = path_to_file_uri("C:\\Users\\test.toon");
+        assert!(uri.starts_with("file:///"));
+        assert!(uri.contains("C:/Users/test.toon"));
+    }
+
+    #[test]
+    fn test_sarif_uses_file_uri_for_absolute_paths() {
+        let report = DiagnosticReport {
+            file: "test.toon".to_string(),
+            diagnostics: vec![DiagnosticEntry {
+                range: Range {
+                    start: Position { line: 0, character: 0 },
+                    end: Position { line: 0, character: 5 },
+                },
+                severity: "error".to_string(),
+                code: Some("E001".to_string()),
+                message: "test".to_string(),
+                source: "toon-lsp".to_string(),
+                context: None,
+            }],
+            summary: DiagnosticSummary {
+                errors: 1,
+                warnings: 0,
+                hints: 0,
+            },
+        };
+
+        // Relative path stays as-is
+        let sarif = format_sarif(&report, "test.toon").unwrap();
+        assert!(sarif.contains("\"uri\": \"test.toon\""));
     }
 }
