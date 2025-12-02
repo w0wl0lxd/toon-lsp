@@ -98,28 +98,30 @@ pub enum AstNode {
 
 impl AstNode {
     /// Get the span of this node.
+    #[must_use]
     pub fn span(&self) -> Span {
         match self {
-            AstNode::Document { span, .. } => *span,
-            AstNode::Object { span, .. } => *span,
-            AstNode::Array { span, .. } => *span,
-            AstNode::String { span, .. } => *span,
-            AstNode::Number { span, .. } => *span,
-            AstNode::Bool { span, .. } => *span,
-            AstNode::Null { span } => *span,
+            Self::Document { span, .. }
+            | Self::Object { span, .. }
+            | Self::Array { span, .. }
+            | Self::String { span, .. }
+            | Self::Number { span, .. }
+            | Self::Bool { span, .. }
+            | Self::Null { span } => *span,
         }
     }
 
     /// Get the kind of this node as a string.
-    pub fn kind(&self) -> &'static str {
+    #[must_use]
+    pub const fn kind(&self) -> &'static str {
         match self {
-            AstNode::Document { .. } => "document",
-            AstNode::Object { .. } => "object",
-            AstNode::Array { .. } => "array",
-            AstNode::String { .. } => "string",
-            AstNode::Number { .. } => "number",
-            AstNode::Bool { .. } => "bool",
-            AstNode::Null { .. } => "null",
+            Self::Document { .. } => "document",
+            Self::Object { .. } => "object",
+            Self::Array { .. } => "array",
+            Self::String { .. } => "string",
+            Self::Number { .. } => "number",
+            Self::Bool { .. } => "bool",
+            Self::Null { .. } => "null",
         }
     }
 }
