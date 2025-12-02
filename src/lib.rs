@@ -77,6 +77,7 @@
 //! ```
 
 pub mod ast;
+pub mod cli;
 pub mod lsp;
 pub mod parser;
 
