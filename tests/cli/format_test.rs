@@ -28,6 +28,7 @@ fn fixtures_dir() -> std::path::PathBuf {
 }
 
 /// Get a command for the toon-lsp binary
+#[allow(deprecated)]
 fn toon_lsp() -> Command {
     Command::cargo_bin("toon-lsp").expect("Failed to find toon-lsp binary")
 }
@@ -72,7 +73,7 @@ fn test_format_normalizes_spacing() {
 fn test_format_preserves_valid_structure() {
     // Given: A well-formatted TOON file
     let fixture = fixtures_dir().join("simple.toon");
-    let original = fs::read_to_string(&fixture).expect("read fixture");
+    let _original = fs::read_to_string(&fixture).expect("read fixture");
 
     // When: User runs format
     let mut cmd = toon_lsp();
