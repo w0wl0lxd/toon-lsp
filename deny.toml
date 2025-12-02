@@ -1,0 +1,48 @@
+# cargo-deny configuration
+# https://embarkstudios.github.io/cargo-deny/
+
+[advisories]
+# Database of known vulnerabilities
+db-path = "~/.cargo/advisory-db"
+# Update advisory database on each check
+ignore = []
+
+[licenses]
+# List of allowed licenses
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unlicense",
+    "Zlib",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+]
+# Confidence threshold for license detection
+confidence-threshold = 0.8
+# Allow AGPL-3.0 for the project itself
+exceptions = [
+    { allow = ["AGPL-3.0-only"], crate = "toon-lsp" },
+]
+
+[bans]
+# Lint level for multiple versions of same crate
+multiple-versions = "warn"
+# Lint level for wildcard dependencies
+wildcards = "deny"
+# Allow specific duplicates that are common in the ecosystem
+skip = [
+    # bitflags v1 still used by lsp-types
+    { crate = "bitflags@1", reason = "lsp-types dependency" },
+    # windows-sys version splits are normal
+    { crate = "windows-sys", reason = "platform crate version splits" },
+]
+
+[sources]
+# Only allow crates from crates.io
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
