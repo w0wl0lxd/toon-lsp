@@ -1,13 +1,13 @@
-# toon-lsp
+# `toon-lsp`
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSING.md)
 
-A Language Server Protocol (LSP) implementation for [TOON](https://github.com/toon-format/toon) (Token-Oriented Object Notation).
+A Language Server Protocol (LSP) implementation for [TOON](https://github.com/toon-format/toon) `(Token-Oriented Object Notation)`.
 
 ## Overview
 
-TOON is a compact, human-readable encoding of the JSON data model designed for LLM prompts. This project provides:
+`TOON` is a compact, human-readable encoding of the JSON data model designed for LLM prompts. This project provides:
 
 - **Full AST with source positions** - Parse TOON into an abstract syntax tree with span information
 - **LSP Server** - Complete language server for IDE integration with 9 LSP features
