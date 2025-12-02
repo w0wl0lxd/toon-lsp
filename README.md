@@ -65,16 +65,45 @@ toon-lsp
 ```rust
 use toon_lsp::{parse, AstNode};
 
-let source = r#"
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let source = r#"
 name: Alice
 age: 30
-tags:
+tags[2]:
   - developer
   - rust
 "#;
 
-let ast = parse(source)?;
-println!("Parsed: {:?}", ast);
+    let ast = parse(source)?;
+
+    // AST nodes carry source positions for error reporting
+    if let AstNode::Document { children, span } = &ast {
+        println!("Document spans lines {}-{}", span.start.line, span.end.line);
+
+        for child in children {
+            match child {
+                AstNode::Object { entries, .. } => {
+                    for entry in entries {
+                        println!("Key '{}' at line {}", entry.key, entry.key_span.start.line);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    Ok(())
+}
+```
+
+For IDE integration with error recovery:
+
+```rust
+use toon_lsp::parse_with_errors;
+
+let (ast, errors) = parse_with_errors(source);
+// ast is Some even if there are parse errors (partial AST)
+// errors contains all ParseError with spans for diagnostics
 ```
 
 ## Architecture

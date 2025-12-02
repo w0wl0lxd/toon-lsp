@@ -41,18 +41,30 @@
 //!
 //! ## Usage
 //!
-//! ```rust,ignore
+//! ```rust
 //! use toon_lsp::{parse, AstNode};
 //!
-//! let source = r#"
-//! name: Alice
-//! age: 30
-//! "#;
+//! let source = "user:\n  name: Alice\n  age: 30\n  roles[2]:\n    - admin\n    - developer";
 //!
-//! let ast = parse(source)?;
-//! for node in ast.iter() {
-//!     println!("{:?} at {:?}", node.kind(), node.span());
+//! let ast = parse(source).unwrap();
+//!
+//! // AST nodes carry source positions for error reporting
+//! if let AstNode::Document { children, span } = &ast {
+//!     println!("Document spans lines {}-{}", span.start.line, span.end.line);
 //! }
+//! ```
+//!
+//! For IDE integration with error recovery:
+//!
+//! ```rust
+//! use toon_lsp::parse_with_errors;
+//!
+//! let source = "config:\n  debug: true\n  port: 8080";
+//!
+//! let (ast, errors) = parse_with_errors(source);
+//! // ast is Some even with parse errors (partial AST for IDE use)
+//! assert!(ast.is_some());
+//! assert!(errors.is_empty());
 //! ```
 
 pub mod ast;
