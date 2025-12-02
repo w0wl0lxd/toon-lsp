@@ -48,11 +48,7 @@ impl std::fmt::Display for ParseError {
 impl ParseError {
     /// Create a new parse error.
     pub fn new(kind: ParseErrorKind, span: Span) -> Self {
-        Self {
-            kind,
-            span,
-            context: None,
-        }
+        Self { kind, span, context: None }
     }
 
     /// Add context to this error.
@@ -97,4 +93,17 @@ pub enum ParseErrorKind {
 
     #[error("duplicate key")]
     DuplicateKey,
+
+    // Security error variants for resource exhaustion protection
+    #[error("maximum nesting depth exceeded")]
+    MaxDepthExceeded,
+
+    #[error("document too large")]
+    DocumentTooLarge,
+
+    #[error("too many array items")]
+    TooManyArrayItems,
+
+    #[error("too many object entries")]
+    TooManyObjectEntries,
 }

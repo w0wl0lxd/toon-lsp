@@ -100,10 +100,7 @@ pub fn prepare_rename(
     let entry = node_at_pos.on_key?;
 
     // Return span and key name if on a key
-    Some(PrepareRenameResult {
-        range: entry.key_span,
-        placeholder: entry.key.clone(),
-    })
+    Some(PrepareRenameResult { range: entry.key_span, placeholder: entry.key.clone() })
 }
 
 /// Generate edits to rename a key at the given position.
@@ -155,10 +152,7 @@ pub fn rename_key(
     let mut edits: Vec<RenameEdit> = all_keys
         .into_iter()
         .filter(|(k, _)| k == key_name) // Exact match only
-        .map(|(_, span)| RenameEdit {
-            span,
-            new_text: new_name.to_string(),
-        })
+        .map(|(_, span)| RenameEdit { span, new_text: new_name.to_string() })
         .collect();
 
     // Sort by position for consistent ordering
@@ -293,11 +287,7 @@ mod tests {
         // Renaming "age" (line 1, col 0) to "name" would create duplicate
         // Function should still return edits (LSP handler can add warning)
         let edits = rename_key(&ast, source, 1, 0, "name");
-        assert_eq!(
-            edits.len(),
-            1,
-            "Should return edit even if creating duplicate"
-        );
+        assert_eq!(edits.len(), 1, "Should return edit even if creating duplicate");
         assert_eq!(edits[0].new_text, "name");
 
         // Apply and verify it creates duplicate (valid TOON but semantically questionable)
