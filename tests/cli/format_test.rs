@@ -194,20 +194,21 @@ fn test_format_with_4_space_indent() {
 }
 
 #[test]
-fn test_format_with_tabs() {
+fn test_format_always_uses_spaces_not_tabs() {
     // Given: A nested TOON file
+    // Note: TOON spec prohibits tabs for indentation - spaces only
     let temp = tempdir().expect("create temp dir");
     let toon_path = temp.path().join("nested.toon");
     fs::write(&toon_path, "server:\n  host: localhost\n").expect("write file");
 
-    // When: User runs `toon-lsp format --tabs file.toon`
+    // When: User runs format (tabs option removed - TOON spec prohibits tabs)
     let mut cmd = toon_lsp();
-    cmd.arg("format").arg("--tabs").arg(&toon_path);
+    cmd.arg("format").arg(&toon_path);
 
-    // Then: Output uses tab indentation
+    // Then: Output uses space indentation (tabs prohibited by TOON spec)
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("\thost:")); // tab
+        .stdout(predicate::str::contains("  host:")); // spaces, not tabs
 }
 
 // =============================================================================
