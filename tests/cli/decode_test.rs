@@ -24,9 +24,7 @@ use tempfile::tempdir;
 
 /// Path to fixtures directory
 fn fixtures_dir() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures")
 }
 
 /// Get a command for the toon-lsp binary
@@ -87,9 +85,7 @@ fn test_decode_with_pretty_flag() {
 
     // When: User runs `toon-lsp decode input.toon --pretty`
     let mut cmd = toon_lsp();
-    cmd.arg("decode")
-        .arg(&fixture)
-        .arg("--pretty");
+    cmd.arg("decode").arg(&fixture).arg("--pretty");
 
     // Then: Pretty-printed JSON is output (contains newlines and indentation)
     cmd.assert()
@@ -105,14 +101,10 @@ fn test_decode_with_short_pretty_flag() {
 
     // When: User runs `toon-lsp decode input.toon -p`
     let mut cmd = toon_lsp();
-    cmd.arg("decode")
-        .arg(&fixture)
-        .arg("-p");
+    cmd.arg("decode").arg(&fixture).arg("-p");
 
     // Then: Pretty-printed JSON is output
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("\n"));
+    cmd.assert().success().stdout(predicate::str::contains("\n"));
 }
 
 // =============================================================================
@@ -126,9 +118,7 @@ fn test_decode_to_yaml_format() {
 
     // When: User runs `toon-lsp decode input.toon -f yaml`
     let mut cmd = toon_lsp();
-    cmd.arg("decode")
-        .arg(&fixture)
-        .args(["-f", "yaml"]);
+    cmd.arg("decode").arg(&fixture).args(["-f", "yaml"]);
 
     // Then: YAML output is written to stdout
     cmd.assert()
@@ -145,14 +135,10 @@ fn test_decode_to_yaml_with_long_option() {
 
     // When: User runs `toon-lsp decode input.toon --output-format yaml`
     let mut cmd = toon_lsp();
-    cmd.arg("decode")
-        .arg(&fixture)
-        .args(["--output-format", "yaml"]);
+    cmd.arg("decode").arg(&fixture).args(["--output-format", "yaml"]);
 
     // Then: YAML output is written to stdout
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("name"));
+    cmd.assert().success().stdout(predicate::str::contains("name"));
 }
 
 // =============================================================================
@@ -169,9 +155,7 @@ fn test_decode_invalid_toon_file_fails() {
     cmd.arg("decode").arg(&fixture);
 
     // Then: Parse errors are displayed and exit code is 2
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(2).stderr(predicate::str::is_empty().not());
 }
 
 #[test]
@@ -181,14 +165,10 @@ fn test_decode_invalid_stdin_fails() {
 
     // When: User runs decode with invalid input
     let mut cmd = toon_lsp();
-    cmd.arg("decode")
-        .arg("-")
-        .write_stdin(invalid_toon);
+    cmd.arg("decode").arg("-").write_stdin(invalid_toon);
 
     // Then: Exit code is 2 (validation failure)
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(2).stderr(predicate::str::is_empty().not());
 }
 
 #[test]
@@ -201,9 +181,7 @@ fn test_decode_nonexistent_file_fails() {
     cmd.arg("decode").arg(nonexistent);
 
     // Then: Exit code is 1 (I/O error)
-    cmd.assert()
-        .code(1)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(1).stderr(predicate::str::is_empty().not());
 }
 
 // =============================================================================
@@ -251,7 +229,8 @@ fn test_roundtrip_json_to_toon_to_json() {
 #[test]
 fn test_roundtrip_complex_structure() {
     // Given: Complex JSON with arrays and nested objects
-    let original_json = r#"{"users":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}],"metadata":{"version":"1.0"}}"#;
+    let original_json =
+        r#"{"users":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}],"metadata":{"version":"1.0"}}"#;
 
     // When: We encode to TOON and decode back
     let mut encode_cmd = toon_lsp();
@@ -296,9 +275,7 @@ fn test_decode_from_stdin() {
 
     // When: User runs `toon-lsp decode -`
     let mut cmd = toon_lsp();
-    cmd.arg("decode")
-        .arg("-")
-        .write_stdin(toon_input);
+    cmd.arg("decode").arg("-").write_stdin(toon_input);
 
     // Then: JSON output is written to stdout
     cmd.assert()
@@ -316,10 +293,7 @@ fn test_decode_to_output_file() {
 
     // When: User runs `toon-lsp decode input.toon -o output.json`
     let mut cmd = toon_lsp();
-    cmd.arg("decode")
-        .arg(&fixture)
-        .arg("-o")
-        .arg(&output_path);
+    cmd.arg("decode").arg(&fixture).arg("-o").arg(&output_path);
 
     // Then: JSON is written to the specified file
     cmd.assert().success();
