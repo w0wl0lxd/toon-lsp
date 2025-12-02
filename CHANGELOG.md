@@ -7,30 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Security limits for parser: maximum nesting depth (128), document size (10MB), array items (100k), object entries (10k)
-- New error types: `MaxDepthExceeded`, `DocumentTooLarge`, `TooManyArrayItems`, `TooManyObjectEntries`
-- `#[must_use]` attributes on pure functions in AST module
-- `const fn` for `AstNode::kind()` method
-- Async parsing via `spawn_blocking` for better LSP responsiveness
-
-### Changed
-- Consolidated duplicate `calculate_offset` function into single implementation in `ast_utils`
-- Merged identical match arms in `AstNode::span()` using OR patterns
-- Updated to use `Self::` instead of `AstNode::` in impl blocks
-
-### Fixed
-- Potential stack overflow from deeply nested TOON documents
-- Memory exhaustion from extremely large documents
-- Synchronous parsing blocking async runtime
-
-## [0.1.0] - 2024-XX-XX
+## [0.1.0] - 2025-12-01
 
 ### Added
-- Initial release
 - Full TOON parser with position tracking (Span on all AST nodes)
 - Scanner/lexer with 45 tests
 - Recursive descent parser with 27 tests
+- Security limits: maximum nesting depth (128), document size (10MB), array items (100k), object entries (10k)
+- Error types for security limits: `MaxDepthExceeded`, `DocumentTooLarge`, `TooManyArrayItems`, `TooManyObjectEntries`
+- `#[must_use]` attributes on pure functions in AST module
+- `const fn` for `AstNode::kind()` method
+- Async parsing via `spawn_blocking` for better LSP responsiveness
 - LSP server with 9 features:
   - Real-time diagnostics
   - Document symbols (outline)
