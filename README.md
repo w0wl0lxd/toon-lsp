@@ -63,47 +63,58 @@ toon-lsp
 ### As a Library
 
 ```rust
-use toon_lsp::{parse, AstNode};
+use toon_lsp::{parse, AstNode, ObjectEntry, ParseError};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let source = r#"
-name: Alice
-age: 30
-tags[2]:
-  - developer
-  - rust
-"#;
+fn main() -> Result<(), ParseError> {
+    let source = "user:\n  name: Alice\n  age: 30\n  roles[2]:\n    - admin\n    - developer";
 
     let ast = parse(source)?;
 
-    // AST nodes carry source positions for error reporting
-    if let AstNode::Document { children, span } = &ast {
-        println!("Document spans lines {}-{}", span.start.line, span.end.line);
+    // Every AST node carries source positions (Span) - 0-indexed
+    let AstNode::Document { children, span } = &ast else {
+        return Ok(());
+    };
+    println!("Document: lines {}-{}", span.start.line + 1, span.end.line + 1);
 
-        for child in children {
-            match child {
-                AstNode::Object { entries, .. } => {
-                    for entry in entries {
-                        println!("Key '{}' at line {}", entry.key, entry.key_span.start.line);
-                    }
-                }
-                _ => {}
-            }
+    // Walk the AST - objects contain key-value entries
+    for node in children {
+        if let AstNode::Object { entries, .. } = node {
+            print_entries(entries, 0);
         }
     }
-
     Ok(())
+}
+
+fn print_entries(entries: &[ObjectEntry], depth: usize) {
+    let indent = "  ".repeat(depth);
+    for entry in entries {
+        let loc = &entry.key_span.start;
+        println!("{}{}: (line {}, col {})", indent, entry.key, loc.line + 1, loc.column + 1);
+
+        // Recursively handle nested objects
+        if let AstNode::Object { entries: nested, .. } = &entry.value {
+            print_entries(nested, depth + 1);
+        }
+    }
 }
 ```
 
-For IDE integration with error recovery:
+**Error recovery for IDEs** — parse succeeds even with syntax errors:
 
 ```rust
 use toon_lsp::parse_with_errors;
 
 let (ast, errors) = parse_with_errors(source);
-// ast is Some even if there are parse errors (partial AST)
-// errors contains all ParseError with spans for diagnostics
+
+// Partial AST available even with errors (for IDE features)
+if let Some(ast) = ast {
+    // Provide completions, symbols, hover despite errors
+}
+
+// Errors have spans for diagnostic squiggles
+for err in &errors {
+    eprintln!("{}:{}: {}", err.span.start.line, err.span.start.column, err.kind);
+}
 ```
 
 ## Architecture
