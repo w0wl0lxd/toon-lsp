@@ -58,13 +58,24 @@ impl Diagnostic {
     }
 
     /// Format as GitHub Actions annotation.
+    ///
+    /// Special characters are URL-encoded per GitHub Actions workflow commands:
+    /// - `%` -> `%25`
+    /// - `\r` -> `%0D`
+    /// - `\n` -> `%0A`
     pub fn format_github(&self) -> String {
+        // URL-encode special characters in message
+        let encoded_message = self
+            .message
+            .replace('%', "%25")
+            .replace('\r', "%0D")
+            .replace('\n', "%0A");
         format!(
             "::error file={},line={},col={}::{}",
             self.file.display(),
             self.line,
             self.column,
-            self.message
+            encoded_message
         )
     }
 
@@ -237,6 +248,26 @@ mod tests {
         assert!(github.contains("file=test.toon"));
         assert!(github.contains("line=5"));
         assert!(github.contains("col=10"));
+    }
+
+    #[test]
+    fn test_diagnostic_format_github_encodes_special_chars() {
+        let diag = Diagnostic {
+            file: PathBuf::from("test.toon"),
+            line: 1,
+            column: 1,
+            message: "100% complete\nwith newline\rand carriage return".to_string(),
+        };
+        let github = diag.format_github();
+        // % should be encoded as %25
+        assert!(github.contains("100%25 complete"));
+        // \n should be encoded as %0A
+        assert!(github.contains("%0Awith newline"));
+        // \r should be encoded as %0D
+        assert!(github.contains("%0Dand carriage return"));
+        // Original special chars should not appear
+        assert!(!github.contains('\n'));
+        assert!(!github.contains('\r'));
     }
 
     #[test]
