@@ -1,6 +1,6 @@
 #!/bin/sh
 # Pre-commit hook for toon-lsp
-# Runs cargo fmt to ensure consistent formatting
+# Runs cargo fmt and clippy to ensure code quality
 
 set -e
 
@@ -14,17 +14,16 @@ fi
 STAGED_RS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$' || true)
 
 if [ -n "$STAGED_RS_FILES" ]; then
-    echo "Running cargo fmt on staged Rust files..."
-
-    # Run cargo fmt
+    echo "==> Running cargo fmt..."
     cargo fmt --all
 
     # Re-add formatted files to staging
     echo "$STAGED_RS_FILES" | xargs git add
+    echo "    Formatting complete."
 
-    echo "Formatting complete."
+    echo "==> Running cargo clippy..."
+    cargo clippy --all-targets --all-features -- -D warnings
+    echo "    Clippy passed."
 fi
 
-# Optional: Run clippy check (comment out if too slow)
-# echo "Running cargo clippy..."
-# cargo clippy --all-targets --all-features -- -D warnings
+echo "==> Pre-commit checks passed."
