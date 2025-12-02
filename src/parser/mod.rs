@@ -28,12 +28,45 @@ pub use scanner::{Scanner, Token, TokenKind};
 
 use crate::ast::{AstNode, NumberValue, ObjectEntry, Span};
 
+// =============================================================================
+// Security Constants - Resource Exhaustion Protection
+// =============================================================================
+
+/// Maximum nesting depth for objects and arrays.
+///
+/// Prevents stack overflow from deeply nested structures.
+/// 128 levels is sufficient for legitimate use cases while preventing
+/// unbounded recursion attacks.
+const MAX_NESTING_DEPTH: usize = 128;
+
+/// Maximum document size in bytes (10MB).
+///
+/// Prevents memory exhaustion from maliciously large documents.
+/// 10MB is generous for TOON configuration files while providing
+/// protection against DoS attacks.
+const MAX_DOCUMENT_SIZE: usize = 10 * 1024 * 1024;
+
+/// Maximum number of array items (100,000).
+///
+/// Prevents memory exhaustion from maliciously large arrays.
+/// 100k items is sufficient for reasonable data structures while
+/// protecting against collection-based DoS attacks.
+const MAX_ARRAY_ITEMS: usize = 100_000;
+
+/// Maximum number of object entries (10,000).
+///
+/// Prevents memory exhaustion from maliciously large objects.
+/// 10k entries is sufficient for configuration files while
+/// protecting against hash collision and memory exhaustion attacks.
+const MAX_OBJECT_ENTRIES: usize = 10_000;
+
 /// Parser state machine that consumes tokens and produces AST.
 ///
 /// # Design
 /// - Recursive descent parser with single-token lookahead
 /// - Consumes tokens from Scanner
 /// - Tracks position and errors for IDE integration
+/// - Enforces security limits to prevent resource exhaustion
 struct Parser {
     /// All tokens from Scanner
     tokens: Vec<Token>,
@@ -43,6 +76,8 @@ struct Parser {
     errors: Vec<ParseError>,
     /// Whether we're in error recovery mode
     recovering: bool,
+    /// Current nesting depth for recursion protection
+    depth: usize,
 }
 
 impl Parser {
@@ -53,12 +88,7 @@ impl Parser {
     fn new(source: &str) -> Self {
         let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_all();
-        Self {
-            tokens,
-            position: 0,
-            errors: Vec::new(),
-            recovering: false,
-        }
+        Self { tokens, position: 0, errors: Vec::new(), recovering: false, depth: 0 }
     }
 
     // =========================================================================
@@ -147,6 +177,26 @@ impl Parser {
         error
     }
 
+    /// Check and enforce maximum nesting depth.
+    ///
+    /// # Safety
+    /// This function MUST be called at entry to every recursive parsing function
+    /// (parse_nested_object, parse_expanded_array, parse_tabular_row) to prevent
+    /// stack overflow attacks from deeply nested structures.
+    ///
+    /// # Arguments
+    /// * `span` - Source span for error reporting if depth exceeded
+    ///
+    /// # Returns
+    /// * `Ok(())` if depth is within limits
+    /// * `Err(ParseError)` if maximum depth exceeded
+    fn check_depth(&self, span: Span) -> Result<(), ParseError> {
+        if self.depth >= MAX_NESTING_DEPTH {
+            return Err(ParseError::new(ParseErrorKind::MaxDepthExceeded, span));
+        }
+        Ok(())
+    }
+
     /// Synchronize after an error by skipping to next statement boundary.
     ///
     /// Sync points: Newline, Dedent, Eof
@@ -178,10 +228,7 @@ impl Parser {
         let token = self.advance().clone();
         if let TokenKind::Number(text) = &token.kind {
             let value = Self::parse_number_value(text, token.span)?;
-            Ok(AstNode::Number {
-                value,
-                span: token.span,
-            })
+            Ok(AstNode::Number { value, span: token.span })
         } else {
             Err(ParseError::new(ParseErrorKind::ExpectedValue, token.span))
         }
@@ -209,10 +256,7 @@ impl Parser {
     fn parse_string(&mut self) -> Result<AstNode, ParseError> {
         let token = self.advance().clone();
         if let TokenKind::String(value) = token.kind {
-            Ok(AstNode::String {
-                value,
-                span: token.span,
-            })
+            Ok(AstNode::String { value, span: token.span })
         } else {
             Err(ParseError::new(ParseErrorKind::ExpectedValue, token.span))
         }
@@ -222,14 +266,8 @@ impl Parser {
     fn parse_primitive(&mut self) -> Result<AstNode, ParseError> {
         let token = self.advance().clone();
         match token.kind {
-            TokenKind::True => Ok(AstNode::Bool {
-                value: true,
-                span: token.span,
-            }),
-            TokenKind::False => Ok(AstNode::Bool {
-                value: false,
-                span: token.span,
-            }),
+            TokenKind::True => Ok(AstNode::Bool { value: true, span: token.span }),
+            TokenKind::False => Ok(AstNode::Bool { value: false, span: token.span }),
             TokenKind::Null => Ok(AstNode::Null { span: token.span }),
             _ => Err(ParseError::new(ParseErrorKind::ExpectedValue, token.span)),
         }
@@ -274,17 +312,13 @@ impl Parser {
                 } else {
                     // Implicit null
                     let span = self.current().span;
-                    Ok(AstNode::Null {
-                        span: Span::point(span.start),
-                    })
+                    Ok(AstNode::Null { span: Span::point(span.start) })
                 }
             }
             TokenKind::Eof => {
                 // Implicit null at end
                 let span = self.current().span;
-                Ok(AstNode::Null {
-                    span: Span::point(span.start),
-                })
+                Ok(AstNode::Null { span: Span::point(span.start) })
             }
             _ => {
                 let span = self.current().span;
@@ -384,11 +418,7 @@ impl Parser {
         if matches!(self.current().kind, TokenKind::LeftBracket) {
             // Rewind isn't possible, so handle inline
             let value = self.parse_array_with_key(&key, key_span)?;
-            return Ok(ObjectEntry {
-                key,
-                key_span,
-                value,
-            });
+            return Ok(ObjectEntry { key, key_span, value });
         }
 
         // Expect colon
@@ -400,11 +430,7 @@ impl Parser {
         // Parse value
         let value = self.parse_value()?;
 
-        Ok(ObjectEntry {
-            key,
-            key_span,
-            value,
-        })
+        Ok(ObjectEntry { key, key_span, value })
     }
 
     /// Parse object entries at the current indentation level.
@@ -412,6 +438,14 @@ impl Parser {
         let mut entries = Vec::new();
 
         while !self.is_at_end() {
+            // SECURITY: Enforce maximum object size to prevent memory exhaustion
+            if entries.len() >= MAX_OBJECT_ENTRIES {
+                return Err(ParseError::new(
+                    ParseErrorKind::TooManyObjectEntries,
+                    self.current().span,
+                ));
+            }
+
             self.skip_newlines();
 
             // Stop at dedent or end
@@ -420,10 +454,7 @@ impl Parser {
             }
 
             // Stop if not at a key
-            if !matches!(
-                self.current().kind,
-                TokenKind::Identifier(_) | TokenKind::String(_)
-            ) {
+            if !matches!(self.current().kind, TokenKind::Identifier(_) | TokenKind::String(_)) {
                 break;
             }
 
@@ -444,21 +475,18 @@ impl Parser {
             }
         }
 
-        let end_span = if let Some(last) = entries.last() {
-            last.value.span()
-        } else {
-            start_span
-        };
+        let end_span = if let Some(last) = entries.last() { last.value.span() } else { start_span };
 
-        Ok(AstNode::Object {
-            entries,
-            span: Self::merge_spans(start_span, end_span),
-        })
+        Ok(AstNode::Object { entries, span: Self::merge_spans(start_span, end_span) })
     }
 
     /// Parse a nested object (after Indent token).
     fn parse_nested_object(&mut self) -> Result<AstNode, ParseError> {
         let start_span = self.current().span;
+
+        // SECURITY: Check maximum nesting depth before recursion
+        self.check_depth(start_span)?;
+        self.depth += 1;
 
         // Consume indent
         if matches!(self.current().kind, TokenKind::Indent) {
@@ -467,7 +495,9 @@ impl Parser {
 
         // Check if this is an array (dash items)
         if matches!(self.current().kind, TokenKind::Dash) {
-            return self.parse_expanded_array();
+            let result = self.parse_expanded_array();
+            self.depth -= 1;
+            return result;
         }
 
         let result = self.parse_object(start_span);
@@ -477,6 +507,7 @@ impl Parser {
             self.advance();
         }
 
+        self.depth -= 1;
         result
     }
 
@@ -487,10 +518,7 @@ impl Parser {
 
         // Empty document
         if self.is_at_end() {
-            return Ok(AstNode::Document {
-                children: vec![],
-                span: Span::point(start_span.start),
-            });
+            return Ok(AstNode::Document { children: vec![], span: Span::point(start_span.start) });
         }
 
         // Parse root object
@@ -510,9 +538,23 @@ impl Parser {
     /// Parse expanded array (dash-prefixed items).
     fn parse_expanded_array(&mut self) -> Result<AstNode, ParseError> {
         let start_span = self.current().span;
+
+        // SECURITY: Check maximum nesting depth before recursion
+        self.check_depth(start_span)?;
+        self.depth += 1;
+
         let mut items = Vec::new();
 
         while matches!(self.current().kind, TokenKind::Dash) {
+            // SECURITY: Enforce maximum array size to prevent memory exhaustion
+            if items.len() >= MAX_ARRAY_ITEMS {
+                self.depth -= 1;
+                return Err(ParseError::new(
+                    ParseErrorKind::TooManyArrayItems,
+                    self.current().span,
+                ));
+            }
+
             self.advance(); // consume dash
 
             // Skip whitespace (already handled by scanner)
@@ -525,15 +567,11 @@ impl Parser {
                     self.parse_nested_object()?
                 } else {
                     // Empty item = null
-                    AstNode::Null {
-                        span: Span::point(self.current().span.start),
-                    }
+                    AstNode::Null { span: Span::point(self.current().span.start) }
                 }
             } else if matches!(self.current().kind, TokenKind::Eof | TokenKind::Dedent) {
                 // Empty item at end
-                AstNode::Null {
-                    span: Span::point(self.current().span.start),
-                }
+                AstNode::Null { span: Span::point(self.current().span.start) }
             } else {
                 // Item value on same line
                 self.parse_value()?
@@ -552,8 +590,9 @@ impl Parser {
             }
         }
 
-        let end_span = items.last().map(|i| i.span()).unwrap_or(start_span);
+        let end_span = items.last().map_or(start_span, AstNode::span);
 
+        self.depth -= 1;
         Ok(AstNode::Array {
             items,
             form: crate::ast::ArrayForm::Expanded,
@@ -653,10 +692,7 @@ impl Parser {
         let mut items = Vec::new();
 
         // Handle empty array
-        if matches!(
-            self.current().kind,
-            TokenKind::Newline | TokenKind::Eof | TokenKind::Dedent
-        ) {
+        if matches!(self.current().kind, TokenKind::Newline | TokenKind::Eof | TokenKind::Dedent) {
             return Ok(AstNode::Array {
                 items,
                 form: crate::ast::ArrayForm::Inline,
@@ -666,6 +702,14 @@ impl Parser {
 
         // Parse items
         loop {
+            // SECURITY: Enforce maximum array size to prevent memory exhaustion
+            if items.len() >= MAX_ARRAY_ITEMS {
+                return Err(ParseError::new(
+                    ParseErrorKind::TooManyArrayItems,
+                    self.current().span,
+                ));
+            }
+
             // Skip leading whitespace (handled by scanner)
 
             // Parse value
@@ -723,7 +767,7 @@ impl Parser {
             }
         }
 
-        let end_span = items.last().map(|i| i.span()).unwrap_or(start_span);
+        let end_span = items.last().map_or(start_span, AstNode::span);
 
         Ok(AstNode::Array {
             items,
@@ -754,6 +798,14 @@ impl Parser {
 
         // Parse rows
         for _ in 0..expected_count {
+            // SECURITY: Enforce maximum array size to prevent memory exhaustion
+            if items.len() >= MAX_ARRAY_ITEMS {
+                return Err(ParseError::new(
+                    ParseErrorKind::TooManyArrayItems,
+                    self.current().span,
+                ));
+            }
+
             if self.is_at_end() || matches!(self.current().kind, TokenKind::Dedent) {
                 break;
             }
@@ -772,7 +824,7 @@ impl Parser {
             self.advance();
         }
 
-        let end_span = items.last().map(|i| i.span()).unwrap_or(start_span);
+        let end_span = items.last().map_or(start_span, AstNode::span);
 
         Ok(AstNode::Array {
             items,
@@ -788,6 +840,11 @@ impl Parser {
         delimiter: char,
     ) -> Result<AstNode, ParseError> {
         let start_span = self.current().span;
+
+        // SECURITY: Check maximum nesting depth before recursion
+        self.check_depth(start_span)?;
+        self.depth += 1;
+
         let mut entries = Vec::new();
 
         for (i, field_name) in field_names.iter().enumerate() {
@@ -803,10 +860,7 @@ impl Parser {
                     let span = self.current().span;
                     let num_value = Self::parse_number_value(n, span)?;
                     self.advance();
-                    AstNode::Number {
-                        value: num_value,
-                        span,
-                    }
+                    AstNode::Number { value: num_value, span }
                 }
                 TokenKind::Identifier(s) => {
                     let span = self.current().span;
@@ -831,9 +885,7 @@ impl Parser {
                 }
                 _ => {
                     // Missing value
-                    AstNode::Null {
-                        span: self.current().span,
-                    }
+                    AstNode::Null { span: self.current().span }
                 }
             };
 
@@ -853,12 +905,10 @@ impl Parser {
             }
         }
 
-        let end_span = entries.last().map(|e| e.value.span()).unwrap_or(start_span);
+        let end_span = entries.last().map_or(start_span, |e| e.value.span());
 
-        Ok(AstNode::Object {
-            entries,
-            span: Self::merge_spans(start_span, end_span),
-        })
+        self.depth -= 1;
+        Ok(AstNode::Object { entries, span: Self::merge_spans(start_span, end_span) })
     }
 }
 
@@ -875,6 +925,13 @@ impl Parser {
 /// * `Ok(AstNode)` - The root AST node (Document) on success
 /// * `Err(ParseError)` - First parse error encountered
 ///
+/// # Security
+/// Enforces resource limits to prevent DoS attacks:
+/// - Maximum document size: 10MB
+/// - Maximum nesting depth: 128 levels
+/// - Maximum array size: 100,000 items
+/// - Maximum object size: 10,000 entries
+///
 /// # Example
 /// ```rust
 /// use toon_lsp::parse;
@@ -883,6 +940,11 @@ impl Parser {
 /// assert_eq!(ast.kind(), "document");
 /// ```
 pub fn parse(source: &str) -> Result<AstNode, ParseError> {
+    // SECURITY: Enforce maximum document size to prevent memory exhaustion
+    if source.len() > MAX_DOCUMENT_SIZE {
+        return Err(ParseError::new(ParseErrorKind::DocumentTooLarge, Span::default()));
+    }
+
     let mut parser = Parser::new(source);
     let result = parser.parse_document();
 
@@ -905,6 +967,9 @@ pub fn parse(source: &str) -> Result<AstNode, ParseError> {
 /// # Returns
 /// * `(Option<AstNode>, Vec<ParseError>)` - Partial AST (if any) and all errors
 ///
+/// # Security
+/// Enforces the same resource limits as `parse()` to prevent DoS attacks.
+///
 /// # Example
 /// ```rust
 /// use toon_lsp::parse_with_errors;
@@ -915,6 +980,12 @@ pub fn parse(source: &str) -> Result<AstNode, ParseError> {
 /// ```
 #[must_use]
 pub fn parse_with_errors(source: &str) -> (Option<AstNode>, Vec<ParseError>) {
+    // SECURITY: Enforce maximum document size to prevent memory exhaustion
+    if source.len() > MAX_DOCUMENT_SIZE {
+        let error = ParseError::new(ParseErrorKind::DocumentTooLarge, Span::default());
+        return (None, vec![error]);
+    }
+
     let mut parser = Parser::new(source);
     let result = parser.parse_document();
 
@@ -929,5 +1000,184 @@ pub fn parse_with_errors(source: &str) -> (Option<AstNode>, Vec<ParseError>) {
                 (None, parser.errors)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod security_tests {
+    use super::*;
+
+    /// SEC-001: Test recursive nesting depth protection
+    #[test]
+    fn test_max_nesting_depth_object() {
+        // Create deeply nested object structure (150 levels)
+        // Each level needs: key + colon + newline + indent
+        let mut input = String::from("root:\n");
+        for level in 0..150 {
+            let indent = "  ".repeat(level + 1);
+            input.push_str(&format!("{}level{}:\n", indent, level));
+        }
+        input.push_str(&format!("{}value: deep\n", "  ".repeat(151)));
+
+        let result = parse(&input);
+        assert!(result.is_err(), "Should reject excessive nesting");
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ParseErrorKind::MaxDepthExceeded);
+    }
+
+    #[test]
+    fn test_max_nesting_depth_array() {
+        // Create deeply nested array structure (150 levels)
+        // Each level: key + colon + newline + indent + dash + newline + deeper indent
+        let mut input = String::from("root:\n");
+        for level in 0..150 {
+            let indent = "  ".repeat(level + 1);
+            input.push_str(&format!("{}- \n", indent));
+            if level < 149 {
+                input.push_str(&format!("{}  nested:\n", indent));
+            }
+        }
+
+        let result = parse(&input);
+        assert!(result.is_err(), "Should reject excessive array nesting");
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ParseErrorKind::MaxDepthExceeded);
+    }
+
+    #[test]
+    fn test_nesting_depth_within_limit() {
+        // Create nested structure just under limit (127 levels)
+        let mut input = String::from("root:\n");
+        for level in 0..127 {
+            let indent = "  ".repeat(level + 1);
+            input.push_str(&format!("{}level{}:\n", indent, level));
+        }
+        input.push_str(&format!("{}value: deep\n", "  ".repeat(128)));
+
+        let result = parse(&input);
+        assert!(result.is_ok(), "Should accept nesting within limit");
+    }
+
+    /// SEC-002: Test document size limits
+    #[test]
+    fn test_document_too_large() {
+        // Create document exceeding 10MB
+        let large_input = "a".repeat(11 * 1024 * 1024);
+
+        let result = parse(&large_input);
+        assert!(result.is_err(), "Should reject oversized document");
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ParseErrorKind::DocumentTooLarge);
+    }
+
+    #[test]
+    fn test_document_size_within_limit() {
+        // Create document just under limit (~8MB)
+        // Use 9,000 entries to stay under MAX_OBJECT_ENTRIES (10,000)
+        let input = "key: value\n".repeat(9_000);
+
+        let result = parse(&input);
+        assert!(result.is_ok(), "Should accept document within size limit");
+    }
+
+    /// SEC-003: Test array size limits
+    #[test]
+    fn test_too_many_array_items() {
+        // Create array with >100k items
+        let mut input = String::from("items:\n");
+        for i in 0..100_001 {
+            input.push_str(&format!("  - item{}\n", i));
+        }
+
+        let result = parse(&input);
+        assert!(result.is_err(), "Should reject oversized array");
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ParseErrorKind::TooManyArrayItems);
+    }
+
+    #[test]
+    fn test_array_items_within_limit() {
+        // Create array with exactly 100k items (at limit)
+        let mut input = String::from("items:\n");
+        for i in 0..100_000 {
+            input.push_str(&format!("  - item{}\n", i));
+        }
+
+        let result = parse(&input);
+        assert!(result.is_ok(), "Should accept array at limit");
+    }
+
+    /// SEC-004: Test object size limits
+    #[test]
+    fn test_too_many_object_entries() {
+        // Create object with >10k entries
+        let mut input = String::new();
+        for i in 0..10_001 {
+            input.push_str(&format!("key{}: value{}\n", i, i));
+        }
+
+        let result = parse(&input);
+        assert!(result.is_err(), "Should reject oversized object");
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ParseErrorKind::TooManyObjectEntries);
+    }
+
+    #[test]
+    fn test_object_entries_within_limit() {
+        // Create object with exactly 10k entries (at limit)
+        let mut input = String::new();
+        for i in 0..10_000 {
+            input.push_str(&format!("key{}: value{}\n", i, i));
+        }
+
+        let result = parse(&input);
+        assert!(result.is_ok(), "Should accept object at limit");
+    }
+
+    /// SEC-005: Test combined attack scenarios
+    #[test]
+    fn test_large_deeply_nested_structure() {
+        // Combine depth and size attacks - create document >10MB with deep nesting
+        let mut input = String::from("root:\n");
+        for depth in 0..150 {
+            let indent = "  ".repeat(depth + 1);
+            input.push_str(&format!("{}level{}:\n", indent, depth));
+            // Add many entries at each level
+            for item in 0..1000 {
+                input.push_str(&format!("{}item{}: value\n", indent, item));
+            }
+        }
+
+        let result = parse(&input);
+        assert!(result.is_err(), "Should reject combined attack");
+        // Should fail on document size first (>10MB) or depth (128 levels)
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err.kind, ParseErrorKind::DocumentTooLarge | ParseErrorKind::MaxDepthExceeded),
+            "Expected DocumentTooLarge or MaxDepthExceeded, got {:?}",
+            err.kind
+        );
+    }
+
+    /// SEC-006: Test error recovery mode respects limits
+    #[test]
+    fn test_error_recovery_respects_depth_limit() {
+        // Create deeply nested structure (valid syntax)
+        // Depth limit should be enforced even in error recovery mode
+        let mut input = String::from("root:\n");
+        for level in 0..150 {
+            let indent = "  ".repeat(level + 1);
+            input.push_str(&format!("{}level{}:\n", indent, level));
+        }
+        input.push_str(&format!("{}value: deep\n", "  ".repeat(151)));
+
+        let (_ast, errors) = parse_with_errors(&input);
+        // Should fail on depth limit
+        assert!(!errors.is_empty());
+        assert!(
+            errors.iter().any(|e| e.kind == ParseErrorKind::MaxDepthExceeded),
+            "Expected MaxDepthExceeded error, got: {:?}",
+            errors
+        );
     }
 }

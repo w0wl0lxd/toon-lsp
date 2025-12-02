@@ -54,12 +54,7 @@ impl DocumentState {
     /// A new `DocumentState` with parsed AST and any errors
     pub fn new(text: String, version: i32) -> Self {
         let (ast, errors) = parse_with_errors(&text);
-        Self {
-            text,
-            version,
-            ast,
-            errors,
-        }
+        Self { text, version, ast, errors }
     }
 
     /// Update the document with new text and version.
@@ -71,6 +66,30 @@ impl DocumentState {
     /// * `version` - The new LSP document version
     pub fn update(&mut self, text: String, version: i32) {
         let (ast, errors) = parse_with_errors(&text);
+        self.text = text;
+        self.version = version;
+        self.ast = ast;
+        self.errors = errors;
+    }
+
+    /// Update the document with pre-parsed AST and errors.
+    ///
+    /// This method is used by the LSP server when parsing has already been
+    /// performed on a blocking thread pool. It simply updates the state without
+    /// re-parsing, avoiding blocking the async runtime.
+    ///
+    /// # Arguments
+    /// * `text` - The new document content
+    /// * `version` - The new LSP document version
+    /// * `ast` - The pre-parsed AST
+    /// * `errors` - The parse errors from parsing
+    pub fn update_parsed(
+        &mut self,
+        text: String,
+        version: i32,
+        ast: Option<AstNode>,
+        errors: Vec<ParseError>,
+    ) {
         self.text = text;
         self.version = version;
         self.ast = ast;
@@ -157,5 +176,38 @@ mod tests {
         assert_eq!(state.get_line(1), Some("line1"));
         assert_eq!(state.get_line(2), Some("line2"));
         assert_eq!(state.get_line(3), None);
+    }
+
+    #[test]
+    fn test_update_parsed() {
+        let mut state = DocumentState::new("old: value".to_string(), 1);
+
+        // Pre-parse new content
+        let new_text = "new: value".to_string();
+        let (ast, errors) = parse_with_errors(&new_text);
+
+        // Update with pre-parsed data
+        state.update_parsed(new_text.clone(), 2, ast, errors);
+
+        assert_eq!(state.text(), "new: value");
+        assert_eq!(state.version(), 2);
+        assert!(state.ast().is_some());
+        assert!(!state.has_errors());
+    }
+
+    #[test]
+    fn test_update_parsed_with_errors() {
+        let mut state = DocumentState::new("key: value".to_string(), 1);
+
+        // Pre-parse invalid content
+        let invalid_text = "invalid syntax [[[".to_string();
+        let (ast, errors) = parse_with_errors(&invalid_text);
+
+        // Update with pre-parsed data including errors
+        state.update_parsed(invalid_text.clone(), 2, ast, errors);
+
+        assert_eq!(state.text(), "invalid syntax [[[");
+        assert_eq!(state.version(), 2);
+        assert!(state.has_errors());
     }
 }

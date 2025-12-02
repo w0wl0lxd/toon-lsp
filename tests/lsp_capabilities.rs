@@ -24,10 +24,7 @@ async fn test_semantic_tokens_capability_declared() {
     let caps = get_server_capabilities().await;
 
     // T001: Verify semantic tokens capability exists
-    assert!(
-        caps.semantic_tokens_provider.is_some(),
-        "semantic_tokens_provider must be declared"
-    );
+    assert!(caps.semantic_tokens_provider.is_some(), "semantic_tokens_provider must be declared");
 
     let semantic_tokens = caps.semantic_tokens_provider.unwrap();
 
@@ -50,11 +47,7 @@ async fn test_semantic_tokens_capability_declared() {
     assert_eq!(legend.token_types[4], SemanticTokenType::OPERATOR);
 
     // Verify token modifiers: definition (bit 0), readonly (bit 1)
-    assert_eq!(
-        legend.token_modifiers.len(),
-        2,
-        "Must have 2 token modifiers"
-    );
+    assert_eq!(legend.token_modifiers.len(), 2, "Must have 2 token modifiers");
     assert_eq!(legend.token_modifiers[0], SemanticTokenModifier::DEFINITION);
     assert_eq!(legend.token_modifiers[1], SemanticTokenModifier::READONLY);
 }
@@ -102,10 +95,7 @@ async fn test_references_provider_declared() {
     let caps = get_server_capabilities().await;
 
     // T002: Verify references provider is enabled
-    assert!(
-        caps.references_provider.is_some(),
-        "references_provider must be declared"
-    );
+    assert!(caps.references_provider.is_some(), "references_provider must be declared");
 
     // Should be simple boolean true
     match caps.references_provider.unwrap() {
@@ -119,10 +109,7 @@ async fn test_rename_provider_declared() {
     let caps = get_server_capabilities().await;
 
     // T003: Verify rename provider is enabled
-    assert!(
-        caps.rename_provider.is_some(),
-        "rename_provider must be declared"
-    );
+    assert!(caps.rename_provider.is_some(), "rename_provider must be declared");
 
     // Should use RenameOptions with prepare_provider
     match caps.rename_provider.unwrap() {
@@ -159,21 +146,9 @@ async fn test_all_existing_capabilities_preserved() {
     let caps = get_server_capabilities().await;
 
     // Ensure existing capabilities are not lost
-    assert!(
-        caps.text_document_sync.is_some(),
-        "text_document_sync must exist"
-    );
+    assert!(caps.text_document_sync.is_some(), "text_document_sync must exist");
     assert!(caps.hover_provider.is_some(), "hover_provider must exist");
-    assert!(
-        caps.completion_provider.is_some(),
-        "completion_provider must exist"
-    );
-    assert!(
-        caps.definition_provider.is_some(),
-        "definition_provider must exist"
-    );
-    assert!(
-        caps.document_symbol_provider.is_some(),
-        "document_symbol_provider must exist"
-    );
+    assert!(caps.completion_provider.is_some(), "completion_provider must exist");
+    assert!(caps.definition_provider.is_some(), "definition_provider must exist");
+    assert!(caps.document_symbol_provider.is_some(), "document_symbol_provider must exist");
 }

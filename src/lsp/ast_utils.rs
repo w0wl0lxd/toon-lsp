@@ -37,29 +37,17 @@ pub struct NodePathEntry<'a> {
 impl<'a> NodePathEntry<'a> {
     /// Create a new path entry for a root or standalone node.
     pub fn root(node: &'a AstNode) -> Self {
-        Self {
-            node,
-            key: None,
-            index: None,
-        }
+        Self { node, key: None, index: None }
     }
 
     /// Create a new path entry for an object entry value.
     pub fn with_key(node: &'a AstNode, key: &'a str) -> Self {
-        Self {
-            node,
-            key: Some(key),
-            index: None,
-        }
+        Self { node, key: Some(key), index: None }
     }
 
     /// Create a new path entry for an array item.
     pub fn with_index(node: &'a AstNode, index: usize) -> Self {
-        Self {
-            node,
-            key: None,
-            index: Some(index),
-        }
+        Self { node, key: None, index: Some(index) }
     }
 }
 
@@ -142,11 +130,7 @@ pub fn find_node_at_position(
         }
     }
 
-    Some(NodeAtPosition {
-        path,
-        node: current,
-        on_key,
-    })
+    Some(NodeAtPosition { path, node: current, on_key })
 }
 
 /// Find a child node containing the position.
@@ -176,10 +160,7 @@ fn find_entry_containing(
 /// Find an array item containing the position.
 /// Returns the index and reference to the item.
 fn find_item_containing(items: &[AstNode], pos: crate::ast::Position) -> Option<(usize, &AstNode)> {
-    items
-        .iter()
-        .enumerate()
-        .find(|(_, item)| item.span().contains(pos))
+    items.iter().enumerate().find(|(_, item)| item.span().contains(pos))
 }
 
 /// Collect all keys from sibling entries in an object.
@@ -194,11 +175,7 @@ pub fn collect_sibling_keys<'a>(
     entries: &'a [ObjectEntry],
     exclude_key: Option<&str>,
 ) -> Vec<&'a str> {
-    entries
-        .iter()
-        .map(|e| e.key.as_str())
-        .filter(|k| exclude_key != Some(*k))
-        .collect()
+    entries.iter().map(|e| e.key.as_str()).filter(|k| exclude_key != Some(*k)).collect()
 }
 
 /// Collect all keys from a node path (parent objects).
@@ -233,11 +210,7 @@ pub fn collect_parent_keys<'a>(path: &'a [NodePathEntry<'a>]) -> Vec<&'a str> {
 /// # Returns
 /// Vector of spans where the key is defined
 pub fn find_key_definitions<'a>(entries: &'a [ObjectEntry], key_name: &str) -> Vec<&'a Span> {
-    entries
-        .iter()
-        .filter(|e| e.key == key_name)
-        .map(|e| &e.key_span)
-        .collect()
+    entries.iter().filter(|e| e.key == key_name).map(|e| &e.key_span).collect()
 }
 
 /// Collect all keys with their spans from an AST.
@@ -283,7 +256,6 @@ fn collect_keys_recursive(node: &AstNode, keys: &mut Vec<(String, Span)>) {
     }
 }
 
-
 /// Calculate byte offset from line and column position.
 ///
 /// Converts a (line, column) position into a byte offset in the source text.
@@ -326,11 +298,7 @@ pub fn calculate_offset(source: &str, line: u32, column: u32) -> Option<u32> {
     }
 
     // Handle end of file
-    if current_line == line {
-        Some(source.len() as u32)
-    } else {
-        None
-    }
+    if current_line == line { Some(source.len() as u32) } else { None }
 }
 
 #[cfg(test)]
