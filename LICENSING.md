@@ -2,7 +2,7 @@
 
 > **DUAL LICENSE NOTICE**: This software is dual-licensed. You may choose either:
 > 1. GNU Affero General Public License v3.0 (AGPL-3.0-only) - See [LICENSE](LICENSE)
-> 2. Commercial License - Contact licensing@example.com
+> 2. Commercial License - See [COMMERCIAL-LICENSE.txt](COMMERCIAL-LICENSE.txt)
 
 ---
 
@@ -27,34 +27,31 @@ For organizations that cannot comply with AGPL terms, commercial licenses are av
 - You're embedding toon-lsp in proprietary software
 - You're providing toon-lsp as part of a closed-source cloud service
 - Your legal team prohibits AGPL dependencies
-- You want support, warranties, or indemnification
+- You want to avoid copyleft source disclosure requirements
 
-## Commercial License Terms (Placeholder)
+## Commercial License Tiers
 
-| Tier | Price | Includes |
-|------|-------|----------|
-| **Indie** | $XX/year | Single developer, perpetual use rights |
-| **Team** | $XXX/year | Up to 10 developers, priority support |
-| **Enterprise** | Custom | Unlimited developers, SLA, custom integration |
+| Tier | Model | Price | Includes |
+|------|-------|-------|----------|
+| **Standard** | Perpetual | $99 one-time | 1 developer, v1.x updates, community support |
+| **Team** | Perpetual | $399 one-time | Up to 10 developers, v1.x updates |
+| **Enterprise** | Subscription | $999/year | Unlimited developers, all updates, priority email support |
 
 **All commercial licenses include:**
-- Perpetual license to use in proprietary products
+- Perpetual or subscription rights to use in proprietary products
 - No copyleft/source disclosure requirements
 - License to distribute as part of your product
-- 1 year of updates included
+- Bug fixes and minor updates for the licensed version
 
-**Optional add-ons:**
-- Priority support: $XX/year
-- Custom integration assistance: $XXX one-time
-- Source code escrow: Available for Enterprise
+**Perpetual licenses** (Standard and Team) are valid forever for the major version purchased (v1.x). When v2.0 releases, you can continue using v1.x or purchase a new license for v2.x.
 
-*Pricing and terms subject to change. Contact for current rates.*
+**Enterprise subscriptions** include all versions released during your subscription term plus priority email support.
 
 ## Contact
 
 For commercial licensing inquiries:
-- **Email**: licensing@example.com
-- **GitHub**: [Open an issue with "Commercial License" label](https://github.com/w0wl0lxd/toon-lsp/issues)
+- **Email**: w0wl0lxd@tuta.com
+- **GitHub**: [Open a Discussion with "licensing" label](https://github.com/w0wl0lxd/toon-lsp/discussions)
 
 ## FAQ
 
@@ -68,7 +65,13 @@ A: If your extension is open source (AGPL-compatible), no. If proprietary, yes.
 A: Yes, network service provision triggers AGPL Section 13.
 
 **Q: What if I'm unsure which license I need?**
-A: Email licensing@example.com - we'll help you figure it out.
+A: Email w0wl0lxd@tuta.com or open a GitHub Discussion - I'll help you figure it out.
 
 **Q: Do you offer discounts for startups/education?**
-A: Yes, contact us for special pricing.
+A: Yes, contact me for special pricing on educational or early-stage startup use.
+
+**Q: What happens when v2.0 releases?**
+A: Perpetual license holders keep v1.x forever. Enterprise subscribers get v2.0 included. Standard/Team users can purchase a new license for v2.x or continue using v1.x.
+
+**Q: Can I upgrade from Standard to Team?**
+A: Yes, contact me and I'll credit your Standard purchase toward the Team price.
