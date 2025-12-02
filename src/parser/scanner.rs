@@ -632,10 +632,7 @@ impl<'a> Scanner<'a> {
             _ => {
                 // Unknown character - emit error and advance
                 self.advance();
-                self.make_token(
-                    TokenKind::Error(format!("Unexpected character: {}", ch)),
-                    start,
-                )
+                self.make_token(TokenKind::Error(format!("Unexpected character: {}", ch)), start)
             }
         }
     }
