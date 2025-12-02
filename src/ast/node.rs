@@ -3,6 +3,21 @@
 use super::Span;
 use serde::{Deserialize, Serialize};
 
+/// Array presentation form in the source document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ArrayForm {
+    /// Inline form: [item1, item2, item3]
+    Inline,
+    /// Expanded form with dashes:
+    /// - item1
+    /// - item2
+    Expanded,
+    /// Tabular form with pipes:
+    /// | col1 | col2 |
+    /// | val1 | val2 |
+    Tabular,
+}
+
 /// An AST node in a TOON document.
 ///
 /// Each variant carries its span (source location) for error reporting
@@ -29,6 +44,8 @@ pub enum AstNode {
     Array {
         /// Array items
         items: Vec<AstNode>,
+        /// Array presentation form
+        form: ArrayForm,
         /// Source span
         span: Span,
     },
@@ -125,7 +142,7 @@ impl NumberValue {
     }
 }
 
-// TODO: Implement additional AST traversal methods
-// - iter() for iterating over all nodes
-// - iter_depth_first() for depth-first traversal
-// - find_at_position() for locating node at cursor position
+// AST traversal is provided via lsp::ast_utils module:
+// - find_node_at_position() for cursor-based node lookup
+// - find_all_key_references() for key occurrence finding
+// - flatten_ast() for collecting all document symbols
