@@ -19,7 +19,7 @@ use super::error::{CliError, CliResult};
 use serde_json::Value as JsonValue;
 use std::io::{Read, Write};
 
-/// Encode JSON value to TOON format.
+/// Encode JSON value to TOON format with default options.
 ///
 /// This is a thin wrapper around `toon_format::encode_default()`.
 ///
@@ -28,6 +28,17 @@ use std::io::{Read, Write};
 /// Returns `CliError::Encode` if encoding fails.
 pub fn encode_json(value: &JsonValue) -> CliResult<String> {
     toon_format::encode_default(value)
+        .map_err(|e| CliError::encode(format!("Failed to encode JSON to TOON: {e}")))
+}
+
+/// Encode JSON value to TOON format with custom indentation.
+///
+/// # Errors
+///
+/// Returns `CliError::Encode` if encoding fails.
+pub fn encode_json_with_indent(value: &JsonValue, indent: usize) -> CliResult<String> {
+    let opts = toon_format::EncodeOptions::new().with_spaces(indent);
+    toon_format::encode(value, &opts)
         .map_err(|e| CliError::encode(format!("Failed to encode JSON to TOON: {e}")))
 }
 
