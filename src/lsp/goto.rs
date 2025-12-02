@@ -18,6 +18,7 @@
 //! This module provides functions to find all definitions of a key,
 //! supporting navigation between duplicate keys.
 
+use super::ast_utils::calculate_offset;
 use crate::ast::{AstNode, ObjectEntry, Position, Span};
 
 /// A location result for go-to-definition.
@@ -34,11 +35,7 @@ pub struct DefinitionLocation {
 impl DefinitionLocation {
     /// Create a new definition location from a span.
     pub fn from_span(span: &Span) -> Self {
-        Self {
-            line: span.start.line,
-            start_col: span.start.column,
-            end_col: span.end.column,
-        }
+        Self { line: span.start.line, start_col: span.start.column, end_col: span.end.column }
     }
 }
 
@@ -132,35 +129,6 @@ fn find_all_key_definitions(entries: &[ObjectEntry], key_name: &str) -> Vec<Defi
         .filter(|e| e.key == key_name)
         .map(|e| DefinitionLocation::from_span(&e.key_span))
         .collect()
-}
-
-/// Calculate byte offset from line and column.
-fn calculate_offset(source: &str, line: u32, column: u32) -> Option<u32> {
-    let mut current_line = 0u32;
-    let mut line_start_offset = 0u32;
-
-    for (idx, ch) in source.char_indices() {
-        if current_line == line {
-            let col_offset = idx as u32 - line_start_offset;
-            if col_offset >= column {
-                return Some(idx as u32);
-            }
-        }
-
-        if ch == '\n' {
-            if current_line == line {
-                return Some(idx as u32);
-            }
-            current_line += 1;
-            line_start_offset = idx as u32 + 1;
-        }
-    }
-
-    if current_line == line {
-        Some(source.len() as u32)
-    } else {
-        None
-    }
 }
 
 #[cfg(test)]
