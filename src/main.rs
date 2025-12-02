@@ -20,9 +20,20 @@ use tower_lsp::{LspService, Server};
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use toon_lsp::cli::error::{CliError, ExitCode};
 use toon_lsp::cli::{check, decode, diagnose, encode, format, symbols, Cli, Command};
 use toon_lsp::lsp::ToonLanguageServer;
 
+/// Handle CLI command result with error reporting and exit code.
+fn handle_result<F>(result: Result<(), CliError>, exit_code_fn: F)
+where
+    F: FnOnce(&CliError) -> ExitCode,
+{
+    if let Err(e) = result {
+        eprintln!("Error: {e}");
+        std::process::exit(i32::from(exit_code_fn(&e)));
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -64,40 +75,22 @@ async fn main() {
             Server::new(stdin, stdout, socket).serve(service).await;
         }
         Some(Command::Encode(args)) => {
-            if let Err(e) = encode::execute(&args) {
-                eprintln!("Error: {e}");
-                std::process::exit(i32::from(encode::error_exit_code(&e)));
-            }
+            handle_result(encode::execute(&args), encode::error_exit_code);
         }
         Some(Command::Decode(args)) => {
-            if let Err(e) = decode::execute(&args) {
-                eprintln!("Error: {e}");
-                std::process::exit(i32::from(decode::error_exit_code(&e)));
-            }
+            handle_result(decode::execute(&args), decode::error_exit_code);
         }
         Some(Command::Check(args)) => {
-            if let Err(e) = check::execute(&args) {
-                eprintln!("Error: {e}");
-                std::process::exit(i32::from(check::error_exit_code(&e)));
-            }
+            handle_result(check::execute(&args), CliError::exit_code);
         }
         Some(Command::Format(args)) => {
-            if let Err(e) = format::execute(&args) {
-                eprintln!("Error: {e}");
-                std::process::exit(i32::from(format::error_exit_code(&e)));
-            }
+            handle_result(format::execute(&args), format::error_exit_code);
         }
         Some(Command::Symbols(args)) => {
-            if let Err(e) = symbols::execute(&args) {
-                eprintln!("Error: {e}");
-                std::process::exit(i32::from(symbols::error_exit_code(&e)));
-            }
+            handle_result(symbols::execute(&args), symbols::error_exit_code);
         }
         Some(Command::Diagnose(args)) => {
-            if let Err(e) = diagnose::execute(&args) {
-                eprintln!("Error: {e}");
-                std::process::exit(i32::from(diagnose::error_exit_code(&e)));
-            }
+            handle_result(diagnose::execute(&args), diagnose::error_exit_code);
         }
     }
 }
