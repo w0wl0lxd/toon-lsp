@@ -24,9 +24,7 @@ use tempfile::tempdir;
 
 /// Path to fixtures directory
 fn fixtures_dir() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures")
 }
 
 /// Get a command for the toon-lsp binary
@@ -79,9 +77,7 @@ fn test_encode_yaml_file_to_stdout() {
 
     // When: User runs `toon-lsp encode input.yaml -f yaml`
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg(&fixture)
-        .args(["-f", "yaml"]);
+    cmd.arg("encode").arg(&fixture).args(["-f", "yaml"]);
 
     // Then: TOON output is written to stdout
     cmd.assert()
@@ -98,14 +94,8 @@ fn test_encode_roundtrip_preserves_data() {
 
     // When: We encode to TOON
     let mut cmd = toon_lsp();
-    let encode_output = cmd
-        .arg("encode")
-        .arg(&fixture)
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
+    let encode_output =
+        cmd.arg("encode").arg(&fixture).assert().success().get_output().stdout.clone();
 
     // Then: The TOON can be decoded back to equivalent JSON
     let toon_content = String::from_utf8_lossy(&encode_output);
@@ -130,9 +120,7 @@ fn test_encode_from_stdin() {
 
     // When: User runs `echo '{"a":1}' | toon-lsp encode -`
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg("-")
-        .write_stdin(json_input);
+    cmd.arg("encode").arg("-").write_stdin(json_input);
 
     // Then: TOON output is written to stdout
     cmd.assert()
@@ -150,10 +138,7 @@ fn test_encode_from_stdin_with_yaml_format() {
 
     // When: User runs `toon-lsp encode - -f yaml`
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg("-")
-        .args(["-f", "yaml"])
-        .write_stdin(yaml_input);
+    cmd.arg("encode").arg("-").args(["-f", "yaml"]).write_stdin(yaml_input);
 
     // Then: TOON output is written to stdout
     cmd.assert()
@@ -169,9 +154,7 @@ fn test_encode_from_stdin_complex() {
 
     // When: User runs encode with stdin
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg("-")
-        .write_stdin(json_input);
+    cmd.arg("encode").arg("-").write_stdin(json_input);
 
     // Then: TOON output contains nested structure
     cmd.assert()
@@ -195,10 +178,7 @@ fn test_encode_to_output_file() {
 
     // When: User runs `toon-lsp encode input.json -o output.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg(&fixture)
-        .arg("-o")
-        .arg(&output_path);
+    cmd.arg("encode").arg(&fixture).arg("-o").arg(&output_path);
 
     // Then: TOON is written to the specified file
     cmd.assert().success();
@@ -217,10 +197,7 @@ fn test_encode_to_output_file_long_option() {
 
     // When: User runs `toon-lsp encode input.json --output output.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg(&fixture)
-        .arg("--output")
-        .arg(&output_path);
+    cmd.arg("encode").arg(&fixture).arg("--output").arg(&output_path);
 
     // Then: TOON is written to the specified file
     cmd.assert().success();
@@ -237,11 +214,7 @@ fn test_encode_stdin_to_output_file() {
 
     // When: User runs `echo '{"key":"value"}' | toon-lsp encode - -o output.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg("-")
-        .arg("-o")
-        .arg(&output_path)
-        .write_stdin(json_input);
+    cmd.arg("encode").arg("-").arg("-o").arg(&output_path).write_stdin(json_input);
 
     // Then: TOON is written to the specified file
     cmd.assert().success();
@@ -279,9 +252,7 @@ fn test_encode_invalid_stdin_fails() {
 
     // When: User runs encode with invalid input
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg("-")
-        .write_stdin(invalid_json);
+    cmd.arg("encode").arg("-").write_stdin(invalid_json);
 
     // Then: Exit code is 2 (validation failure)
     cmd.assert()
@@ -299,9 +270,7 @@ fn test_encode_nonexistent_file_fails() {
     cmd.arg("encode").arg(nonexistent);
 
     // Then: Exit code is 1
-    cmd.assert()
-        .code(1)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(1).stderr(predicate::str::is_empty().not());
 }
 
 #[test]
@@ -313,14 +282,10 @@ fn test_encode_invalid_yaml_fails() {
 
     // When: User runs `toon-lsp encode invalid.yaml -f yaml`
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg(&invalid_path)
-        .args(["-f", "yaml"]);
+    cmd.arg("encode").arg(&invalid_path).args(["-f", "yaml"]);
 
     // Then: Exit code is 2 (validation failure)
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(2).stderr(predicate::str::is_empty().not());
 }
 
 // =============================================================================
@@ -334,14 +299,10 @@ fn test_encode_with_indent_option() {
 
     // When: User runs `toon-lsp encode input.json --indent 4`
     let mut cmd = toon_lsp();
-    cmd.arg("encode")
-        .arg(&fixture)
-        .args(["--indent", "4"]);
+    cmd.arg("encode").arg(&fixture).args(["--indent", "4"]);
 
     // Then: Output uses 4-space indentation
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("server"));
+    cmd.assert().success().stdout(predicate::str::contains("server"));
 }
 
 #[test]
