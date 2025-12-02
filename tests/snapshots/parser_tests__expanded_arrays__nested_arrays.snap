@@ -59,6 +59,7 @@ Document {
                                         },
                                     },
                                 ],
+                                form: Expanded,
                                 span: Span {
                                     start: Position {
                                         line: 2,
@@ -73,6 +74,7 @@ Document {
                                 },
                             },
                         ],
+                        form: Expanded,
                         span: Span {
                             start: Position {
                                 line: 1,

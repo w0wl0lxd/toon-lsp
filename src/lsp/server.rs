@@ -10,11 +10,14 @@ use tower_lsp::{Client, LanguageServer};
 
 use super::completion::get_completions_at_position;
 use super::diagnostics::errors_to_diagnostics;
+use super::formatting::{ToonFormattingOptions, format_document};
 use super::goto::get_definition_at_position;
 use super::hover::get_hover_at_position;
+use super::references::find_references_at_position;
+use super::rename::{prepare_rename, rename_key};
 use super::state::DocumentState;
 use super::symbols::ast_to_document_symbols;
-use super::utf16::{utf8_to_utf16_col, utf16_to_utf8_col};
+use super::utf16::{span_to_range, utf8_to_utf16_col};
 
 /// The TOON Language Server.
 ///
@@ -66,6 +69,43 @@ impl LanguageServer for ToonLanguageServer {
                 }),
                 definition_provider: Some(OneOf::Left(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
+
+                // T001: Semantic tokens for syntax highlighting
+                semantic_tokens_provider: Some(
+                    SemanticTokensServerCapabilities::SemanticTokensOptions(
+                        SemanticTokensOptions {
+                            legend: SemanticTokensLegend {
+                                token_types: vec![
+                                    SemanticTokenType::PROPERTY, // 0 - object keys
+                                    SemanticTokenType::STRING,   // 1 - string values
+                                    SemanticTokenType::NUMBER,   // 2 - number values
+                                    SemanticTokenType::KEYWORD,  // 3 - true/false/null
+                                    SemanticTokenType::OPERATOR, // 4 - : = | >
+                                ],
+                                token_modifiers: vec![
+                                    SemanticTokenModifier::DEFINITION, // bit 0 - key definitions
+                                    SemanticTokenModifier::READONLY,   // bit 1 - immutable values
+                                ],
+                            },
+                            full: Some(SemanticTokensFullOptions::Bool(true)),
+                            range: Some(true),
+                            ..Default::default()
+                        },
+                    ),
+                ),
+
+                // T002: Find all references to keys
+                references_provider: Some(OneOf::Left(true)),
+
+                // T003: Rename symbols with prepare support
+                rename_provider: Some(OneOf::Right(RenameOptions {
+                    prepare_provider: Some(true),
+                    work_done_progress_options: WorkDoneProgressOptions::default(),
+                })),
+
+                // T004: Format TOON documents
+                document_formatting_provider: Some(OneOf::Left(true)),
+
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -86,7 +126,7 @@ impl LanguageServer for ToonLanguageServer {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        let uri = params.text_document.uri.clone();
+        let uri = params.text_document.uri;
         let text = params.text_document.text;
         let version = params.text_document.version;
 
@@ -107,7 +147,7 @@ impl LanguageServer for ToonLanguageServer {
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
-        let uri = params.text_document.uri.clone();
+        let uri = params.text_document.uri;
         let version = params.text_document.version;
 
         // Get full text from changes (we use FULL sync)
@@ -167,8 +207,7 @@ impl LanguageServer for ToonLanguageServer {
             let doc = doc_arc.read().await;
             if let Some(ast) = doc.ast() {
                 // Convert UTF-16 column to UTF-8
-                let line_text = doc.get_line(position.line).unwrap_or("");
-                let utf8_col = utf16_to_utf8_col(line_text, position.character);
+                let utf8_col = doc.utf8_col_at(position.line, position.character);
 
                 if let Some(hover_info) =
                     get_hover_at_position(ast, doc.text(), position.line, utf8_col)
@@ -195,8 +234,7 @@ impl LanguageServer for ToonLanguageServer {
             let doc = doc_arc.read().await;
             if let Some(ast) = doc.ast() {
                 // Convert UTF-16 column to UTF-8
-                let line_text = doc.get_line(position.line).unwrap_or("");
-                let utf8_col = utf16_to_utf8_col(line_text, position.character);
+                let utf8_col = doc.utf8_col_at(position.line, position.character);
 
                 let completions =
                     get_completions_at_position(ast, doc.text(), position.line, utf8_col);
@@ -223,8 +261,7 @@ impl LanguageServer for ToonLanguageServer {
             let doc = doc_arc.read().await;
             if let Some(ast) = doc.ast() {
                 // Convert UTF-16 column to UTF-8
-                let line_text = doc.get_line(position.line).unwrap_or("");
-                let utf8_col = utf16_to_utf8_col(line_text, position.character);
+                let utf8_col = doc.utf8_col_at(position.line, position.character);
 
                 let locations =
                     get_definition_at_position(ast, doc.text(), position.line, utf8_col);
@@ -256,6 +293,263 @@ impl LanguageServer for ToonLanguageServer {
 
                     return Ok(Some(GotoDefinitionResponse::Array(lsp_locations)));
                 }
+            }
+        }
+
+        Ok(None)
+    }
+
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        let uri = params.text_document_position.text_document.uri;
+        let position = params.text_document_position.position;
+        let include_declaration = params.context.include_declaration;
+
+        if let Some(doc_arc) = self.get_document(&uri).await {
+            let doc = doc_arc.read().await;
+            if let Some(ast) = doc.ast() {
+                // Convert UTF-16 column to UTF-8
+                let utf8_col = doc.utf8_col_at(position.line, position.character);
+
+                let refs = find_references_at_position(
+                    ast,
+                    doc.text(),
+                    position.line,
+                    utf8_col,
+                    include_declaration,
+                );
+
+                if !refs.is_empty() {
+                    // Convert KeyReference to LSP Location with UTF-16 positions
+                    let locations: Vec<Location> = refs
+                        .into_iter()
+                        .map(|key_ref| {
+                            // Convert UTF-8 columns back to UTF-16
+                            let loc_line_text = doc.get_line(key_ref.span.start.line).unwrap_or("");
+                            let start_utf16 =
+                                utf8_to_utf16_col(loc_line_text, key_ref.span.start.column);
+                            let end_utf16 =
+                                utf8_to_utf16_col(loc_line_text, key_ref.span.end.column);
+
+                            Location {
+                                uri: uri.clone(),
+                                range: Range {
+                                    start: Position {
+                                        line: key_ref.span.start.line,
+                                        character: start_utf16,
+                                    },
+                                    end: Position {
+                                        line: key_ref.span.end.line,
+                                        character: end_utf16,
+                                    },
+                                },
+                            }
+                        })
+                        .collect();
+
+                    return Ok(Some(locations));
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Validate if rename is possible at the cursor position.
+    ///
+    /// Returns the range and placeholder text for the key to be renamed.
+    /// Returns None if the cursor is not on a renameable symbol (key).
+    async fn prepare_rename(
+        &self,
+        params: TextDocumentPositionParams,
+    ) -> Result<Option<PrepareRenameResponse>> {
+        let uri = params.text_document.uri;
+        let position = params.position;
+
+        if let Some(doc_arc) = self.get_document(&uri).await {
+            let doc = doc_arc.read().await;
+            if let Some(ast) = doc.ast() {
+                // Convert UTF-16 column to UTF-8
+                let utf8_col = doc.utf8_col_at(position.line, position.character);
+
+                if let Some(prepare_result) =
+                    prepare_rename(ast, doc.text(), position.line, utf8_col)
+                {
+                    // Convert span to UTF-16 range for LSP
+                    let range = span_to_range(&prepare_result.range, doc.text());
+
+                    return Ok(Some(PrepareRenameResponse::Range(range)));
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Rename all occurrences of a symbol (key) in the document.
+    ///
+    /// Returns WorkspaceEdit containing text edits for all occurrences of the key.
+    async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
+        let uri = params.text_document_position.text_document.uri;
+        let position = params.text_document_position.position;
+        let new_name = params.new_name;
+
+        if let Some(doc_arc) = self.get_document(&uri).await {
+            let doc = doc_arc.read().await;
+            if let Some(ast) = doc.ast() {
+                // Convert UTF-16 column to UTF-8
+                let utf8_col = doc.utf8_col_at(position.line, position.character);
+
+                let edits = rename_key(ast, doc.text(), position.line, utf8_col, &new_name);
+
+                if !edits.is_empty() {
+                    // Convert RenameEdit to LSP TextEdit with UTF-16 positions
+                    let text_edits: Vec<TextEdit> = edits
+                        .into_iter()
+                        .map(|edit| {
+                            let range = span_to_range(&edit.span, doc.text());
+                            TextEdit {
+                                range,
+                                new_text: edit.new_text,
+                            }
+                        })
+                        .collect();
+
+                    // Create WorkspaceEdit
+                    let mut changes = HashMap::new();
+                    changes.insert(uri, text_edits);
+
+                    return Ok(Some(WorkspaceEdit {
+                        changes: Some(changes),
+                        document_changes: None,
+                        change_annotations: None,
+                    }));
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Handle semantic tokens request for full document.
+    ///
+    /// Returns semantic tokens for the entire document, providing
+    /// syntax highlighting information for all tokens.
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let uri = params.text_document.uri;
+
+        if let Some(doc_arc) = self.get_document(&uri).await {
+            let doc = doc_arc.read().await;
+            if let Some(ast) = doc.ast() {
+                let tokens = crate::lsp::semantic_tokens::collect_semantic_tokens(ast);
+                let encoded = crate::lsp::semantic_tokens::encode_tokens(&tokens, doc.text());
+
+                return Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
+                    result_id: None,
+                    data: encoded,
+                })));
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Handle semantic tokens request for a specific range.
+    ///
+    /// Returns semantic tokens for only the specified range of the document.
+    /// Filters out tokens outside the requested range.
+    async fn semantic_tokens_range(
+        &self,
+        params: SemanticTokensRangeParams,
+    ) -> Result<Option<SemanticTokensRangeResult>> {
+        let uri = params.text_document.uri;
+        let range = params.range;
+
+        if let Some(doc_arc) = self.get_document(&uri).await {
+            let doc = doc_arc.read().await;
+            if let Some(ast) = doc.ast() {
+                // Collect all tokens
+                let all_tokens =
+                    crate::lsp::semantic_tokens::collect_semantic_tokens(ast);
+
+                // Filter tokens within the requested range
+                let filtered_tokens: Vec<_> = all_tokens
+                    .into_iter()
+                    .filter(|token| {
+                        // Token is in range if it starts after range.start and ends before range.end
+                        let token_line = token.line;
+                        let token_start = token.start_col;
+                        let token_end = token.start_col + token.length;
+
+                        // Check if token overlaps with requested range
+                        if token_line < range.start.line || token_line > range.end.line {
+                            return false;
+                        }
+
+                        if token_line == range.start.line && token_end <= range.start.character {
+                            return false;
+                        }
+
+                        if token_line == range.end.line && token_start >= range.end.character {
+                            return false;
+                        }
+
+                        true
+                    })
+                    .collect();
+
+                let encoded =
+                    crate::lsp::semantic_tokens::encode_tokens(&filtered_tokens, doc.text());
+
+                return Ok(Some(SemanticTokensRangeResult::Tokens(SemanticTokens {
+                    result_id: None,
+                    data: encoded,
+                })));
+            }
+        }
+
+        Ok(None)
+    }
+
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let uri = params.text_document.uri;
+        let options = ToonFormattingOptions::from(&params.options);
+
+        if let Some(doc_arc) = self.get_document(&uri).await {
+            let doc = doc_arc.read().await;
+
+            // Skip formatting if document has parse errors
+            if !doc.errors().is_empty() {
+                return Ok(None);
+            }
+
+            if let Some(ast) = doc.ast()
+                && let Some(formatted) = format_document(ast, options)
+            {
+                // Return single TextEdit replacing entire document
+                let end_line = doc.text().lines().count().saturating_sub(1) as u32;
+                let end_col = doc
+                    .text()
+                    .lines()
+                    .nth(end_line as usize)
+                    .map(|l| utf8_to_utf16_col(l, l.len() as u32))
+                    .unwrap_or(0);
+
+                return Ok(Some(vec![TextEdit {
+                    range: Range {
+                        start: Position {
+                            line: 0,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: end_line,
+                            character: end_col,
+                        },
+                    },
+                    new_text: formatted,
+                }]));
             }
         }
 

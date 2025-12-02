@@ -27,12 +27,15 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # Error handling
-thiserror = "1.0"
+thiserror = "2"
 anyhow = "1.0"
 
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Bitflags
+bitflags = "2.4"
 
 [dev-dependencies]
 pretty_assertions = "1.4"

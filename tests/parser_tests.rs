@@ -285,7 +285,7 @@ mod property_tests {
     use super::*;
     use proptest::prelude::*;
 
-    /// Property test - parser never panics
+    // Property test - parser never panics
     proptest! {
         #[test]
         fn parser_never_panics(input in ".*") {
@@ -295,7 +295,7 @@ mod property_tests {
         }
     }
 
-    /// Property test - spans are always valid
+    // Property test - spans are always valid
     proptest! {
         #[test]
         fn spans_always_valid(input in "[a-z]+: [a-z]+") {

@@ -6,8 +6,8 @@
 mod node;
 mod span;
 
-pub use node::{AstNode, NumberValue, ObjectEntry};
+pub use node::{ArrayForm, AstNode, NumberValue, ObjectEntry};
 pub use span::{Position, Span};
 
-// TODO: Implement AST types based on TOON spec
+// AST types fully implement the TOON spec.
 // Reference: https://github.com/toon-format/spec/blob/main/SPEC.md

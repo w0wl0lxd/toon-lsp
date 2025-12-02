@@ -38,6 +38,7 @@ Document {
                                 },
                             },
                         ],
+                        form: Expanded,
                         span: Span {
                             start: Position {
                                 line: 1,
