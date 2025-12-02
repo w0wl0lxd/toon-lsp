@@ -20,7 +20,7 @@
 
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
-use super::ast_utils::find_node_at_position;
+use super::ast_utils::{calculate_offset, find_node_at_position};
 use crate::ast::AstNode;
 
 /// A completion item for TOON.
@@ -158,11 +158,7 @@ fn determine_completion_context(source: &str, line: u32, column: u32) -> Complet
 
     let line_text = lines[line_idx];
     let col = column as usize;
-    let prefix = if col <= line_text.len() {
-        &line_text[..col]
-    } else {
-        line_text
-    };
+    let prefix = if col <= line_text.len() { &line_text[..col] } else { line_text };
 
     // Check if we're after a colon
     if prefix.contains(':') {
@@ -204,35 +200,6 @@ fn collect_root_keys(ast: &AstNode) -> Vec<String> {
     }
 
     keys
-}
-
-/// Calculate byte offset from line and column.
-fn calculate_offset(source: &str, line: u32, column: u32) -> Option<u32> {
-    let mut current_line = 0u32;
-    let mut line_start_offset = 0u32;
-
-    for (idx, ch) in source.char_indices() {
-        if current_line == line {
-            let col_offset = idx as u32 - line_start_offset;
-            if col_offset >= column {
-                return Some(idx as u32);
-            }
-        }
-
-        if ch == '\n' {
-            if current_line == line {
-                return Some(idx as u32);
-            }
-            current_line += 1;
-            line_start_offset = idx as u32 + 1;
-        }
-    }
-
-    if current_line == line {
-        Some(source.len() as u32)
-    } else {
-        None
-    }
 }
 
 #[cfg(test)]

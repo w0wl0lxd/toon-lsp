@@ -62,10 +62,7 @@ pub fn error_to_diagnostic(error: &ParseError, source: &str) -> Diagnostic {
 /// # Returns
 /// A vector of LSP Diagnostics
 pub fn errors_to_diagnostics(errors: &[ParseError], source: &str) -> Vec<Diagnostic> {
-    errors
-        .iter()
-        .map(|err| error_to_diagnostic(err, source))
-        .collect()
+    errors.iter().map(|err| error_to_diagnostic(err, source)).collect()
 }
 
 #[cfg(test)]
