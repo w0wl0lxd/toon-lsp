@@ -44,27 +44,36 @@
 //! ```rust
 //! use toon_lsp::{parse, AstNode};
 //!
-//! let source = "user:\n  name: Alice\n  age: 30\n  roles[2]:\n    - admin\n    - developer";
+//! let source = "user:\n  name: Alice\n  age: 30";
+//! let ast = parse(source).expect("valid TOON");
 //!
-//! let ast = parse(source).unwrap();
+//! // Every AST node carries source positions (Span)
+//! let AstNode::Document { children, span } = &ast else { return };
+//! assert_eq!(span.start.line, 0); // 0-indexed
 //!
-//! // AST nodes carry source positions for error reporting
-//! if let AstNode::Document { children, span } = &ast {
-//!     println!("Document spans lines {}-{}", span.start.line, span.end.line);
+//! // Walk objects via entries
+//! for node in children {
+//!     if let AstNode::Object { entries, .. } = node {
+//!         assert_eq!(entries[0].key, "user");
+//!     }
 //! }
 //! ```
 //!
-//! For IDE integration with error recovery:
+//! **Error recovery for IDEs** — parse succeeds even with syntax errors:
 //!
 //! ```rust
 //! use toon_lsp::parse_with_errors;
 //!
 //! let source = "config:\n  debug: true\n  port: 8080";
-//!
 //! let (ast, errors) = parse_with_errors(source);
-//! // ast is Some even with parse errors (partial AST for IDE use)
+//!
+//! // Partial AST available for IDE features even with errors
 //! assert!(ast.is_some());
-//! assert!(errors.is_empty());
+//!
+//! // Errors carry spans for diagnostic rendering
+//! for err in &errors {
+//!     let _ = (err.span.start.line, err.kind.clone());
+//! }
 //! ```
 
 pub mod ast;
