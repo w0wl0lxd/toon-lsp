@@ -48,10 +48,7 @@ pub struct ToonLanguageServer {
 impl ToonLanguageServer {
     /// Create a new TOON language server.
     pub fn new(client: Client) -> Self {
-        Self {
-            client,
-            documents: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self { client, documents: Arc::new(RwLock::new(HashMap::new())) }
     }
 
     /// Get a document's state by URI.
@@ -63,9 +60,7 @@ impl ToonLanguageServer {
     /// Publish diagnostics for a document.
     async fn publish_diagnostics(&self, uri: Url, doc: &DocumentState) {
         let diagnostics = errors_to_diagnostics(doc.errors(), doc.text());
-        self.client
-            .publish_diagnostics(uri, diagnostics, None)
-            .await;
+        self.client.publish_diagnostics(uri, diagnostics, None).await;
     }
 }
 
@@ -131,9 +126,7 @@ impl LanguageServer for ToonLanguageServer {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        self.client
-            .log_message(MessageType::INFO, "TOON Language Server initialized")
-            .await;
+        self.client.log_message(MessageType::INFO, "TOON Language Server initialized").await;
     }
 
     async fn shutdown(&self) -> Result<()> {
@@ -145,8 +138,18 @@ impl LanguageServer for ToonLanguageServer {
         let text = params.text_document.text;
         let version = params.text_document.version;
 
-        // Create document state
-        let doc_state = DocumentState::new(text, version);
+        // Parse on blocking thread pool to avoid blocking async runtime
+        let text_clone = text.clone();
+        let parse_result =
+            tokio::task::spawn_blocking(move || crate::parser::parse_with_errors(&text_clone))
+                .await
+                .expect("parsing task panicked");
+
+        let (ast, errors) = parse_result;
+
+        // Create document state with pre-parsed data
+        let mut doc_state = DocumentState::new(String::new(), 0);
+        doc_state.update_parsed(text, version, ast, errors);
 
         // Store in documents map
         {
@@ -171,11 +174,20 @@ impl LanguageServer for ToonLanguageServer {
             None => return,
         };
 
-        // Update document state
+        // Parse on blocking thread pool to avoid blocking async runtime
+        let text_clone = text.clone();
+        let parse_result =
+            tokio::task::spawn_blocking(move || crate::parser::parse_with_errors(&text_clone))
+                .await
+                .expect("parsing task panicked");
+
+        let (ast, errors) = parse_result;
+
+        // Update document state with pre-parsed data
         if let Some(doc_arc) = self.get_document(&uri).await {
             {
                 let mut doc = doc_arc.write().await;
-                doc.update(text, version);
+                doc.update_parsed(text, version, ast, errors);
             }
 
             // Publish diagnostics after releasing write lock
@@ -293,14 +305,8 @@ impl LanguageServer for ToonLanguageServer {
                             Location {
                                 uri: uri.clone(),
                                 range: Range {
-                                    start: Position {
-                                        line: loc.line,
-                                        character: start_utf16,
-                                    },
-                                    end: Position {
-                                        line: loc.line,
-                                        character: end_utf16,
-                                    },
+                                    start: Position { line: loc.line, character: start_utf16 },
+                                    end: Position { line: loc.line, character: end_utf16 },
                                 },
                             }
                         })
@@ -422,10 +428,7 @@ impl LanguageServer for ToonLanguageServer {
                         .into_iter()
                         .map(|edit| {
                             let range = span_to_range(&edit.span, doc.text());
-                            TextEdit {
-                                range,
-                                new_text: edit.new_text,
-                            }
+                            TextEdit { range, new_text: edit.new_text }
                         })
                         .collect();
 
@@ -486,8 +489,7 @@ impl LanguageServer for ToonLanguageServer {
             let doc = doc_arc.read().await;
             if let Some(ast) = doc.ast() {
                 // Collect all tokens
-                let all_tokens =
-                    crate::lsp::semantic_tokens::collect_semantic_tokens(ast);
+                let all_tokens = crate::lsp::semantic_tokens::collect_semantic_tokens(ast);
 
                 // Filter tokens within the requested range
                 let filtered_tokens: Vec<_> = all_tokens
@@ -549,19 +551,12 @@ impl LanguageServer for ToonLanguageServer {
                     .text()
                     .lines()
                     .nth(end_line as usize)
-                    .map(|l| utf8_to_utf16_col(l, l.len() as u32))
-                    .unwrap_or(0);
+                    .map_or(0, |l| utf8_to_utf16_col(l, l.len() as u32));
 
                 return Ok(Some(vec![TextEdit {
                     range: Range {
-                        start: Position {
-                            line: 0,
-                            character: 0,
-                        },
-                        end: Position {
-                            line: end_line,
-                            character: end_col,
-                        },
+                        start: Position { line: 0, character: 0 },
+                        end: Position { line: end_line, character: end_col },
                     },
                     new_text: formatted,
                 }]));
