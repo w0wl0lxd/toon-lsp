@@ -68,6 +68,7 @@ Document {
                                 },
                             },
                         ],
+                        form: Inline,
                         span: Span {
                             start: Position {
                                 line: 0,
