@@ -1,5 +1,8 @@
 # toon-lsp
 
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
+[![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSING.md)
+
 A Language Server Protocol (LSP) implementation for [TOON](https://github.com/toon-format/toon) (Token-Oriented Object Notation).
 
 ## Overview
@@ -103,6 +106,12 @@ RUST_LOG=debug cargo run         # Run LSP server with debug logging
 - [toon-format/toon-rust](https://github.com/toon-format/toon-rust) - Rust implementation (serde-based)
 - [tower-lsp](https://github.com/ebkalderon/tower-lsp) - LSP framework used by this project
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+All contributions require a DCO sign-off (`git commit -s`).
+
 ## License
 
 **Dual Licensed**: AGPL-3.0-only OR Commercial
@@ -110,6 +119,11 @@ RUST_LOG=debug cargo run         # Run LSP server with debug logging
 - **Open Source**: [AGPL-3.0](LICENSE) - Free for open source and personal use
 - **Commercial**: Available for proprietary use - See [LICENSING.md](LICENSING.md)
 
-Individual developers using locally: **Free under AGPL**
+| Use Case | License |
+|----------|---------|
+| Personal/internal development | Free (AGPL) |
+| Open source project (AGPL-compatible) | Free (AGPL) |
+| Proprietary IDE/editor embedding | Commercial required |
+| Cloud IDE / SaaS platform | Commercial required |
 
-Cloud providers / proprietary embedding: **Commercial license required**
+Contact: w0wl0lxd@tuta.com | [GitHub Discussions](https://github.com/w0wl0lxd/toon-lsp/discussions)
