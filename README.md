@@ -254,82 +254,94 @@ toon-lsp lsp
 ## Library Usage
 
 ```rust
-use toon_lsp::{parse, AstNode, ObjectEntry, ParseError};
+use toon_lsp::{parse, AstNode, ObjectEntry};
 
-fn main() -> Result<(), ParseError> {
-    let source = "user:\n  name: Alice\n  age: 30\n  roles[2]:\n    - admin\n    - developer";
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let source = r#"
+user:
+  name: Alice
+  age: 30
+  roles[2]:
+    - admin
+    - developer
+"#;
 
     let ast = parse(source)?;
 
-    // Every AST node carries source positions (Span) - 0-indexed
+    // Pattern match with let-else (Rust 2024 idiom)
     let AstNode::Document { children, span } = &ast else {
         return Ok(());
     };
-    println!("Document: lines {}-{}", span.start.line + 1, span.end.line + 1);
 
-    // Walk the AST - objects contain key-value entries
-    for node in children {
-        if let AstNode::Object { entries, .. } = node {
-            print_entries(entries, 0);
-        }
-    }
+    println!("Document spans lines {}-{}", span.start.line + 1, span.end.line + 1);
+
+    // Functional iteration with pattern matching
+    children
+        .iter()
+        .filter_map(|node| match node {
+            AstNode::Object { entries, .. } => Some(entries),
+            _ => None,
+        })
+        .flatten()
+        .for_each(|entry| print_entry(entry, 0));
+
     Ok(())
 }
 
-fn print_entries(entries: &[ObjectEntry], depth: usize) {
+fn print_entry(entry: &ObjectEntry, depth: usize) {
     let indent = "  ".repeat(depth);
-    for entry in entries {
-        let loc = &entry.key_span.start;
-        println!("{}{}: (line {}, col {})", indent, entry.key, loc.line + 1, loc.column + 1);
+    let pos = &entry.key_span.start;
 
-        // Recursively handle nested objects
-        if let AstNode::Object { entries: nested, .. } = &entry.value {
-            print_entries(nested, depth + 1);
-        }
+    println!("{indent}{}: L{}:C{}", entry.key, pos.line + 1, pos.column + 1);
+
+    // Recursive descent into nested objects
+    if let AstNode::Object { entries, .. } = &entry.value {
+        entries.iter().for_each(|e| print_entry(e, depth + 1));
     }
 }
 ```
 
-**Error recovery for IDEs** — parse succeeds even with syntax errors:
+**Error recovery for IDEs** — parsing succeeds even with syntax errors:
 
 ```rust
 use toon_lsp::parse_with_errors;
 
 let (ast, errors) = parse_with_errors(source);
 
-// Partial AST available even with errors (for IDE features)
-if let Some(ast) = ast {
-    // Provide completions, symbols, hover despite errors
+// IDE features work with partial AST
+if let Some(ref ast) = ast {
+    // Completions, hover, symbols available despite errors
 }
 
-// Errors have spans for diagnostic squiggles
-for err in &errors {
-    eprintln!("{}:{}: {}", err.span.start.line, err.span.start.column, err.kind);
-}
+// Errors include spans for diagnostic rendering
+errors.iter().for_each(|err| {
+    eprintln!(
+        "L{}:C{}: {}",
+        err.span.start.line + 1,
+        err.span.start.column + 1,
+        err.kind
+    );
+});
 ```
 
 ## Architecture
 
-```
-                        ┌─────────────────────────────────────┐
-                        │           toon-lsp CLI              │
-                        ├─────────────────────────────────────┤
-                        │ encode │ decode │ check │ format   │
-                        │ symbols │ diagnose │ lsp           │
-                        └─────────────────────────────────────┘
-                                          │
-                        ┌─────────────────┴─────────────────┐
-                        ▼                                   ▼
-              ┌─────────────────┐                 ┌─────────────────┐
-              │   LSP Server    │                 │   Parser Core   │
-              │  (tower-lsp)    │                 │                 │
-              └────────┬────────┘                 └────────┬────────┘
-                       │                                   │
-         ┌─────────────┼─────────────┐                     │
-         ▼             ▼             ▼                     ▼
-    Diagnostics   Symbols      Semantic         Scanner ──▶ AST
-    Hover         References   Tokens           (Lexer)    (Spans)
-    Completion    Rename       Formatting
+```mermaid
+flowchart LR
+    CLI[toon-lsp] --> LSP[LSP Server]
+    CLI --> CMD[Commands]
+
+    LSP --> F1[Diagnostics<br>Hover<br>Completion]
+    LSP --> F2[Symbols<br>References<br>Rename]
+    LSP --> F3[Tokens<br>Formatting<br>Definition]
+
+    LSP --> P[Parser]
+    CMD --> P
+    P --> AST[AST]
+
+    CMD --> C1[encode<br>decode]
+    CMD --> C2[check<br>format]
+    CMD --> C3[symbols<br>diagnose]
 ```
 
 ## Development
