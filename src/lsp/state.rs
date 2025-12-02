@@ -96,6 +96,23 @@ impl DocumentState {
     pub fn get_line(&self, line: u32) -> Option<&str> {
         self.text.lines().nth(line as usize)
     }
+
+    /// Convert LSP UTF-16 position to UTF-8 column for internal use.
+    ///
+    /// LSP uses UTF-16 column offsets, but our internal AST uses UTF-8.
+    /// This helper centralizes the conversion logic that previously appeared
+    /// in multiple LSP handlers.
+    ///
+    /// # Arguments
+    /// * `line` - The 0-indexed line number
+    /// * `utf16_col` - The UTF-16 column offset (as received from LSP)
+    ///
+    /// # Returns
+    /// The UTF-8 column offset for the given position
+    pub fn utf8_col_at(&self, line: u32, utf16_col: u32) -> u32 {
+        let line_text = self.get_line(line).unwrap_or("");
+        crate::lsp::utf16::utf16_to_utf8_col(line_text, utf16_col)
+    }
 }
 
 #[cfg(test)]
