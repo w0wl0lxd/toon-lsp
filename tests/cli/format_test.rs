@@ -24,9 +24,7 @@ use tempfile::tempdir;
 
 /// Path to fixtures directory
 fn fixtures_dir() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures")
 }
 
 /// Get a command for the toon-lsp binary
@@ -48,9 +46,7 @@ fn test_format_basic_to_stdout() {
     cmd.arg("format").arg(&fixture);
 
     // Then: Formatted output is written to stdout
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("name"));
+    cmd.assert().success().stdout(predicate::str::contains("name"));
 }
 
 #[test]
@@ -80,14 +76,7 @@ fn test_format_preserves_valid_structure() {
 
     // When: User runs format
     let mut cmd = toon_lsp();
-    let output = cmd
-        .arg("format")
-        .arg(&fixture)
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
+    let output = cmd.arg("format").arg(&fixture).assert().success().get_output().stdout.clone();
 
     // Then: Content is semantically preserved
     let formatted = String::from_utf8_lossy(&output);
@@ -161,10 +150,7 @@ fn test_format_with_2_space_indent() {
 
     // When: User runs `toon-lsp format --indent 2 file.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("format")
-        .arg("--indent")
-        .arg("2")
-        .arg(&toon_path);
+    cmd.arg("format").arg("--indent").arg("2").arg(&toon_path);
 
     // Then: Output uses 2-space indentation
     cmd.assert()
@@ -182,15 +168,10 @@ fn test_format_with_4_space_indent() {
 
     // When: User runs `toon-lsp format --indent 4 file.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("format")
-        .arg("--indent")
-        .arg("4")
-        .arg(&toon_path);
+    cmd.arg("format").arg("--indent").arg("4").arg(&toon_path);
 
     // Then: Output uses 4-space indentation
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("    host:")); // 4 spaces
+    cmd.assert().success().stdout(predicate::str::contains("    host:")); // 4 spaces
 }
 
 #[test]
@@ -206,9 +187,7 @@ fn test_format_always_uses_spaces_not_tabs() {
     cmd.arg("format").arg(&toon_path);
 
     // Then: Output uses space indentation (tabs prohibited by TOON spec)
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("  host:")); // spaces, not tabs
+    cmd.assert().success().stdout(predicate::str::contains("  host:")); // spaces, not tabs
 }
 
 // =============================================================================
@@ -224,10 +203,7 @@ fn test_format_to_output_file() {
 
     // When: User runs `toon-lsp format file.toon -o output.toon`
     let mut cmd = toon_lsp();
-    cmd.arg("format")
-        .arg(&fixture)
-        .arg("-o")
-        .arg(&output_path);
+    cmd.arg("format").arg(&fixture).arg("-o").arg(&output_path);
 
     // Then: Formatted output is written to the file
     cmd.assert().success();
@@ -244,10 +220,7 @@ fn test_format_in_place_modifies_file() {
 
     // When: User runs format with output to same file
     let mut cmd = toon_lsp();
-    cmd.arg("format")
-        .arg(&toon_path)
-        .arg("-o")
-        .arg(&toon_path);
+    cmd.arg("format").arg(&toon_path).arg("-o").arg(&toon_path);
 
     // Then: File is modified in place
     cmd.assert().success();
@@ -269,9 +242,7 @@ fn test_format_from_stdin() {
     cmd.arg("format").arg("-").write_stdin(toon_input);
 
     // Then: Formatted output is written to stdout
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("key: value"));
+    cmd.assert().success().stdout(predicate::str::contains("key: value"));
 }
 
 #[test]
@@ -281,16 +252,10 @@ fn test_format_from_stdin_nested() {
 
     // When: User runs format with stdin and custom indent
     let mut cmd = toon_lsp();
-    cmd.arg("format")
-        .arg("-")
-        .arg("--indent")
-        .arg("2")
-        .write_stdin(toon_input);
+    cmd.arg("format").arg("-").arg("--indent").arg("2").write_stdin(toon_input);
 
     // Then: Output uses requested indentation
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("  host:")); // 2 spaces
+    cmd.assert().success().stdout(predicate::str::contains("  host:")); // 2 spaces
 }
 
 // =============================================================================
@@ -307,9 +272,7 @@ fn test_format_invalid_toon_fails() {
     cmd.arg("format").arg(&fixture);
 
     // Then: Exit code is 2 (validation failure)
-    cmd.assert()
-        .code(2)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(2).stderr(predicate::str::is_empty().not());
 }
 
 #[test]
@@ -335,9 +298,7 @@ fn test_format_nonexistent_file_fails() {
     cmd.arg("format").arg(nonexistent);
 
     // Then: Exit code is 1 (I/O error)
-    cmd.assert()
-        .code(1)
-        .stderr(predicate::str::is_empty().not());
+    cmd.assert().code(1).stderr(predicate::str::is_empty().not());
 }
 
 // =============================================================================
@@ -411,7 +372,5 @@ fn test_format_default_indent_is_2() {
     cmd.arg("format").arg(&toon_path);
 
     // Then: Output uses 2-space indentation (default)
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("  host:")); // 2 spaces, not 4
+    cmd.assert().success().stdout(predicate::str::contains("  host:")); // 2 spaces, not 4
 }

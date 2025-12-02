@@ -82,7 +82,11 @@ fn write_output(args: &DecodeArgs, value: &serde_json::Value) -> CliResult<()> {
 }
 
 /// Write value to a writer in the requested format.
-fn write_to_writer<W: Write>(writer: W, args: &DecodeArgs, value: &serde_json::Value) -> CliResult<()> {
+fn write_to_writer<W: Write>(
+    writer: W,
+    args: &DecodeArgs,
+    value: &serde_json::Value,
+) -> CliResult<()> {
     match args.output_format {
         OutputFormat::Json => write_json(writer, value, args.pretty),
         OutputFormat::Yaml => write_yaml(writer, value),
@@ -102,16 +106,6 @@ pub fn error_exit_code(error: &CliError) -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
-
-    fn make_decode_args(input: Option<&str>, pretty: bool, format: OutputFormat) -> DecodeArgs {
-        DecodeArgs {
-            input: input.map(PathBuf::from),
-            output: None,
-            output_format: format,
-            pretty,
-        }
-    }
 
     #[test]
     fn test_decode_simple_toon() {

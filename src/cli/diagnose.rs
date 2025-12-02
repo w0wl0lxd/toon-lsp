@@ -169,16 +169,10 @@ struct SarifRegion {
 pub fn execute(args: &DiagnoseArgs) -> CliResult<()> {
     // Read input from file or stdin
     let content = read_input(&args.input)?;
-    let file_name = args
-        .input
-        .as_ref()
-        .and_then(|p| p.file_name())
-        .and_then(|n| n.to_str())
-        .unwrap_or("stdin");
-    let file_path = args
-        .input
-        .as_ref()
-        .map_or_else(|| "stdin".to_string(), |p| p.display().to_string());
+    let file_name =
+        args.input.as_ref().and_then(|p| p.file_name()).and_then(|n| n.to_str()).unwrap_or("stdin");
+    let file_path =
+        args.input.as_ref().map_or_else(|| "stdin".to_string(), |p| p.display().to_string());
 
     // Parse and collect diagnostics
     let report = generate_diagnostics(&content, file_name, args.context, args.severity)?;
@@ -220,11 +214,8 @@ fn generate_diagnostics(
             }
 
             // Extract source context if requested
-            let source_context = if include_context {
-                extract_context(content, &err.span)
-            } else {
-                None
-            };
+            let source_context =
+                if include_context { extract_context(content, &err.span) } else { None };
 
             Some(DiagnosticEntry {
                 range: span_to_range(&err.span),
@@ -240,25 +231,15 @@ fn generate_diagnostics(
     // Calculate summary counts
     let summary = calculate_summary(&diagnostics);
 
-    Ok(DiagnosticReport {
-        file: file_name.to_string(),
-        diagnostics,
-        summary,
-    })
+    Ok(DiagnosticReport { file: file_name.to_string(), diagnostics, summary })
 }
 
 /// Convert Span to LSP Range (zero-based).
 /// Note: AST Position is already 0-indexed, so no conversion needed.
 fn span_to_range(span: &Span) -> Range {
     Range {
-        start: Position {
-            line: span.start.line,
-            character: span.start.column,
-        },
-        end: Position {
-            line: span.end.line,
-            character: span.end.column,
-        },
+        start: Position { line: span.start.line, character: span.start.column },
+        end: Position { line: span.end.line, character: span.end.column },
     }
 }
 
@@ -319,11 +300,7 @@ fn calculate_summary(diagnostics: &[DiagnosticEntry]) -> DiagnosticSummary {
         }
     }
 
-    DiagnosticSummary {
-        errors,
-        warnings,
-        hints,
-    }
+    DiagnosticSummary { errors, warnings, hints }
 }
 
 /// Format diagnostics as JSON.
@@ -377,14 +354,10 @@ fn format_sarif(report: &DiagnosticReport, file_path: &str) -> CliResult<String>
             SarifResult {
                 rule_id: diag.code.clone(),
                 level: level.to_string(),
-                message: SarifMessage {
-                    text: diag.message.clone(),
-                },
+                message: SarifMessage { text: diag.message.clone() },
                 locations: vec![SarifLocation {
                     physical_location: SarifPhysicalLocation {
-                        artifact_location: SarifArtifactLocation {
-                            uri: artifact_uri.clone(),
-                        },
+                        artifact_location: SarifArtifactLocation { uri: artifact_uri.clone() },
                         region: SarifRegion {
                             start_line: diag.range.start.line + 1, // SARIF is 1-based
                             start_column: diag.range.start.character + 1,
@@ -427,10 +400,7 @@ mod tests {
     #[test]
     fn test_span_to_range_conversion() {
         // AST Position is already 0-indexed (line 1 = 0, column 5 = 5)
-        let span = Span::new(
-            AstPosition::new(1, 5, 0),
-            AstPosition::new(1, 10, 5),
-        );
+        let span = Span::new(AstPosition::new(1, 5, 0), AstPosition::new(1, 10, 5));
         let range = span_to_range(&span);
 
         // Should preserve 0-based indexing
@@ -444,10 +414,7 @@ mod tests {
     fn test_extract_context() {
         let content = "line 1\nline 2 with error\nline 3\n";
         // Line 1 = index 1 (0-indexed, so line 2 in 1-based)
-        let span = Span::new(
-            AstPosition::new(1, 0, 7),
-            AstPosition::new(1, 5, 12),
-        );
+        let span = Span::new(AstPosition::new(1, 0, 7), AstPosition::new(1, 5, 12));
 
         let context = extract_context(content, &span);
         assert_eq!(context, Some("line 2 with error".to_string()));
@@ -457,10 +424,7 @@ mod tests {
     fn test_extract_context_invalid_line() {
         let content = "line 1\n";
         // Invalid line number
-        let span = Span::new(
-            AstPosition::new(99, 0, 999),
-            AstPosition::new(99, 5, 1004),
-        );
+        let span = Span::new(AstPosition::new(99, 0, 999), AstPosition::new(99, 5, 1004));
 
         let context = extract_context(content, &span);
         assert_eq!(context, None);
@@ -473,32 +437,16 @@ mod tests {
         let pos = AstPosition::new(1, 1, 1);
         let span = Span::new(pos, pos);
 
-        let err = ParseError {
-            kind: ParseErrorKind::UnexpectedChar,
-            span,
-            context: None,
-        };
+        let err = ParseError { kind: ParseErrorKind::UnexpectedChar, span, context: None };
         assert_eq!(error_code(&err), 1);
 
-        let err = ParseError {
-            kind: ParseErrorKind::UnexpectedToken,
-            span,
-            context: None,
-        };
+        let err = ParseError { kind: ParseErrorKind::UnexpectedToken, span, context: None };
         assert_eq!(error_code(&err), 2);
 
-        let err = ParseError {
-            kind: ParseErrorKind::UnexpectedEof,
-            span,
-            context: None,
-        };
+        let err = ParseError { kind: ParseErrorKind::UnexpectedEof, span, context: None };
         assert_eq!(error_code(&err), 10);
 
-        let err = ParseError {
-            kind: ParseErrorKind::DuplicateKey,
-            span,
-            context: None,
-        };
+        let err = ParseError { kind: ParseErrorKind::DuplicateKey, span, context: None };
         assert_eq!(error_code(&err), 11);
     }
 
@@ -557,8 +505,7 @@ mod tests {
     #[test]
     fn test_generate_diagnostics_valid_input() {
         let content = "key: value\n";
-        let report =
-            generate_diagnostics(content, "test.toon", false, Severity::Error).unwrap();
+        let report = generate_diagnostics(content, "test.toon", false, Severity::Error).unwrap();
 
         assert_eq!(report.file, "test.toon");
         assert_eq!(report.diagnostics.len(), 0);
@@ -568,8 +515,7 @@ mod tests {
     #[test]
     fn test_generate_diagnostics_invalid_input() {
         let content = "key: [unclosed\n";
-        let report =
-            generate_diagnostics(content, "test.toon", false, Severity::Error).unwrap();
+        let report = generate_diagnostics(content, "test.toon", false, Severity::Error).unwrap();
 
         assert_eq!(report.file, "test.toon");
         assert!(!report.diagnostics.is_empty());
@@ -579,8 +525,7 @@ mod tests {
     #[test]
     fn test_generate_diagnostics_with_context() {
         let content = "key: [unclosed\n";
-        let report =
-            generate_diagnostics(content, "test.toon", true, Severity::Error).unwrap();
+        let report = generate_diagnostics(content, "test.toon", true, Severity::Error).unwrap();
 
         assert!(!report.diagnostics.is_empty());
         let diag = &report.diagnostics[0];
@@ -603,11 +548,7 @@ mod tests {
                 source: "toon-lsp".to_string(),
                 context: None,
             }],
-            summary: DiagnosticSummary {
-                errors: 1,
-                warnings: 0,
-                hints: 0,
-            },
+            summary: DiagnosticSummary { errors: 1, warnings: 0, hints: 0 },
         };
 
         let json = format_json(&report).unwrap();
@@ -632,11 +573,7 @@ mod tests {
                 source: "toon-lsp".to_string(),
                 context: None,
             }],
-            summary: DiagnosticSummary {
-                errors: 1,
-                warnings: 0,
-                hints: 0,
-            },
+            summary: DiagnosticSummary { errors: 1, warnings: 0, hints: 0 },
         };
 
         let sarif = format_sarif(&report, "test.toon").unwrap();
@@ -663,11 +600,7 @@ mod tests {
                 source: "toon-lsp".to_string(),
                 context: None,
             }],
-            summary: DiagnosticSummary {
-                errors: 1,
-                warnings: 0,
-                hints: 0,
-            },
+            summary: DiagnosticSummary { errors: 1, warnings: 0, hints: 0 },
         };
 
         let sarif = format_sarif(&report, "test.toon").unwrap();
@@ -686,8 +619,7 @@ mod tests {
         assert!(!errors.is_empty(), "Should have parse errors");
 
         // Test filtering with Error level (should include errors)
-        let report =
-            generate_diagnostics(content, "test.toon", false, Severity::Error).unwrap();
+        let report = generate_diagnostics(content, "test.toon", false, Severity::Error).unwrap();
         assert!(!report.diagnostics.is_empty());
 
         // Currently all ParseErrors are mapped to Error severity
@@ -721,10 +653,7 @@ mod tests {
     #[cfg(unix)]
     fn test_path_to_file_uri_unix_absolute() {
         // Unix absolute paths get file:// prefix
-        assert_eq!(
-            path_to_file_uri("/home/user/test.toon"),
-            "file:///home/user/test.toon"
-        );
+        assert_eq!(path_to_file_uri("/home/user/test.toon"), "file:///home/user/test.toon");
     }
 
     #[test]
@@ -751,11 +680,7 @@ mod tests {
                 source: "toon-lsp".to_string(),
                 context: None,
             }],
-            summary: DiagnosticSummary {
-                errors: 1,
-                warnings: 0,
-                hints: 0,
-            },
+            summary: DiagnosticSummary { errors: 1, warnings: 0, hints: 0 },
         };
 
         // Relative path stays as-is
