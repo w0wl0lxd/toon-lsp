@@ -36,17 +36,11 @@ pub fn ast_to_document_symbols(ast: &AstNode, source: &str) -> Vec<DocumentSymbo
     match ast {
         AstNode::Document { children, .. } => {
             // Document root: process all children
-            children
-                .iter()
-                .flat_map(|child| node_to_symbols(child, source))
-                .collect()
+            children.iter().flat_map(|child| node_to_symbols(child, source)).collect()
         }
         AstNode::Object { entries, .. } => {
             // Object at root level: process entries
-            entries
-                .iter()
-                .map(|entry| entry_to_symbol(entry, source))
-                .collect()
+            entries.iter().map(|entry| entry_to_symbol(entry, source)).collect()
         }
         _ => Vec::new(),
     }
@@ -55,10 +49,9 @@ pub fn ast_to_document_symbols(ast: &AstNode, source: &str) -> Vec<DocumentSymbo
 /// Convert an AST node to document symbols.
 fn node_to_symbols(node: &AstNode, source: &str) -> Vec<DocumentSymbol> {
     match node {
-        AstNode::Object { entries, .. } => entries
-            .iter()
-            .map(|entry| entry_to_symbol(entry, source))
-            .collect(),
+        AstNode::Object { entries, .. } => {
+            entries.iter().map(|entry| entry_to_symbol(entry, source)).collect()
+        }
         _ => Vec::new(),
     }
 }
@@ -70,21 +63,14 @@ fn entry_to_symbol(entry: &crate::ast::ObjectEntry, source: &str) -> DocumentSym
     let value_range = span_to_range(&entry.value.span(), source);
 
     // Full range includes key and value
-    let range = tower_lsp::lsp_types::Range {
-        start: key_range.start,
-        end: value_range.end,
-    };
+    let range = tower_lsp::lsp_types::Range { start: key_range.start, end: value_range.end };
 
     // Determine symbol kind and children based on value type
     let (kind, children) = match &entry.value {
         AstNode::Object { entries, .. } => {
             let child_symbols: Vec<DocumentSymbol> =
                 entries.iter().map(|e| entry_to_symbol(e, source)).collect();
-            let children = if child_symbols.is_empty() {
-                None
-            } else {
-                Some(child_symbols)
-            };
+            let children = if child_symbols.is_empty() { None } else { Some(child_symbols) };
             (SymbolKind::OBJECT, children)
         }
         AstNode::Array { items, .. } => {
@@ -93,11 +79,7 @@ fn entry_to_symbol(entry: &crate::ast::ObjectEntry, source: &str) -> DocumentSym
                 .enumerate()
                 .flat_map(|(idx, item)| array_item_to_symbols(item, idx, source))
                 .collect();
-            let children = if child_symbols.is_empty() {
-                None
-            } else {
-                Some(child_symbols)
-            };
+            let children = if child_symbols.is_empty() { None } else { Some(child_symbols) };
             (SymbolKind::ARRAY, children)
         }
         AstNode::String { .. } => (SymbolKind::STRING, None),
@@ -143,11 +125,7 @@ fn array_item_to_symbols(item: &AstNode, index: usize, source: &str) -> Vec<Docu
                 deprecated: None,
                 range,
                 selection_range: range,
-                children: if child_symbols.is_empty() {
-                    None
-                } else {
-                    Some(child_symbols)
-                },
+                children: if child_symbols.is_empty() { None } else { Some(child_symbols) },
             }]
         }
         AstNode::Array { items, span, .. } => {
