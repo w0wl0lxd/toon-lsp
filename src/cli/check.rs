@@ -31,7 +31,7 @@
 
 use std::path::{Path, PathBuf};
 
-use super::error::{CliError, CliResult, ExitCode};
+use super::error::{CliError, CliResult};
 use super::io_utils::{read_file, read_stdin};
 use super::{CheckArgs, DiagnosticFormat};
 use crate::parser;
@@ -183,28 +183,39 @@ fn check_content(content: &str, file: &Path) -> Vec<Diagnostic> {
 
 /// Report diagnostics to stderr in the requested format.
 fn report_diagnostics(diagnostics: &[&Diagnostic], format: DiagnosticFormat) {
-    for diag in diagnostics {
-        let output = match format {
-            DiagnosticFormat::Text => diag.format_text(),
-            DiagnosticFormat::Github => diag.format_github(),
-            DiagnosticFormat::Json => diag.format_json(),
-        };
-        eprintln!("{output}");
-    }
-}
-
-/// Get exit code for check errors.
-pub fn error_exit_code(error: &CliError) -> ExitCode {
-    match error {
-        CliError::Validation(_) => ExitCode::ValidationFailed,
-        _ => error.exit_code(),
+    match format {
+        DiagnosticFormat::Json => {
+            // Output as a single JSON array for tooling compatibility
+            let json_array: Vec<serde_json::Value> = diagnostics
+                .iter()
+                .map(|diag| {
+                    serde_json::json!({
+                        "file": diag.file.to_string_lossy(),
+                        "line": diag.line,
+                        "column": diag.column,
+                        "message": diag.message,
+                        "severity": "error"
+                    })
+                })
+                .collect();
+            eprintln!("{}", serde_json::to_string_pretty(&json_array).unwrap_or_default());
+        }
+        _ => {
+            for diag in diagnostics {
+                let output = match format {
+                    DiagnosticFormat::Text => diag.format_text(),
+                    DiagnosticFormat::Github => diag.format_github(),
+                    DiagnosticFormat::Json => unreachable!(),
+                };
+                eprintln!("{output}");
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io;
 
     #[test]
     fn test_check_valid_content() {
@@ -282,14 +293,5 @@ mod tests {
         assert!(json.contains("\"file\""));
         assert!(json.contains("\"line\":5"));
         assert!(json.contains("\"column\":10"));
-    }
-
-    #[test]
-    fn test_error_exit_code() {
-        let validation_err = CliError::Validation("test".to_string());
-        assert_eq!(error_exit_code(&validation_err), ExitCode::ValidationFailed);
-
-        let io_err = CliError::Io(io::Error::new(io::ErrorKind::NotFound, "not found"));
-        assert_eq!(error_exit_code(&io_err), ExitCode::Error);
     }
 }

@@ -82,21 +82,9 @@ pub struct EncodeArgs {
     #[arg(short = 'f', long, value_enum, default_value = "json")]
     pub input_format: InputFormat,
 
-    /// Indentation size (spaces)
+    /// Indentation size in spaces (TOON spec prohibits tabs)
     #[arg(short, long, default_value = "2")]
     pub indent: usize,
-
-    /// Array style preference
-    #[arg(short = 's', long, value_enum, default_value = "auto")]
-    pub array_style: ArrayStyle,
-
-    /// Use tabs for indentation
-    #[arg(long)]
-    pub tabs: bool,
-
-    /// Maximum line width for tabular arrays
-    #[arg(long, default_value = "80")]
-    pub max_width: usize,
 }
 
 /// Arguments for decode command
@@ -146,21 +134,9 @@ pub struct FormatArgs {
     #[arg(short, long, value_name = "FILE")]
     pub output: Option<PathBuf>,
 
-    /// Indentation size (spaces)
+    /// Indentation size in spaces (TOON spec prohibits tabs)
     #[arg(short, long, default_value = "2")]
     pub indent: usize,
-
-    /// Use tabs for indentation
-    #[arg(long)]
-    pub tabs: bool,
-
-    /// Array style preference
-    #[arg(short = 's', long, value_enum, default_value = "auto")]
-    pub array_style: ArrayStyle,
-
-    /// Maximum line width for tabular arrays
-    #[arg(long, default_value = "80")]
-    pub max_width: usize,
 
     /// Check formatting without writing changes
     #[arg(long)]
@@ -275,31 +251,6 @@ pub enum OutputFormat {
     Yaml,
 }
 
-/// Array formatting style
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-#[non_exhaustive]
-pub enum ArrayStyle {
-    /// Automatically choose best style
-    Auto,
-    /// Expanded (multi-line) arrays
-    Expanded,
-    /// Inline (single-line) arrays
-    Inline,
-    /// Tabular (CSV-style) arrays
-    Tabular,
-}
-
-/// Delimiter for tabular arrays
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-#[non_exhaustive]
-pub enum Delimiter {
-    /// Comma delimiter
-    Comma,
-    /// Tab delimiter
-    Tab,
-    /// Pipe delimiter
-    Pipe,
-}
 
 #[cfg(test)]
 mod tests {
@@ -329,10 +280,7 @@ mod tests {
         let cli = Cli::parse_from(["toon-lsp", "encode"]);
         if let Some(Command::Encode(args)) = cli.command {
             assert_eq!(args.indent, 2);
-            assert!(!args.tabs);
             assert_eq!(args.input_format, InputFormat::Json);
-            assert_eq!(args.array_style, ArrayStyle::Auto);
-            assert_eq!(args.max_width, 80);
         } else {
             panic!("Expected Encode command");
         }
@@ -365,9 +313,7 @@ mod tests {
         let cli = Cli::parse_from(["toon-lsp", "format"]);
         if let Some(Command::Format(args)) = cli.command {
             assert_eq!(args.indent, 2);
-            assert!(!args.tabs);
             assert!(!args.check);
-            assert_eq!(args.array_style, ArrayStyle::Auto);
         } else {
             panic!("Expected Format command");
         }

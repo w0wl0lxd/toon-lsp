@@ -16,7 +16,7 @@
 //! Format command implementation: TOON file formatting.
 //!
 //! This module provides consistent formatting for TOON files including:
-//! - Indentation normalization (spaces or tabs)
+//! - Indentation normalization (spaces only, per TOON spec)
 //! - Consistent spacing around colons
 //! - Check mode for CI verification
 
@@ -58,7 +58,6 @@ pub fn execute(args: &FormatArgs) -> CliResult<()> {
     // Format the AST
     let options = ToonFormattingOptions {
         indent_size: args.indent as u32,
-        use_tabs: args.tabs,
     };
     let formatted = format_document(&ast_node, options)
         .ok_or_else(|| CliError::Format("Failed to format document".to_string()))?;
@@ -140,29 +139,25 @@ mod tests {
         assert!(errors.is_empty());
         let ast_node = ast.unwrap();
 
-        let options = ToonFormattingOptions {
-            indent_size: 4,
-            use_tabs: false,
-        };
+        let options = ToonFormattingOptions { indent_size: 4 };
         let formatted = format_document(&ast_node, options).unwrap();
         // Should use 4-space indent
         assert!(formatted.contains("    host:"));
     }
 
     #[test]
-    fn test_format_with_tabs() {
+    fn test_format_always_uses_spaces() {
+        // TOON spec prohibits tabs, so formatting always uses spaces
         let content = "server:\n  host: localhost\n";
         let (ast, errors) = parser::parse_with_errors(content);
         assert!(errors.is_empty());
         let ast_node = ast.unwrap();
 
-        let options = ToonFormattingOptions {
-            indent_size: 1,
-            use_tabs: true,
-        };
+        let options = ToonFormattingOptions { indent_size: 2 };
         let formatted = format_document(&ast_node, options).unwrap();
-        // Should use tab indent
-        assert!(formatted.contains("\thost:"));
+        // Should use space indent (tabs prohibited)
+        assert!(formatted.contains("  host:"));
+        assert!(!formatted.contains('\t'), "Output should not contain tabs");
     }
 
     #[test]

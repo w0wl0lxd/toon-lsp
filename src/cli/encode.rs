@@ -35,7 +35,7 @@ use std::fs::File;
 use std::io::{self, BufReader, Read, Write};
 use std::path::Path;
 
-use super::convert::{encode_json, read_json, read_yaml};
+use super::convert::{encode_json_with_indent, read_json, read_yaml};
 use super::error::{CliError, CliResult};
 use super::{EncodeArgs, InputFormat};
 
@@ -58,8 +58,8 @@ pub fn execute(args: &EncodeArgs) -> CliResult<()> {
     // Read and parse input
     let value = read_input(args, format)?;
 
-    // Encode to TOON
-    let toon = encode_json(&value)?;
+    // Encode to TOON with specified indentation
+    let toon = encode_json_with_indent(&value, args.indent)?;
 
     // Write output
     write_output(args, &toon)?;
@@ -160,7 +160,9 @@ fn write_output(args: &EncodeArgs, toon: &str) -> CliResult<()> {
 pub fn error_exit_code(error: &super::error::CliError) -> super::error::ExitCode {
     use super::error::{CliError, ExitCode};
     match error {
-        CliError::Parse(_) | CliError::Encode(_) => ExitCode::ValidationFailed,
+        CliError::Parse(_) | CliError::Encode(_) | CliError::Json(_) | CliError::Yaml(_) => {
+            ExitCode::ValidationFailed
+        }
         _ => error.exit_code(),
     }
 }
@@ -176,9 +178,6 @@ mod tests {
             output: None,
             input_format: format,
             indent: 2,
-            array_style: super::super::ArrayStyle::Auto,
-            tabs: false,
-            max_width: 80,
         }
     }
 
@@ -236,6 +235,14 @@ mod tests {
         // Encode errors should return ValidationFailed (exit code 2)
         let encode_err = CliError::Encode("encoding failed".to_string());
         assert_eq!(error_exit_code(&encode_err), ExitCode::ValidationFailed);
+
+        // JSON errors should return ValidationFailed (exit code 2)
+        let json_err = CliError::Json(serde_json::from_str::<()>("invalid").unwrap_err());
+        assert_eq!(error_exit_code(&json_err), ExitCode::ValidationFailed);
+
+        // YAML errors should return ValidationFailed (exit code 2)
+        let yaml_err = CliError::Yaml(serde_yaml::from_str::<()>("invalid: [").unwrap_err());
+        assert_eq!(error_exit_code(&yaml_err), ExitCode::ValidationFailed);
 
         // IO errors should return Error (exit code 1)
         let io_err = CliError::Io(io::Error::new(io::ErrorKind::NotFound, "not found"));
