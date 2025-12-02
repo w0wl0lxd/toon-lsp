@@ -1,4 +1,5 @@
 //! LSP capability definitions for TOON.
 
-// Reserved for future capability configuration
-// TODO: Add configuration for optional LSP features
+// Capability configuration is handled in server.rs via ServerCapabilities.
+// All core features (diagnostics, symbols, hover, completion, definition,
+// references, rename, formatting, semantic tokens) are currently enabled.
