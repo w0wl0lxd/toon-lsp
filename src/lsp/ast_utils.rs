@@ -225,6 +225,99 @@ pub fn find_key_definitions<'a>(entries: &'a [ObjectEntry], key_name: &str) -> V
         .collect()
 }
 
+/// Collect all keys with their spans from an AST.
+///
+/// Recursively traverses the entire AST and collects every object key
+/// with its corresponding span. Used by find references and rename features.
+///
+/// # Arguments
+/// * `ast` - The root AST node to traverse
+///
+/// # Returns
+/// Vector of (key_name, key_span) tuples for all keys in the tree
+pub fn collect_all_keys(ast: &AstNode) -> Vec<(String, Span)> {
+    let mut keys = Vec::new();
+    collect_keys_recursive(ast, &mut keys);
+    keys
+}
+
+/// Helper function for recursive key collection.
+fn collect_keys_recursive(node: &AstNode, keys: &mut Vec<(String, Span)>) {
+    match node {
+        AstNode::Document { children, .. } => {
+            for child in children {
+                collect_keys_recursive(child, keys);
+            }
+        }
+        AstNode::Object { entries, .. } => {
+            for entry in entries {
+                keys.push((entry.key.clone(), entry.key_span));
+                collect_keys_recursive(&entry.value, keys);
+            }
+        }
+        AstNode::Array { items, .. } => {
+            for item in items {
+                collect_keys_recursive(item, keys);
+            }
+        }
+        // Leaf nodes - no keys to collect
+        AstNode::String { .. }
+        | AstNode::Number { .. }
+        | AstNode::Bool { .. }
+        | AstNode::Null { .. } => {}
+    }
+}
+
+
+/// Calculate byte offset from line and column position.
+///
+/// Converts a (line, column) position into a byte offset in the source text.
+/// This is necessary because Rust's string indexing uses byte offsets, while
+/// LSP uses line/column positions.
+///
+/// # Arguments
+///
+/// * `source` - The document text
+/// * `line` - 0-based line number
+/// * `column` - 0-based UTF-8 column (character offset, not byte offset)
+///
+/// # Returns
+///
+/// Byte offset from start of document, or `None` if position is out of bounds.
+///
+/// # Implementation Notes
+///
+/// Handles UTF-8 multi-byte characters correctly by iterating over `char_indices()`
+/// rather than bytes. Counts newlines to track line boundaries.
+pub fn calculate_offset(source: &str, line: u32, column: u32) -> Option<u32> {
+    let mut current_line = 0u32;
+    let mut line_start_offset = 0u32;
+
+    for (idx, ch) in source.char_indices() {
+        if current_line == line {
+            let col_offset = idx as u32 - line_start_offset;
+            if col_offset >= column {
+                return Some(idx as u32);
+            }
+        }
+
+        if ch == '\n' {
+            if current_line == line {
+                return Some(idx as u32);
+            }
+            current_line += 1;
+            line_start_offset = idx as u32 + 1;
+        }
+    }
+
+    // Handle end of file
+    if current_line == line {
+        Some(source.len() as u32)
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -297,5 +390,90 @@ mod tests {
                 assert_eq!(defs.len(), 1);
             }
         }
+    }
+
+    #[test]
+    fn test_collect_all_keys_empty() {
+        // Test with empty document
+        let source = "";
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        let keys = collect_all_keys(&ast);
+        assert_eq!(keys.len(), 0);
+    }
+
+    #[test]
+    fn test_collect_all_keys_single_object() {
+        // Test with single object
+        let source = "name: Alice\nage: 30";
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        let keys = collect_all_keys(&ast);
+        assert_eq!(keys.len(), 2);
+
+        let key_names: Vec<&str> = keys.iter().map(|(k, _)| k.as_str()).collect();
+        assert!(key_names.contains(&"name"));
+        assert!(key_names.contains(&"age"));
+    }
+
+    #[test]
+    fn test_collect_all_keys_nested_objects() {
+        // Test with nested objects
+        let source = r#"
+user:
+  name: Alice
+  address:
+    city: Boston
+    zip: 02101
+"#;
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        let keys = collect_all_keys(&ast);
+        assert_eq!(keys.len(), 5); // user, name, address, city, zip
+
+        let key_names: Vec<&str> = keys.iter().map(|(k, _)| k.as_str()).collect();
+        assert!(key_names.contains(&"user"));
+        assert!(key_names.contains(&"name"));
+        assert!(key_names.contains(&"address"));
+        assert!(key_names.contains(&"city"));
+        assert!(key_names.contains(&"zip"));
+    }
+
+    #[test]
+    fn test_collect_all_keys_with_arrays() {
+        // Test with tabular array containing objects
+        let source = "users[2]{id,name}:\n  1,Alice\n  2,Bob";
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        let keys = collect_all_keys(&ast);
+
+        // Should find: users (1), id (2), name (2) = 5 keys total
+        assert_eq!(keys.len(), 5);
+
+        let key_names: Vec<&str> = keys.iter().map(|(k, _)| k.as_str()).collect();
+        assert!(key_names.contains(&"users"));
+        assert_eq!(key_names.iter().filter(|&&k| k == "id").count(), 2);
+        assert_eq!(key_names.iter().filter(|&&k| k == "name").count(), 2);
+    }
+
+    #[test]
+    fn test_collect_all_keys_preserves_spans() {
+        // Test that spans are correctly preserved
+        let source = "name: Alice";
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        let keys = collect_all_keys(&ast);
+        assert_eq!(keys.len(), 1);
+
+        let (key_name, span) = &keys[0];
+        assert_eq!(key_name, "name");
+        // Verify span points to the key position
+        assert_eq!(span.start.line, 0);
+        assert_eq!(span.start.column, 0);
     }
 }

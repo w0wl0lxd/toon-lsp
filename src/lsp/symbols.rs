@@ -135,7 +135,7 @@ fn array_item_to_symbols(item: &AstNode, index: usize, source: &str) -> Vec<Docu
                 },
             }]
         }
-        AstNode::Array { items, span } => {
+        AstNode::Array { items, span, .. } => {
             let range = span_to_range(span, source);
             vec![DocumentSymbol {
                 name: format!("[{}]", index),
