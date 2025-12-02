@@ -23,36 +23,29 @@ use tower_lsp::lsp_types::FormattingOptions;
 
 /// Formatting configuration derived from LSP FormattingOptions.
 ///
-/// Controls how TOON documents are formatted, including indentation style
-/// and size. This configuration is typically provided by the LSP client
-/// based on the editor's settings.
+/// Controls how TOON documents are formatted. TOON specification prohibits
+/// tabs for indentation, so only space-based indentation is supported.
 ///
 /// # Fields
 ///
 /// * `indent_size` - Number of spaces per indent level (1-8, default 2)
-/// * `use_tabs` - If true, use tab characters instead of spaces
 ///
 /// # Examples
 ///
 /// ```
 /// # use toon_lsp::lsp::formatting::ToonFormattingOptions;
-/// let opts = ToonFormattingOptions {
-///     indent_size: 2,
-///     use_tabs: false,
-/// };
+/// let opts = ToonFormattingOptions { indent_size: 2 };
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToonFormattingOptions {
     /// Number of spaces per indent level (1-8)
     pub indent_size: u32,
-    /// Use tabs instead of spaces
-    pub use_tabs: bool,
 }
 
-/// Default formatting options: 2-space indentation, no tabs.
+/// Default formatting options: 2-space indentation.
 impl Default for ToonFormattingOptions {
     fn default() -> Self {
-        Self { indent_size: 2, use_tabs: false }
+        Self { indent_size: 2 }
     }
 }
 
@@ -60,13 +53,13 @@ impl Default for ToonFormattingOptions {
 ///
 /// Maps LSP client settings to TOON formatter configuration:
 /// - `tab_size` → `indent_size` (clamped to 1-8)
-/// - `insert_spaces` → inverted to get `use_tabs`
+///
+/// Note: TOON spec prohibits tabs, so `insert_spaces` is ignored.
 impl From<&FormattingOptions> for ToonFormattingOptions {
     fn from(opts: &FormattingOptions) -> Self {
         Self {
             // Clamp indent_size to valid range (1-8)
             indent_size: opts.tab_size.clamp(1, 8),
-            use_tabs: !opts.insert_spaces,
         }
     }
 }
@@ -92,13 +85,9 @@ impl FormattingContext {
 
     /// Generate indentation string for current nesting level.
     ///
-    /// Returns tabs or spaces based on configuration.
+    /// Always uses spaces (TOON spec prohibits tabs).
     fn indent(&self) -> String {
-        if self.options.use_tabs {
-            "\t".repeat(self.indent_level as usize)
-        } else {
-            " ".repeat((self.indent_level * self.options.indent_size) as usize)
-        }
+        " ".repeat((self.indent_level * self.options.indent_size) as usize)
     }
 
     /// Append text to the output buffer.
@@ -406,7 +395,7 @@ mod tests {
     fn test_format_2_space_indent() {
         let source = "user:\n    name: Alice\n    age: 30"; // 4-space input
         let ast = parse(source);
-        let opts = ToonFormattingOptions { indent_size: 2, use_tabs: false };
+        let opts = ToonFormattingOptions { indent_size: 2 };
 
         let result = format_document(&ast, opts).expect("Formatting failed");
 
@@ -421,7 +410,7 @@ mod tests {
     fn test_format_4_space_indent() {
         let source = "user:\n  name: Alice\n  age: 30"; // 2-space input
         let ast = parse(source);
-        let opts = ToonFormattingOptions { indent_size: 4, use_tabs: false };
+        let opts = ToonFormattingOptions { indent_size: 4 };
 
         let result = format_document(&ast, opts).expect("Formatting failed");
 
@@ -431,19 +420,19 @@ mod tests {
         assert!(result.contains("    age: 30"), "Expected 4-space indent for 'age'");
     }
 
-    // T050: Test format with tab indentation
+    // T050: Test format always uses spaces (TOON spec prohibits tabs)
     #[test]
-    fn test_format_tab_indent() {
-        let source = "user:\n  name: Alice\n  age: 30"; // 2-space input
+    fn test_format_uses_spaces_not_tabs() {
+        let source = "user:\n  name: Alice\n  age: 30";
         let ast = parse(source);
-        let opts = ToonFormattingOptions { indent_size: 2, use_tabs: true };
+        let opts = ToonFormattingOptions { indent_size: 2 };
 
         let result = format_document(&ast, opts).expect("Formatting failed");
 
-        // Should use tabs for indentation
+        // Should use spaces for indentation (tabs prohibited by TOON spec)
         assert!(result.contains("user:"), "Missing 'user:' key");
-        assert!(result.contains("\tname: Alice"), "Expected tab indent for 'name'");
-        assert!(result.contains("\tage: 30"), "Expected tab indent for 'age'");
+        assert!(result.contains("  name: Alice"), "Expected space indent for 'name'");
+        assert!(!result.contains('\t'), "Output should not contain tabs");
     }
 
     // T051: Test format preserves inline array form
