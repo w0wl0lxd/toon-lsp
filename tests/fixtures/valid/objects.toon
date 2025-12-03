@@ -1,0 +1,13 @@
+# TOON document with nested objects
+person:
+  name: Bob
+  address:
+    street: 123 Main St
+    city: New York
+    zip: 10001
+  contact:
+    email: bob@example.com
+    phone: 555-1234
+config:
+  debug: true
+  maxRetries: 3

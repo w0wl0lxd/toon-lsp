@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- IDE extensions for 11 editors:
+  - **VS Code**: Full extension with bundled binary, TextMate grammar
+  - **Neovim**: nvim-lspconfig integration, tree-sitter support
+  - **Zed**: Native extension with tree-sitter highlighting
+  - **Sublime Text**: LSP package configuration, TextMate syntax
+  - **JetBrains IDEs**: Plugin with LSP4IJ, TextMate grammar
+  - **Helix**: Configuration with tree-sitter queries
+  - **Emacs**: Major mode with lsp-mode/eglot support
+  - **Vim**: vim-lsp and coc.nvim configurations
+  - **Kate/KDevelop**: LSP client configuration
+  - **Eclipse**: LSP4E plugin configuration
+  - **Notepad++**: User Defined Language (syntax only, no LSP)
+- Shared TextMate grammar (`editors/shared/toon.tmLanguage.json`)
+- Shared tree-sitter grammar (`editors/shared/tree-sitter-toon/`)
+- Build automation scripts for cross-platform binaries
+- GitHub Actions workflow for building all extensions
+- IDE support documentation (`docs/ide-support.md`)
+
 ## [0.1.1] - 2025-12-01
 
 ### Changed

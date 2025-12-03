@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "toon": {
+      "command": ["toon-lsp"],
+      "url": "https://github.com/toon-format/toon-lsp",
+      "rootIndicationFileNames": [".git", ".toon"],
+      "highlightingModeRegex": "^TOON$"
+    }
+  }
+}

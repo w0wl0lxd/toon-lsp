@@ -1,0 +1,26 @@
+# TOON document demonstrating all array forms
+
+# Expanded array (multi-line)
+fruits:
+  - apple
+  - banana
+  - cherry
+
+# Inline array (single-line)
+colors: [red, green, blue]
+
+# Tabular array (structured data)
+users:
+  | name   | age | active |
+  | Alice  | 30  | true   |
+  | Bob    | 25  | false  |
+  | Carol  | 35  | true   |
+
+# Mixed array with objects
+items:
+  -
+    id: 1
+    name: Widget
+  -
+    id: 2
+    name: Gadget

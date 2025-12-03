@@ -1,0 +1,191 @@
+name: Build Extensions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'editors/**'
+      - 'scripts/**'
+      - '.github/workflows/build-extensions.yml'
+  pull_request:
+    paths:
+      - 'editors/**'
+      - 'scripts/**'
+      - '.github/workflows/build-extensions.yml'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Build release binaries'
+        type: boolean
+        default: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Build toon-lsp binaries for all platforms
+  build-binaries:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            platform: win32-x64
+            binary: toon-lsp.exe
+          - target: x86_64-apple-darwin
+            os: macos-13
+            platform: darwin-x64
+            binary: toon-lsp
+          - target: aarch64-apple-darwin
+            os: macos-14
+            platform: darwin-arm64
+            binary: toon-lsp
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            platform: linux-x64
+            binary: toon-lsp
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: toon-lsp-${{ matrix.platform }}
+          path: target/${{ matrix.target }}/release/${{ matrix.binary }}
+
+  # Build VSCode extension
+  build-vscode:
+    name: Build VSCode Extension
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [win32-x64, darwin-x64, darwin-arm64, linux-x64]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: toon-lsp-${{ matrix.platform }}
+          path: editors/vscode/binaries/${{ matrix.platform }}/
+
+      - name: Make binary executable
+        if: matrix.platform != 'win32-x64'
+        run: chmod +x editors/vscode/binaries/${{ matrix.platform }}/toon-lsp
+
+      - name: Install dependencies
+        working-directory: editors/vscode
+        run: npm ci
+
+      - name: Copy TextMate grammar
+        run: |
+          mkdir -p editors/vscode/syntaxes
+          cp editors/shared/toon.tmLanguage.json editors/vscode/syntaxes/
+
+      - name: Compile extension
+        working-directory: editors/vscode
+        run: npm run compile
+
+      - name: Package VSIX
+        working-directory: editors/vscode
+        run: npx @vscode/vsce package --target ${{ matrix.platform }} -o toon-lsp-${{ matrix.platform }}.vsix
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-${{ matrix.platform }}
+          path: editors/vscode/*.vsix
+        continue-on-error: true
+
+  # Build JetBrains plugin
+  build-jetbrains:
+    name: Build JetBrains Plugin
+    needs: build-binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: editors/jetbrains/binaries/
+          pattern: toon-lsp-*
+          merge-multiple: true
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build plugin
+        working-directory: editors/jetbrains
+        run: ./gradlew buildPlugin
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jetbrains-plugin
+          path: editors/jetbrains/build/distributions/*.zip
+        continue-on-error: true
+
+  # Build tree-sitter grammar
+  build-tree-sitter:
+    name: Build Tree-sitter Grammar
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install tree-sitter CLI
+        run: npm install -g tree-sitter-cli
+
+      - name: Generate grammar
+        working-directory: editors/shared/tree-sitter-toon
+        run: tree-sitter generate
+
+      - name: Test grammar
+        working-directory: editors/shared/tree-sitter-toon
+        run: tree-sitter test
+        continue-on-error: true
+
+      - name: Upload grammar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tree-sitter-toon
+          path: |
+            editors/shared/tree-sitter-toon/src/
+            editors/shared/tree-sitter-toon/queries/

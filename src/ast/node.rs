@@ -149,12 +149,48 @@ pub enum NumberValue {
 }
 
 impl NumberValue {
-    /// Convert to f64.
-    pub fn as_f64(&self) -> f64 {
+    /// Convert to f64 (lossy for large integers).
+    ///
+    /// # Precision Warning
+    /// For integers with absolute value > 2^53 (9,007,199,254,740,992),
+    /// precision may be lost during conversion. This affects very large
+    /// IDs, timestamps in nanoseconds, or cryptographic values.
+    ///
+    /// Use [`as_u64`] or [`as_i64`] for exact integer access when precision matters.
+    #[allow(clippy::cast_precision_loss)]
+    pub fn as_f64_lossy(&self) -> f64 {
         match self {
             NumberValue::PosInt(n) => *n as f64,
             NumberValue::NegInt(n) => *n as f64,
             NumberValue::Float(n) => *n,
+        }
+    }
+
+    /// Get as u64 if this is a positive integer.
+    #[must_use]
+    pub const fn as_u64(&self) -> Option<u64> {
+        match self {
+            NumberValue::PosInt(n) => Some(*n),
+            NumberValue::NegInt(_) | NumberValue::Float(_) => None,
+        }
+    }
+
+    /// Get as i64 if this is an integer (positive or negative).
+    ///
+    /// Returns `None` for positive integers that exceed `i64::MAX`.
+    #[must_use]
+    #[allow(clippy::cast_possible_wrap)] // Safe: checked that n <= i64::MAX before cast
+    pub const fn as_i64(&self) -> Option<i64> {
+        match self {
+            NumberValue::PosInt(n) => {
+                if *n <= i64::MAX as u64 {
+                    Some(*n as i64)
+                } else {
+                    None
+                }
+            }
+            NumberValue::NegInt(n) => Some(*n),
+            NumberValue::Float(_) => None,
         }
     }
 }

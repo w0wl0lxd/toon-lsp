@@ -251,6 +251,38 @@ toon-lsp
 toon-lsp lsp
 ```
 
+## IDE Support
+
+The language server integrates with all major editors. See [docs/ide-support.md](docs/ide-support.md) for detailed setup instructions.
+
+| IDE | Install Method | LSP | Syntax Highlighting |
+|-----|---------------|-----|---------------------|
+| **VS Code** | [Marketplace](editors/vscode/) | Full | TextMate |
+| **Neovim** | [Config](editors/neovim/) | Full | Tree-sitter |
+| **Zed** | [Extension](editors/zed/) | Full | Tree-sitter |
+| **Sublime Text** | [LSP Package](editors/sublime/) | Full | TextMate |
+| **JetBrains IDEs** | [Plugin](editors/jetbrains/) | Full | TextMate |
+| **Helix** | [Config](editors/helix/) | Full | Tree-sitter |
+| **Emacs** | [Package](editors/emacs/) | Full | Emacs Lisp |
+| **Vim** | [Config](editors/vim/) | Full | N/A |
+| **Kate/KDevelop** | [Config](editors/kate/) | Full | TextMate |
+| **Eclipse** | [LSP4E](editors/eclipse/) | Full | N/A |
+| **Notepad++** | [UDL](editors/notepad++/) | None | UDL |
+
+**Quick Install (VS Code):**
+```bash
+# Install from marketplace (coming soon)
+code --install-extension toon-lang.toon-lsp
+
+# Or install from VSIX
+code --install-extension toon-lsp-0.4.0-win32-x64.vsix
+```
+
+**Quick Config (Neovim):**
+```lua
+require('lspconfig').toon_lsp.setup{}
+```
+
 ## Library Usage
 
 ```rust

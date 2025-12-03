@@ -1,0 +1,6 @@
+# Simple TOON document with basic types
+name: Alice
+age: 30
+active: true
+email: null
+score: 3.14

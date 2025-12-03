@@ -30,12 +30,14 @@ pub struct Position {
 
 impl Position {
     /// Create a new position.
-    pub fn new(line: u32, column: u32, offset: u32) -> Self {
+    #[inline]
+    pub const fn new(line: u32, column: u32, offset: u32) -> Self {
         Self { line, column, offset }
     }
 
     /// Create position at start of file.
-    pub fn start() -> Self {
+    #[inline]
+    pub const fn start() -> Self {
         Self::new(0, 0, 0)
     }
 }
@@ -57,22 +59,29 @@ pub struct Span {
 
 impl Span {
     /// Create a new span from start to end positions.
+    #[inline]
     pub fn new(start: Position, end: Position) -> Self {
         Self { start, end }
     }
 
     /// Create a zero-width span at a position.
+    #[inline]
     pub fn point(pos: Position) -> Self {
         Self::new(pos, pos)
     }
 
     /// Check if this span contains a position.
+    ///
+    /// Comparison is based on byte offset only, which is the authoritative
+    /// position within the source text. Line/column are derived values.
+    #[inline]
     #[must_use]
     pub fn contains(&self, pos: Position) -> bool {
         pos.offset >= self.start.offset && pos.offset < self.end.offset
     }
 
     /// Merge two spans into one that covers both.
+    #[inline]
     #[must_use]
     pub fn merge(self, other: Span) -> Span {
         let start = if self.start.offset <= other.start.offset { self.start } else { other.start };
@@ -81,12 +90,14 @@ impl Span {
     }
 
     /// Get the length of this span in bytes.
+    #[inline]
     #[must_use]
     pub fn len(&self) -> u32 {
         self.end.offset.saturating_sub(self.start.offset)
     }
 
     /// Check if this span is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

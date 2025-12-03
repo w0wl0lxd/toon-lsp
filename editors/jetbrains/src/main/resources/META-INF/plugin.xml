@@ -1,0 +1,70 @@
+<idea-plugin>
+    <id>com.toon.lsp</id>
+    <name>TOON Language</name>
+    <version>0.1.0</version>
+    <vendor email="support@toon-format.org" url="https://github.com/toon-format/toon-lsp">
+        TOON Format
+    </vendor>
+
+    <description><![CDATA[
+        Language support for TOON (Token-Oriented Object Notation) files.
+
+        Features:
+        <ul>
+            <li>Syntax highlighting</li>
+            <li>Error diagnostics</li>
+            <li>Hover information</li>
+            <li>Go to definition</li>
+            <li>Find references</li>
+            <li>Rename symbol</li>
+            <li>Document formatting</li>
+            <li>Document symbols (outline)</li>
+        </ul>
+
+        TOON is a compact, human-readable encoding of the JSON data model,
+        designed for LLM prompts and structured data interchange.
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <h3>0.1.0</h3>
+        <ul>
+            <li>Initial release</li>
+            <li>Full LSP support via bundled toon-lsp binary</li>
+            <li>TextMate-based syntax highlighting</li>
+        </ul>
+    ]]></change-notes>
+
+    <idea-version since-build="231" until-build="243.*"/>
+
+    <depends>com.redhat.devtools.lsp4ij</depends>
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType
+            name="TOON"
+            implementationClass="com.toon.lsp.ToonFileType"
+            fieldName="INSTANCE"
+            language="TOON"
+            extensions="toon"/>
+
+        <lang.parserDefinition
+            language="TOON"
+            implementationClass="com.toon.lsp.ToonParserDefinition"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.redhat.devtools.lsp4ij">
+        <server
+            id="toonLanguageServer"
+            name="TOON Language Server"
+            factoryClass="com.toon.lsp.ToonLanguageServerFactory">
+            <description><![CDATA[
+                Language server for TOON files providing diagnostics,
+                hover, definition, references, rename, and formatting.
+            ]]></description>
+        </server>
+
+        <languageMapping
+            language="TOON"
+            serverId="toonLanguageServer"/>
+    </extensions>
+</idea-plugin>

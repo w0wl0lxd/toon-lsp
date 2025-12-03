@@ -1,0 +1,16 @@
+# TOON Language Extension for Zed
+id = "toon"
+name = "TOON Language"
+description = "Language support for TOON (Token-Oriented Object Notation) files"
+version = "0.1.0"
+schema_version = 1
+
+[authors]
+name = "TOON Format"
+email = "support@toon-format.org"
+
+[repository]
+url = "https://github.com/toon-format/toon-lsp"
+
+[language_servers.toon-lsp]
+languages = ["TOON"]
