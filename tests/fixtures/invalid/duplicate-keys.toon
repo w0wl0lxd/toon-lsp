@@ -1,0 +1,4 @@
+# Invalid TOON: duplicate keys at same level
+name: Alice
+age: 30
+name: Bob

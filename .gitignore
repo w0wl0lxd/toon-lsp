@@ -42,3 +42,20 @@ tarpaulin-report.html
 
 # Spec-kit specifications (local development)
 specs/
+
+# Node.js (VSCode extension)
+node_modules/
+dist/
+*.log
+package-lock.json
+*.vsix
+
+# JetBrains plugin
+*.jar
+.gradle/
+build/
+out/
+*.iml
+
+# Editor binaries (downloaded for bundling)
+editors/*/binaries/

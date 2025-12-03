@@ -1,0 +1,46 @@
+# Cross-compilation configuration for toon-lsp
+# Targets: Windows x64, macOS x64/arm64, Linux x64
+
+# Windows (x64) - MSVC toolchain
+[target.x86_64-pc-windows-msvc]
+# Default linker works on Windows
+
+# macOS (Intel x64)
+[target.x86_64-apple-darwin]
+# Use clang for cross-compilation from Linux
+# linker = "x86_64-apple-darwin-clang"
+
+# macOS (Apple Silicon arm64)
+[target.aarch64-apple-darwin]
+# Use clang for cross-compilation from Linux
+# linker = "aarch64-apple-darwin-clang"
+
+# Linux (x64) - GNU toolchain
+[target.x86_64-unknown-linux-gnu]
+# Default linker works on Linux
+
+# Alias for development convenience
+[alias]
+b = "build"
+t = "test"
+r = "run"
+c = "check"
+br = "build --release"
+tr = "test --release"
+
+# Build configuration
+[build]
+# Increase parallelism for faster builds
+jobs = 8
+
+# Profile overrides for specific targets
+[profile.release.package."*"]
+opt-level = 3
+
+[profile.dev]
+# Faster debug builds
+opt-level = 1
+debug = true
+
+[profile.dev.package."*"]
+opt-level = 2

@@ -1,0 +1,4 @@
+# Invalid TOON: unclosed bracket
+name: Alice
+data: [1, 2, 3
+active: true

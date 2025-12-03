@@ -1,0 +1,102 @@
+{
+  "name": "toon-lsp",
+  "displayName": "TOON Language",
+  "description": "Language support for TOON (Token-Oriented Object Notation) files",
+  "version": "0.1.0",
+  "publisher": "toon-format",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toon-format/toon-lsp"
+  },
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "toon",
+    "json",
+    "configuration",
+    "language-server"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "toon",
+        "aliases": ["TOON", "toon"],
+        "extensions": [".toon"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "toon",
+        "scopeName": "source.toon",
+        "path": "./syntaxes/toon.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "toon-lsp.restart",
+        "title": "TOON: Restart Language Server",
+        "category": "TOON"
+      }
+    ],
+    "configuration": {
+      "title": "TOON Language Server",
+      "properties": {
+        "toon-lsp.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to toon-lsp binary (leave empty to use bundled)"
+        },
+        "toon-lsp.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Trace communication between VSCode and the language server"
+        },
+        "toon-lsp.formatting.tabSize": {
+          "type": "number",
+          "default": 2,
+          "description": "Number of spaces for indentation"
+        },
+        "toon-lsp.formatting.useTabs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use tabs instead of spaces for indentation"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.57.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}

@@ -657,14 +657,10 @@ impl Parser {
             None
         };
 
-        // Determine delimiter from next character
-        let delimiter = match &self.current().kind {
-            TokenKind::Identifier(s) if s == "|" => {
-                self.advance();
-                '|'
-            }
-            _ => ',', // default
-        };
+        // TOON tabular arrays use comma delimiter in source syntax.
+        // Output formatting uses pipe characters for display, but input parsing
+        // always uses commas. See formatting.rs for output handling.
+        let delimiter = ',';
 
         // Expect colon
         if !self.match_token(&TokenKind::Colon) {
