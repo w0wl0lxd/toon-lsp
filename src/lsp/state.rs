@@ -147,6 +147,7 @@ impl DocumentState {
         let line_text = self.get_line(line).unwrap_or("");
         crate::lsp::utf16::utf16_to_utf8_col(line_text, utf16_col)
     }
+
 }
 
 #[cfg(test)]

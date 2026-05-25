@@ -64,11 +64,11 @@ fn test_document_state_empty_document() {
 
 #[test]
 fn test_document_state_nested_structure() {
-    let text = r#"person:
+    let text = r"person:
   name: Alice
   address:
     city: Boston
-    zip: 02101"#;
+    zip: 02101";
     let state = DocumentState::new(text.to_string(), 1);
 
     assert!(state.ast().is_some());
@@ -77,10 +77,10 @@ fn test_document_state_nested_structure() {
 
 #[test]
 fn test_document_state_array() {
-    let text = r#"items:
+    let text = r"items:
   - one
   - two
-  - three"#;
+  - three";
     let state = DocumentState::new(text.to_string(), 1);
 
     assert!(state.ast().is_some());
@@ -93,7 +93,7 @@ fn test_document_state_multiple_errors() {
     let state = DocumentState::new(text.to_string(), 1);
 
     // Should have multiple errors
-    assert!(state.errors().len() >= 1);
+    assert!(!state.errors().is_empty());
 }
 
 #[test]

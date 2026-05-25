@@ -114,7 +114,7 @@ mod did_open {
         let diagnostics = errors_to_diagnostics(&errors, source);
 
         // Should have at least one error
-        assert!(diagnostics.len() >= 1);
+        assert!(!diagnostics.is_empty());
     }
 }
 
