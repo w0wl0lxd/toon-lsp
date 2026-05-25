@@ -77,7 +77,9 @@ pub struct RenameEdit {
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```
+/// # use toon_lsp::lsp::rename::prepare_rename;
+/// # use toon_lsp::parser::parse_with_errors;
 /// let source = "name: Alice";
 /// let (ast, _) = parse_with_errors(source);
 /// let result = prepare_rename(&ast.unwrap(), source, 0, 2); // On "name"
@@ -124,7 +126,9 @@ pub fn prepare_rename(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```
+/// # use toon_lsp::lsp::rename::rename_key;
+/// # use toon_lsp::parser::parse_with_errors;
 /// let source = "id: 1\ndata:\n  id: 2";
 /// let (ast, _) = parse_with_errors(source);
 /// let edits = rename_key(&ast.unwrap(), source, 0, 0, "identifier");
