@@ -346,7 +346,9 @@ mod tests {
 
     #[test]
     fn test_collect_sibling_keys() {
-        let source = "name: Alice\nage: 30\ncity: Boston";
+        let source = "name: Alice
+age: 30
+city: Boston";
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 

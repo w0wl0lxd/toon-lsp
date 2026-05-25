@@ -40,23 +40,23 @@ pub fn collect_code_lenses(ast: &AstNode, source: &str, uri: &Url) -> Vec<CodeLe
         if spans.len() > 1 {
             // Add a lens above the first occurrence
             let first_span = spans[0];
-        let range = span_to_range(&first_span, source);
+            let range = span_to_range(&first_span, source);
 
-        lenses.push(CodeLens {
-            range: Range {
-                start: Position { line: range.start.line, character: 0 },
-                end: Position { line: range.start.line, character: 0 },
-            },
-            command: Some(Command {
-                title: format!("{} references", spans.len()),
-                command: "toon-lsp.peekReferences".to_string(),
-                arguments: Some(vec![serde_json::json!({
-                    "uri": uri.to_string(),
-                    "position": {
-                        "line": range.start.line,
-                        "character": range.start.character,
-                    }
-                })]),
+            lenses.push(CodeLens {
+                range: Range {
+                    start: Position { line: range.start.line, character: 0 },
+                    end: Position { line: range.start.line, character: 0 },
+                },
+                command: Some(Command {
+                    title: format!("{} references", spans.len()),
+                    command: "toon-lsp.peekReferences".to_string(),
+                    arguments: Some(vec![serde_json::json!({
+                        "uri": uri.to_string(),
+                        "position": {
+                            "line": range.start.line,
+                            "character": range.start.character,
+                        }
+                    })]),
                 }),
                 data: Some(serde_json::json!({ "key": key_name })),
             });
@@ -86,13 +86,7 @@ mod tests {
             l.data.as_ref().and_then(|d| d.get("key")).and_then(|v| v.as_str()) == Some("name")
         });
         assert!(name_lens.is_some());
-        assert!(name_lens
-            .unwrap()
-            .command
-            .as_ref()
-            .unwrap()
-            .title
-            .contains("2 references"));
+        assert!(name_lens.unwrap().command.as_ref().unwrap().title.contains("2 references"));
     }
 
     #[test]
@@ -132,12 +126,6 @@ mod tests {
             l.data.as_ref().and_then(|d| d.get("key")).and_then(|v| v.as_str()) == Some("id")
         });
         assert!(id_lens.is_some());
-        assert!(id_lens
-            .unwrap()
-            .command
-            .as_ref()
-            .unwrap()
-            .title
-            .contains("3 references"));
+        assert!(id_lens.unwrap().command.as_ref().unwrap().title.contains("3 references"));
     }
 }
