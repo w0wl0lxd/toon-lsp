@@ -128,7 +128,7 @@ async fn test_rename_provider_declared() {
 async fn test_document_formatting_provider_declared() {
     let caps = get_server_capabilities().await;
 
-    Verify document formatting provider is enabled
+    // Verify document formatting provider is enabled
     assert!(
         caps.document_formatting_provider.is_some(),
         "document_formatting_provider must be declared"
