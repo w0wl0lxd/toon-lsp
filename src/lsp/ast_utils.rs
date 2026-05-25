@@ -256,6 +256,42 @@ fn collect_keys_recursive(node: &AstNode, keys: &mut Vec<(String, Span)>) {
     }
 }
 
+/// Pre-computed line offset index for O(1) offset lookups.
+///
+/// Stores the byte offset of each line start, enabling fast
+/// conversion from (line, column) to byte offset.
+#[derive(Debug, Clone)]
+pub struct LineIndex {
+    offsets: Vec<u32>,
+}
+
+impl LineIndex {
+    /// Build a line index from source text.
+    pub fn new(source: &str) -> Self {
+        let mut offsets = vec![0u32];
+        for (i, ch) in source.char_indices() {
+            if ch == '\n' {
+                offsets.push(i as u32 + 1);
+            }
+        }
+        Self { offsets }
+    }
+
+    /// Get the byte offset for a (line, column) position.
+    #[inline]
+    pub fn offset(&self, line: u32, column: u32) -> Option<u32> {
+        let line_start = self.offsets.get(line as usize)?;
+        Some(line_start.saturating_add(column))
+    }
+
+    /// Get the number of lines in the document.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn line_count(&self) -> usize {
+        self.offsets.len()
+    }
+}
+
 /// Calculate byte offset from line and column position.
 ///
 /// Converts a (line, column) position into a byte offset in the source text.
@@ -272,33 +308,12 @@ fn collect_keys_recursive(node: &AstNode, keys: &mut Vec<(String, Span)>) {
 ///
 /// Byte offset from start of document, or `None` if position is out of bounds.
 ///
-/// # Implementation Notes
+/// # Performance Note
 ///
-/// Handles UTF-8 multi-byte characters correctly by iterating over `char_indices()`
-/// rather than bytes. Counts newlines to track line boundaries.
+/// Prefer `LineIndex::offset()` for repeated lookups. This function does an
+/// O(N) scan and is intended for one-off use.
 pub fn calculate_offset(source: &str, line: u32, column: u32) -> Option<u32> {
-    let mut current_line = 0u32;
-    let mut line_start_offset = 0u32;
-
-    for (idx, ch) in source.char_indices() {
-        if current_line == line {
-            let col_offset = idx as u32 - line_start_offset;
-            if col_offset >= column {
-                return Some(idx as u32);
-            }
-        }
-
-        if ch == '\n' {
-            if current_line == line {
-                return Some(idx as u32);
-            }
-            current_line += 1;
-            line_start_offset = idx as u32 + 1;
-        }
-    }
-
-    // Handle end of file
-    if current_line == line { Some(source.len() as u32) } else { None }
+    LineIndex::new(source).offset(line, column)
 }
 
 #[cfg(test)]
@@ -352,14 +367,14 @@ city: Boston";
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
-        if let AstNode::Document { children, .. } = &ast {
-            if let Some(AstNode::Object { entries, .. }) = children.first() {
-                let keys = collect_sibling_keys(entries, None);
-                assert_eq!(keys.len(), 3);
-                assert!(keys.contains(&"name"));
-                assert!(keys.contains(&"age"));
-                assert!(keys.contains(&"city"));
-            }
+        if let AstNode::Document { children, .. } = &ast
+            && let Some(AstNode::Object { entries, .. }) = children.first()
+        {
+            let keys = collect_sibling_keys(entries, None);
+            assert_eq!(keys.len(), 3);
+            assert!(keys.contains(&"name"));
+            assert!(keys.contains(&"age"));
+            assert!(keys.contains(&"city"));
         }
     }
 
@@ -369,11 +384,11 @@ city: Boston";
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
-        if let AstNode::Document { children, .. } = &ast {
-            if let Some(AstNode::Object { entries, .. }) = children.first() {
-                let defs = find_key_definitions(entries, "name");
-                assert_eq!(defs.len(), 1);
-            }
+        if let AstNode::Document { children, .. } = &ast
+            && let Some(AstNode::Object { entries, .. }) = children.first()
+        {
+            let defs = find_key_definitions(entries, "name");
+            assert_eq!(defs.len(), 1);
         }
     }
 
@@ -406,13 +421,13 @@ city: Boston";
     #[test]
     fn test_collect_all_keys_nested_objects() {
         // Test with nested objects
-        let source = r#"
+        let source = r"
 user:
   name: Alice
   address:
     city: Boston
     zip: 02101
-"#;
+";
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
