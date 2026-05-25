@@ -170,13 +170,6 @@ pub fn collect_semantic_tokens(ast: &crate::ast::AstNode) -> Vec<SemanticToken> 
 /// * `node` - The AST node to visit
 /// * `tokens` - Accumulator vector for collected tokens
 ///
-/// # Examples
-///
-/// ```ignore
-/// let mut tokens = Vec::new();
-/// visit_node(&ast, &mut tokens);
-/// // tokens now contains all semantic tokens from ast
-/// ```
 fn visit_node(node: &crate::ast::AstNode, tokens: &mut Vec<SemanticToken>) {
     use crate::ast::AstNode;
 
