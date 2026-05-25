@@ -300,7 +300,7 @@ mod tests {
     fn apply_edits(source: &str, edits: &[RenameEdit]) -> String {
         // Sort edits by position (reverse order to apply from end to start)
         let mut sorted_edits = edits.to_vec();
-        sorted_edits.sort_by(|a, b| b.span.start.offset.cmp(&a.span.start.offset));
+        sorted_edits.sort_by_key(|e| std::cmp::Reverse(e.span.start.offset));
 
         let mut result = source.to_string();
         for edit in sorted_edits {
