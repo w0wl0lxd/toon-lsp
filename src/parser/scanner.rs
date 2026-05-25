@@ -21,6 +21,18 @@
 use crate::ast::{Position, Span};
 
 /// Token types in TOON.
+///
+/// # Example
+///
+/// ```
+/// use toon_lsp::parser::TokenKind;
+///
+/// let colon = TokenKind::Colon;
+/// assert_eq!(colon, TokenKind::Colon);
+///
+/// let string = TokenKind::String("hello".to_string());
+/// assert!(matches!(string, TokenKind::String(_)));
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     // Structural
@@ -78,6 +90,20 @@ impl std::fmt::Display for TokenKind {
 }
 
 /// A token with its span.
+///
+/// # Example
+///
+/// ```
+/// use toon_lsp::parser::{Token, TokenKind};
+/// use toon_lsp::ast::Span;
+///
+/// let span = Span::new(
+///     toon_lsp::ast::Position::new(0, 0, 0),
+///     toon_lsp::ast::Position::new(0, 1, 1)
+/// );
+/// let token = Token::new(TokenKind::Colon, span);
+/// assert_eq!(token.kind, TokenKind::Colon);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
@@ -109,6 +135,16 @@ pub struct Scanner<'a> {
 
 impl<'a> Scanner<'a> {
     /// Create a new scanner for the given source.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use toon_lsp::parser::Scanner;
+    ///
+    /// let mut scanner = Scanner::new("key: value");
+    /// assert_eq!(scanner.current_position().line, 0);
+    /// assert_eq!(scanner.current_position().column, 0);
+    /// ```
     pub fn new(source: &'a str) -> Self {
         Self {
             source,
@@ -124,6 +160,18 @@ impl<'a> Scanner<'a> {
     }
 
     /// Get current position in source.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use toon_lsp::parser::Scanner;
+    ///
+    /// let mut scanner = Scanner::new("test");
+    /// let pos = scanner.current_position();
+    /// assert_eq!(pos.line, 0);
+    /// assert_eq!(pos.column, 0);
+    /// assert_eq!(pos.offset, 0);
+    /// ```
     pub fn current_position(&self) -> Position {
         Position::new(self.line, self.column, self.offset)
     }
@@ -527,6 +575,21 @@ impl<'a> Scanner<'a> {
     }
 
     /// Scan all tokens from the source.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use toon_lsp::parser::{Scanner, TokenKind};
+    ///
+    /// let mut scanner = Scanner::new("key: [1, 2, 3]");
+    /// let tokens = scanner.scan_all();
+    ///
+    /// // Check we got the expected tokens: identifier, colon, bracket, numbers, etc.
+    /// assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Identifier(ref s) if s == "key")));
+    /// assert!(tokens.iter().any(|t| t.kind == TokenKind::Colon));
+    /// assert!(tokens.iter().any(|t| t.kind == TokenKind::LeftBracket));
+    /// assert!(tokens.iter().any(|t| t.kind == TokenKind::RightBracket));
+    /// ```
     pub fn scan_all(&mut self) -> Vec<Token> {
         let mut tokens = Vec::with_capacity(1024);
         loop {
