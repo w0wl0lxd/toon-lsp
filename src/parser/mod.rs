@@ -277,10 +277,14 @@ impl Parser {
 
     /// Parse any value (dispatcher for all value types).
     fn parse_value(&mut self) -> Result<AstNode, ParseError> {
-        let kind = self.current().kind.clone();
-        if let TokenKind::Error(msg) = &kind {
+        if matches!(self.current().kind, TokenKind::Error(_)) {
             let span = self.current().span;
-            let err = self.error_with_context(ParseErrorKind::UnexpectedToken, span, msg);
+            let msg = if let TokenKind::Error(m) = &self.current().kind {
+                m.clone()
+            } else {
+                String::new()
+            };
+            let err = self.error_with_context(ParseErrorKind::UnexpectedToken, span, &msg);
             self.advance();
             return Err(err);
         }
@@ -320,25 +324,27 @@ impl Parser {
         let mut end_span = start_span;
 
         while !self.is_at_end() {
-            match self.current().kind.clone() {
+            match &self.current().kind {
                 TokenKind::Newline | TokenKind::Dedent | TokenKind::Eof => break,
                 TokenKind::Identifier(s) | TokenKind::Number(s) | TokenKind::String(s) => {
-                    parts.push(s);
+                    parts.push(s.clone());
                     end_span = self.current().span;
                     self.advance();
                 }
                 TokenKind::Colon => {
-                    match parts.last_mut() {
-                        Some(last) => last.push(':'),
-                        None => parts.push(String::from(":")),
+                    if let Some(last) = parts.last_mut() {
+                        last.push(':');
+                    } else {
+                        parts.push(String::from(":"));
                     }
                     end_span = self.current().span;
                     self.advance();
                 }
                 TokenKind::Comma => {
-                    match parts.last_mut() {
-                        Some(last) => last.push(','),
-                        None => parts.push(String::from(",")),
+                    if let Some(last) = parts.last_mut() {
+                        last.push(',');
+                    } else {
+                        parts.push(String::from(","));
                     }
                     end_span = self.current().span;
                     self.advance();
@@ -941,6 +947,7 @@ pub fn parse_with_errors(source: &str) -> (Option<AstNode>, Vec<ParseError>) {
 #[cfg(test)]
 mod security_tests {
     use super::*;
+    use std::fmt::Write;
 
     /// SEC-001: Test recursive nesting depth protection
     #[test]
@@ -950,9 +957,9 @@ mod security_tests {
         let mut input = String::from("root:\n");
         for level in 0..150 {
             let indent = "  ".repeat(level + 1);
-            input.push_str(&format!("{}level{}:\n", indent, level));
+            let _ = writeln!(input, "{}level{}:", indent, level);
         }
-        input.push_str(&format!("{}value: deep\n", "  ".repeat(151)));
+        let _ = writeln!(input, "{}value: deep", "  ".repeat(151));
 
         let result = parse(&input);
         assert!(result.is_err(), "Should reject excessive nesting");
@@ -967,9 +974,9 @@ mod security_tests {
         let mut input = String::from("root:\n");
         for level in 0..150 {
             let indent = "  ".repeat(level + 1);
-            input.push_str(&format!("{}- \n", indent));
+            let _ = writeln!(input, "{}- ", indent);
             if level < 149 {
-                input.push_str(&format!("{}  nested:\n", indent));
+                let _ = writeln!(input, "{}  nested:", indent);
             }
         }
 
@@ -985,9 +992,9 @@ mod security_tests {
         let mut input = String::from("root:\n");
         for level in 0..127 {
             let indent = "  ".repeat(level + 1);
-            input.push_str(&format!("{}level{}:\n", indent, level));
+            let _ = writeln!(input, "{}level{}:", indent, level);
         }
-        input.push_str(&format!("{}value: deep\n", "  ".repeat(128)));
+        let _ = writeln!(input, "{}value: deep", "  ".repeat(128));
 
         let result = parse(&input);
         assert!(result.is_ok(), "Should accept nesting within limit");
@@ -1021,7 +1028,7 @@ mod security_tests {
         // Create array with >100k items
         let mut input = String::from("items:\n");
         for i in 0..100_001 {
-            input.push_str(&format!("  - item{}\n", i));
+            let _ = writeln!(input, "  - item{}", i);
         }
 
         let result = parse(&input);
@@ -1035,7 +1042,7 @@ mod security_tests {
         // Create array with exactly 100k items (at limit)
         let mut input = String::from("items:\n");
         for i in 0..100_000 {
-            input.push_str(&format!("  - item{}\n", i));
+            let _ = writeln!(input, "  - item{}", i);
         }
 
         let result = parse(&input);
@@ -1048,7 +1055,7 @@ mod security_tests {
         // Create object with >10k entries
         let mut input = String::new();
         for i in 0..10_001 {
-            input.push_str(&format!("key{}: value{}\n", i, i));
+            let _ = writeln!(input, "key{}: value{}", i, i);
         }
 
         let result = parse(&input);
@@ -1062,7 +1069,7 @@ mod security_tests {
         // Create object with exactly 10k entries (at limit)
         let mut input = String::new();
         for i in 0..10_000 {
-            input.push_str(&format!("key{}: value{}\n", i, i));
+            let _ = writeln!(input, "key{}: value{}", i, i);
         }
 
         let result = parse(&input);
@@ -1076,10 +1083,10 @@ mod security_tests {
         let mut input = String::from("root:\n");
         for depth in 0..150 {
             let indent = "  ".repeat(depth + 1);
-            input.push_str(&format!("{}level{}:\n", indent, depth));
+            let _ = writeln!(input, "{}level{}:", indent, depth);
             // Add many entries at each level
             for item in 0..1000 {
-                input.push_str(&format!("{}item{}: value\n", indent, item));
+                let _ = writeln!(input, "{}item{}: value", indent, item);
             }
         }
 
@@ -1102,9 +1109,9 @@ mod security_tests {
         let mut input = String::from("root:\n");
         for level in 0..150 {
             let indent = "  ".repeat(level + 1);
-            input.push_str(&format!("{}level{}:\n", indent, level));
+            let _ = writeln!(input, "{}level{}:", indent, level);
         }
-        input.push_str(&format!("{}value: deep\n", "  ".repeat(151)));
+        let _ = writeln!(input, "{}value: deep", "  ".repeat(151));
 
         let (_ast, errors) = parse_with_errors(&input);
         // Should fail on depth limit
