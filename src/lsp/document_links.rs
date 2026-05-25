@@ -28,11 +28,7 @@ pub fn collect_document_links(ast: &AstNode, source: &str) -> Vec<DocumentLink> 
     links
 }
 
-fn collect_links_recursive(
-    node: &AstNode,
-    source: &str,
-    links: &mut Vec<DocumentLink>,
-) {
+fn collect_links_recursive(node: &AstNode, source: &str, links: &mut Vec<DocumentLink>) {
     match node {
         AstNode::Document { children, .. } => {
             for child in children {
@@ -97,30 +93,24 @@ mod tests {
 
     #[test]
     fn test_detect_http_url() {
-        let source = "website: https://example.com";
+        let source = r#"website: "https://example.com""#;
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
         let links = collect_document_links(&ast, source);
         assert_eq!(links.len(), 1);
-        assert_eq!(
-            links[0].target.as_ref().map(|u| u.as_str()),
-            Some("https://example.com/")
-        );
+        assert_eq!(links[0].target.as_ref().map(|u| u.as_str()), Some("https://example.com/"));
     }
 
     #[test]
     fn test_detect_ftp_url() {
-        let source = "data: ftp://files.example.com";
+        let source = r#"data: "ftp://files.example.com""#;
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
         let links = collect_document_links(&ast, source);
         assert_eq!(links.len(), 1);
-        assert_eq!(
-            links[0].target.as_ref().map(|u| u.as_str()),
-            Some("ftp://files.example.com/")
-        );
+        assert_eq!(links[0].target.as_ref().map(|u| u.as_str()), Some("ftp://files.example.com/"));
     }
 
     #[test]
@@ -135,7 +125,7 @@ mod tests {
 
     #[test]
     fn test_detect_file_path() {
-        let source = "config: /etc/config.toml";
+        let source = r#"config: "/etc/config.toml""#;
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
@@ -145,7 +135,8 @@ mod tests {
 
     #[test]
     fn test_multiple_links() {
-        let source = "homepage: https://example.com\napi: https://api.example.com";
+        let source = r#"homepage: "https://example.com"
+api: "https://api.example.com""#;
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 

@@ -6,7 +6,9 @@
 //! This module provides functions to generate inlay hints for TOON documents,
 //! showing type information and sizes for arrays and objects.
 
-use tower_lsp::lsp_types::{InlayHint, InlayHintKind, InlayHintLabel, InlayHintLabelPart, Position};
+use tower_lsp::lsp_types::{
+    InlayHint, InlayHintKind, InlayHintLabel, InlayHintLabelPart, Position,
+};
 
 use super::utf16::utf8_to_utf16_col;
 use crate::ast::{AstNode, NumberValue};
@@ -55,6 +57,7 @@ pub fn collect_inlay_hints(
     hints
 }
 
+#[allow(clippy::only_used_in_recursion)]
 fn collect_hints_recursive(
     node: &AstNode,
     lines: &[&str],
@@ -81,33 +84,19 @@ fn collect_hints_recursive(
                         hints.push(hint);
                     }
                     AstNode::Array { items, .. } => {
-                        let hint = create_type_hint(
-                            entry,
-                            span,
-                            &format!("{} items", items.len()),
-                            lines,
-                        );
+                        let hint =
+                            create_type_hint(entry, span, &format!("{} items", items.len()), lines);
                         hints.push(hint);
                     }
                     AstNode::Number { value, .. } => {
                         if matches!(value, NumberValue::Float(_)) {
-                            let hint = create_type_hint(
-                                entry,
-                                span,
-                                "float",
-                                lines,
-                            );
+                            let hint = create_type_hint(entry, span, "float", lines);
                             hints.push(hint);
                         }
                     }
                     AstNode::Null { .. } => {
                         // Hint that this is null (may be intentional)
-                        let hint = create_type_hint(
-                            entry,
-                            span,
-                            "null",
-                            lines,
-                        );
+                        let hint = create_type_hint(entry, span, "null", lines);
                         hints.push(hint);
                     }
                     _ => {}
@@ -150,9 +139,10 @@ fn create_type_hint(
         }]),
         kind: Some(InlayHintKind::TYPE),
         text_edits: None,
-        tooltip: Some(tower_lsp::lsp_types::InlayHintTooltip::String(
-            format!("Value type: {}", type_text),
-        )),
+        tooltip: Some(tower_lsp::lsp_types::InlayHintTooltip::String(format!(
+            "Value type: {}",
+            type_text
+        ))),
         padding_left: Some(true),
         padding_right: Some(false),
         data: None,
