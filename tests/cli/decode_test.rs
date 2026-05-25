@@ -14,8 +14,6 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Integration tests for the decode command.
-//!
-//! T023-T027: Tests for User Story 2 - Convert TOON to JSON
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -34,7 +32,7 @@ fn toon_lsp() -> Command {
 }
 
 // =============================================================================
-***REMOVED***Integration test for decode command (basic TOON → JSON)
+// Integration test for decode command (basic TOON → JSON)
 // =============================================================================
 
 #[test]
@@ -76,7 +74,7 @@ fn test_decode_nested_toon_file() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for decode with --pretty
+// Integration test for decode with --pretty
 // =============================================================================
 
 #[test]
@@ -109,7 +107,7 @@ fn test_decode_with_short_pretty_flag() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for decode to YAML (-f yaml)
+// Integration test for decode to YAML (-f yaml)
 // =============================================================================
 
 #[test]
@@ -143,7 +141,7 @@ fn test_decode_to_yaml_with_long_option() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for decode with invalid TOON (exit code 2)
+// Integration test for decode with invalid TOON (exit code 2)
 // =============================================================================
 
 #[test]
@@ -186,7 +184,7 @@ fn test_decode_nonexistent_file_fails() {
 }
 
 // =============================================================================
-***REMOVED***Round-trip test (encode → decode)
+// Round-trip test (encode → decode)
 // =============================================================================
 
 #[test]

@@ -23,7 +23,7 @@ async fn get_server_capabilities() -> tower_lsp::lsp_types::ServerCapabilities {
 async fn test_semantic_tokens_capability_declared() {
     let caps = get_server_capabilities().await;
 
-    ***REMOVED***Verify semantic tokens capability exists
+    // Verify semantic tokens capability exists
     assert!(caps.semantic_tokens_provider.is_some(), "semantic_tokens_provider must be declared");
 
     let semantic_tokens = caps.semantic_tokens_provider.unwrap();
@@ -94,7 +94,7 @@ async fn test_semantic_tokens_range_capability() {
 async fn test_references_provider_declared() {
     let caps = get_server_capabilities().await;
 
-    ***REMOVED***Verify references provider is enabled
+    // Verify references provider is enabled
     assert!(caps.references_provider.is_some(), "references_provider must be declared");
 
     // Should be simple boolean true
@@ -108,7 +108,7 @@ async fn test_references_provider_declared() {
 async fn test_rename_provider_declared() {
     let caps = get_server_capabilities().await;
 
-    ***REMOVED***Verify rename provider is enabled
+    // Verify rename provider is enabled
     assert!(caps.rename_provider.is_some(), "rename_provider must be declared");
 
     // Should use RenameOptions with prepare_provider
@@ -128,7 +128,7 @@ async fn test_rename_provider_declared() {
 async fn test_document_formatting_provider_declared() {
     let caps = get_server_capabilities().await;
 
-    ***REMOVED***Verify document formatting provider is enabled
+    Verify document formatting provider is enabled
     assert!(
         caps.document_formatting_provider.is_some(),
         "document_formatting_provider must be declared"

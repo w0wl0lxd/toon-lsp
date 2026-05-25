@@ -79,22 +79,20 @@ impl LanguageServer for ToonLanguageServer {
                 }),
                 definition_provider: Some(OneOf::Left(true)),
                 document_symbol_provider: Some(OneOf::Left(true)),
-
-                ***REMOVED***Semantic tokens for syntax highlighting
                 semantic_tokens_provider: Some(
                     SemanticTokensServerCapabilities::SemanticTokensOptions(
                         SemanticTokensOptions {
                             legend: SemanticTokensLegend {
                                 token_types: vec![
-                                    SemanticTokenType::PROPERTY, // 0 - object keys
-                                    SemanticTokenType::STRING,   // 1 - string values
-                                    SemanticTokenType::NUMBER,   // 2 - number values
-                                    SemanticTokenType::KEYWORD,  // 3 - true/false/null
-                                    SemanticTokenType::OPERATOR, // 4 - : = | >
+                                    SemanticTokenType::PROPERTY,
+                                    SemanticTokenType::STRING,
+                                    SemanticTokenType::NUMBER,
+                                    SemanticTokenType::KEYWORD,
+                                    SemanticTokenType::OPERATOR,
                                 ],
                                 token_modifiers: vec![
-                                    SemanticTokenModifier::DEFINITION, // bit 0 - key definitions
-                                    SemanticTokenModifier::READONLY,   // bit 1 - immutable values
+                                    SemanticTokenModifier::DEFINITION,
+                                    SemanticTokenModifier::READONLY,
                                 ],
                             },
                             full: Some(SemanticTokensFullOptions::Bool(true)),
@@ -103,19 +101,21 @@ impl LanguageServer for ToonLanguageServer {
                         },
                     ),
                 ),
-
-                ***REMOVED***Find all references to keys
                 references_provider: Some(OneOf::Left(true)),
-
-                ***REMOVED***Rename symbols with prepare support
                 rename_provider: Some(OneOf::Right(RenameOptions {
                     prepare_provider: Some(true),
                     work_done_progress_options: WorkDoneProgressOptions::default(),
                 })),
-
-                ***REMOVED***Format TOON documents
                 document_formatting_provider: Some(OneOf::Left(true)),
-
+                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
+                code_lens_provider: Some(CodeLensOptions::default()),
+                document_highlight_provider: Some(OneOf::Left(true)),
+                document_link_provider: Some(DocumentLinkOptions::default()),
+                folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
+                inlay_hint_provider: Some(OneOf::Left(true)),
+                linked_editing_range_provider: Some(LinkedEditingRangeServerCapabilities::default()),
+                selection_range_provider: Some(SelectionRangeProviderCapability::Simple(true)),
+                workspace_symbol_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {

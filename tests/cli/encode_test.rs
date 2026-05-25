@@ -15,7 +15,6 @@
 
 //! Integration tests for the encode command.
 //!
-//! T013-T016: Tests for User Story 1 - Convert JSON to TOON
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -34,7 +33,7 @@ fn toon_lsp() -> Command {
 }
 
 // =============================================================================
-***REMOVED***Integration test for encode command (basic JSON → TOON)
+// Integration test for encode command (basic JSON → TOON)
 // =============================================================================
 
 #[test]
@@ -111,7 +110,7 @@ fn test_encode_roundtrip_preserves_data() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for encode with stdin input
+// Integration test for encode with stdin input
 // =============================================================================
 
 #[test]
@@ -167,7 +166,7 @@ fn test_encode_from_stdin_complex() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for encode with output file (-o)
+// Integration test for encode with output file (-o)
 // =============================================================================
 
 #[test]
@@ -226,7 +225,7 @@ fn test_encode_stdin_to_output_file() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for encode with invalid JSON (exit code 2)
+// Integration test for encode with invalid JSON (exit code 2)
 // =============================================================================
 
 #[test]
