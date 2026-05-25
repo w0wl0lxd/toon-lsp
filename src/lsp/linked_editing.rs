@@ -56,10 +56,7 @@ pub fn collect_linked_editing_ranges(
     // Find the word pattern for the key (use word boundaries to match indented keys)
     let word_pattern = Some(format!("\\b{}\\b", regex_escape(key_name)));
 
-    Some(LinkedEditingRanges {
-        ranges: matching_spans,
-        word_pattern,
-    })
+    Some(LinkedEditingRanges { ranges: matching_spans, word_pattern })
 }
 
 /// Escape a string for regex use.
