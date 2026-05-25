@@ -14,8 +14,6 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Integration tests for the format command.
-//!
-//! T048-T059: Tests for User Story 4 - Format TOON Files
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -34,7 +32,7 @@ fn toon_lsp() -> Command {
 }
 
 // =============================================================================
-***REMOVED***Integration test for format command (basic formatting)
+// Integration test for format command (basic formatting)
 // =============================================================================
 
 #[test]
@@ -87,7 +85,7 @@ fn test_format_preserves_valid_structure() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for format with --check (diff mode)
+// Integration test for format with --check (diff mode)
 // =============================================================================
 
 #[test]
@@ -139,7 +137,7 @@ fn test_format_check_does_not_modify_file() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for format with --indent
+// Integration test for format with --indent
 // =============================================================================
 
 #[test]
@@ -192,7 +190,7 @@ fn test_format_always_uses_spaces_not_tabs() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for format with output file
+// Integration test for format with output file
 // =============================================================================
 
 #[test]
@@ -230,7 +228,7 @@ fn test_format_in_place_modifies_file() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for format from stdin
+// Integration test for format from stdin
 // =============================================================================
 
 #[test]
@@ -260,7 +258,7 @@ fn test_format_from_stdin_nested() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for format with invalid TOON
+// Integration test for format with invalid TOON
 // =============================================================================
 
 #[test]
@@ -303,7 +301,7 @@ fn test_format_nonexistent_file_fails() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for format empty file
+// Integration test for format empty file
 // =============================================================================
 
 #[test]

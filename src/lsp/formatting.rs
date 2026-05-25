@@ -390,7 +390,7 @@ mod tests {
         ast.expect("Expected valid AST")
     }
 
-    ***REMOVED***Test format with 2-space indentation
+    // Test format with 2-space indentation
     #[test]
     fn test_format_2_space_indent() {
         let source = "user:\n    name: Alice\n    age: 30"; // 4-space input
@@ -405,9 +405,9 @@ mod tests {
         assert!(result.contains("  age: 30"), "Expected 2-space indent for 'age'");
     }
 
-    ***REMOVED***Test format with 4-space indentation
+     //    // Test format with 4-space indentation
     #[test]
-    fn test_format_4_space_indent() {
+     fn test_format_4_space_indent() {
         let source = "user:\n  name: Alice\n  age: 30"; // 2-space input
         let ast = parse(source);
         let opts = ToonFormattingOptions { indent_size: 4 };
@@ -420,9 +420,9 @@ mod tests {
         assert!(result.contains("    age: 30"), "Expected 4-space indent for 'age'");
     }
 
-    ***REMOVED***Test format always uses spaces (TOON spec prohibits tabs)
+     //    // Test format always uses spaces (TOON spec prohibits tabs)
     #[test]
-    fn test_format_uses_spaces_not_tabs() {
+     fn test_format_uses_spaces_not_tabs() {
         let source = "user:\n  name: Alice\n  age: 30";
         let ast = parse(source);
         let opts = ToonFormattingOptions { indent_size: 2 };
@@ -433,11 +433,11 @@ mod tests {
         assert!(result.contains("user:"), "Missing 'user:' key");
         assert!(result.contains("  name: Alice"), "Expected space indent for 'name'");
         assert!(!result.contains('\t'), "Output should not contain tabs");
-    }
+}
 
-    ***REMOVED***Test format preserves inline array form
-    #[test]
-    fn test_format_preserves_inline_array() {
+     //      // Test format preserves inline array form
+     #[test]
+     fn test_format_preserves_inline_array() {
         // Test inline array formatting (currently parser creates empty array for array[N]: syntax)
         // This is a known limitation - test that we handle empty inline arrays correctly
         let source = "values[3]:";
@@ -450,11 +450,11 @@ mod tests {
         assert!(result.contains("values"), "Missing 'values' key");
         assert!(result.contains("["), "Expected opening bracket");
         assert!(result.contains("]"), "Expected closing bracket");
-    }
+}
 
-    ***REMOVED***Test format preserves expanded array form
-    #[test]
-    fn test_format_preserves_expanded_array() {
+     // Test format preserves expanded array form
+     #[test]
+     fn test_format_preserves_expanded_array() {
         let source = "items:\n  - first\n  - second\n  - third";
         let ast = parse(source);
         let opts = ToonFormattingOptions::default();
@@ -466,11 +466,11 @@ mod tests {
         assert!(result.contains("  - first"), "Expected expanded format for 'first'");
         assert!(result.contains("  - second"), "Expected expanded format for 'second'");
         assert!(result.contains("  - third"), "Expected expanded format for 'third'");
-    }
+}
 
-    ***REMOVED***Test format preserves tabular array form
-    #[test]
-    fn test_format_preserves_tabular_array() {
+     // Test format preserves tabular array form
+     #[test]
+     fn test_format_preserves_tabular_array() {
         // Tabular arrays use comma delimiter: data[2]{x,y}: \n  1,2 \n  3,4
         let source = "data[2]{x,y}:\n  1,2\n  3,4";
         let ast = parse(source);
@@ -486,11 +486,11 @@ mod tests {
         assert!(result.contains("2"), "Expected value '2'");
         assert!(result.contains("3"), "Expected value '3'");
         assert!(result.contains("4"), "Expected value '4'");
-    }
+}
 
-    ***REMOVED***Test format produces AST-equivalent output
-    #[test]
-    fn test_format_produces_equivalent_ast() {
+     // Test format produces AST-equivalent output
+     #[test]
+     fn test_format_produces_equivalent_ast() {
         let source = "user:\n   name: Bob\n   age:30\n   active:true"; // Messy formatting
         let ast = parse(source);
         let opts = ToonFormattingOptions::default();
@@ -504,11 +504,11 @@ mod tests {
 
         // Compare structure (this is a simplified check)
         assert_eq!(ast.kind(), new_ast.kind(), "AST kinds don't match");
-    }
+}
 
-    ***REMOVED***Test format handles empty document
-    #[test]
-    fn test_format_empty_document() {
+     // Test format handles empty document
+     #[test]
+     fn test_format_empty_document() {
         let source = "";
         let ast = parse(source);
         let opts = ToonFormattingOptions::default();
@@ -522,12 +522,12 @@ mod tests {
             formatted.is_empty() || formatted == "\n",
             "Empty document should format to empty or newline"
         );
-    }
+}
 
-    ***REMOVED***Test format skips documents with parse errors (handler level test)
-    // This test verifies that format_document assumes valid AST
-    #[test]
-    fn test_format_assumes_valid_ast() {
+     // Test format skips documents with parse errors (handler level test)
+     // This test verifies that format_document assumes valid AST
+     #[test]
+     fn test_format_assumes_valid_ast() {
         // This test is more about documenting the contract:
         // format_document should only be called with valid ASTs
         // The LSP handler is responsible for checking errors
