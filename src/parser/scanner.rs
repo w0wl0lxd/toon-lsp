@@ -216,68 +216,47 @@ impl<'a> Scanner<'a> {
     }
 
     /// Handle indentation at line start, emitting Indent/Dedent tokens.
-    ///
-    /// Returns Some(Token) if indent/dedent needed, None if same level.
-    ///
-    /// # Algorithm
-    /// 1. Count leading spaces (detect tab errors)
-    /// 2. Compare to current indent level (top of indent_stack)
-    /// 3. If increased: push new level, emit Indent
-    /// 4. If decreased: pop until match found, emit Dedent tokens
-    /// 5. If same: no action needed
-    ///
-    /// # Design Rationale
-    /// Multiple dedents may be needed when returning from nested blocks
-    /// (e.g., "  foo:\n    bar:\n      baz\nqux" needs 3 dedents before qux).
-    /// We emit the first dedent immediately and queue remaining ones in
-    /// pending_dedents.
     fn handle_indentation(&mut self) -> Option<Token> {
         let start = self.current_position();
         let (spaces, has_tab) = self.count_leading_spaces();
 
         if has_tab {
             return Some(self.make_token(
-                TokenKind::Error("Tabs not allowed in indentation".to_string()),
+                TokenKind::Error("Tabs not allowed in indentation".into()),
                 start,
             ));
         }
 
-        let current_indent = *self.indent_stack.last().unwrap_or(&0);
+        let &current_indent = self.indent_stack.last().unwrap_or(&0);
 
-        if spaces > current_indent {
-            // Indent increase
-            self.indent_stack.push(spaces);
-            Some(self.make_token(TokenKind::Indent, start))
-        } else if spaces < current_indent {
-            // Indent decrease - may need multiple dedents
-            while let Some(&top) = self.indent_stack.last() {
-                if top <= spaces {
-                    break;
+        match spaces.cmp(&current_indent) {
+            std::cmp::Ordering::Greater => {
+                self.indent_stack.push(spaces);
+                Some(self.make_token(TokenKind::Indent, start))
+            }
+            std::cmp::Ordering::Less => {
+                // Pop all levels deeper than current indentation
+                while self.indent_stack.last().is_some_and(|&top| top > spaces) {
+                    self.indent_stack.pop();
+                    self.pending_dedents += 1;
                 }
-                self.indent_stack.pop();
-                self.pending_dedents += 1;
-            }
 
-            // Verify we matched a valid indent level
-            if self.indent_stack.last() != Some(&spaces) && spaces != 0 {
-                return Some(self.make_token(
-                    TokenKind::Error(format!(
-                        "Indentation mismatch: {} spaces does not match any previous level",
-                        spaces
-                    )),
-                    start,
-                ));
-            }
+                // Verify we matched a valid indent level
+                if self.indent_stack.last().copied() != Some(spaces) && spaces != 0 {
+                    return Some(self.make_token(
+                        TokenKind::Error(format!(
+                            "Indentation mismatch: {spaces} spaces does not match any previous level"
+                        )),
+                        start,
+                    ));
+                }
 
-            // Emit first dedent now, rest via pending_dedents
-            if self.pending_dedents > 0 {
-                self.pending_dedents -= 1;
-                Some(self.make_token(TokenKind::Dedent, start))
-            } else {
-                None
+                self.pending_dedents.checked_sub(1).map(|remaining| {
+                    self.pending_dedents = remaining;
+                    self.make_token(TokenKind::Dedent, start)
+                })
             }
-        } else {
-            None // Same level
+            std::cmp::Ordering::Equal => None,
         }
     }
 
@@ -324,15 +303,12 @@ impl<'a> Scanner<'a> {
     ///
     /// # Grammar
     /// Identifiers match: `^[A-Za-z_][A-Za-z0-9_]*$`
-    ///
-    /// # Design Rationale
-    /// Keywords are contextual - parsed as identifiers first, then
+    /// Keywords are contextual — parsed as identifiers first, then
     /// converted to keyword tokens for cleaner separation of concerns.
     fn scan_identifier_or_keyword(&mut self) -> Token {
         let start = self.current_position();
         let start_offset = self.offset as usize;
 
-        // Consume identifier characters
         while let Some(ch) = self.peek() {
             if ch.is_ascii_alphanumeric() || ch == '_' {
                 self.advance();
@@ -346,7 +322,7 @@ impl<'a> Scanner<'a> {
             "true" => TokenKind::True,
             "false" => TokenKind::False,
             "null" => TokenKind::Null,
-            _ => TokenKind::Identifier(text.to_string()),
+            _ => TokenKind::Identifier(text.into()),
         };
         self.make_token(kind, start)
     }
@@ -533,11 +509,7 @@ impl<'a> Scanner<'a> {
 
     /// Scan unquoted string value (after colon in key: value).
     /// Consumes until newline or end of input.
-    ///
-    /// # Note
-    /// This method will be used by the parser when processing `key: value` syntax
-    /// where the value is not a quoted string.
-    #[allow(dead_code)] // Used by parser, not directly by scanner
+    #[allow(dead_code)]
     fn scan_unquoted_string(&mut self) -> Token {
         let start = self.current_position();
         let start_offset = self.offset as usize;
@@ -549,15 +521,14 @@ impl<'a> Scanner<'a> {
             self.advance();
         }
 
-        let text = self.source[start_offset..self.offset as usize].trim_end();
-        self.make_token(TokenKind::String(text.to_string()), start)
+        let end = self.offset as usize;
+        let text = self.source[start_offset..end].trim_end();
+        self.make_token(TokenKind::String(text.into()), start)
     }
 
     /// Scan all tokens from the source.
-    ///
-    /// Returns a vector containing all tokens including the final EOF token.
     pub fn scan_all(&mut self) -> Vec<Token> {
-        let mut tokens = Vec::new();
+        let mut tokens = Vec::with_capacity(1024);
         loop {
             let token = self.next_token();
             let is_eof = matches!(token.kind, TokenKind::Eof);
