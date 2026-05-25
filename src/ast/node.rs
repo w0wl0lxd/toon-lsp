@@ -98,6 +98,7 @@ pub enum AstNode {
 
 impl AstNode {
     /// Get the span of this node.
+    #[inline]
     #[must_use]
     pub fn span(&self) -> Span {
         match self {
@@ -112,6 +113,7 @@ impl AstNode {
     }
 
     /// Get the kind of this node as a string.
+    #[inline]
     #[must_use]
     pub const fn kind(&self) -> &'static str {
         match self {
@@ -150,11 +152,12 @@ pub enum NumberValue {
 
 impl NumberValue {
     /// Convert to f64.
-    pub fn as_f64(&self) -> f64 {
+    #[inline]
+    pub fn as_f64(self) -> f64 {
         match self {
-            NumberValue::PosInt(n) => *n as f64,
-            NumberValue::NegInt(n) => *n as f64,
-            NumberValue::Float(n) => *n,
+            Self::PosInt(n) => n as f64,
+            Self::NegInt(n) => n as f64,
+            Self::Float(n) => n,
         }
     }
 }

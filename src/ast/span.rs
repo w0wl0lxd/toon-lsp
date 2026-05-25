@@ -29,20 +29,20 @@ pub struct Position {
 }
 
 impl Position {
-    /// Create a new position.
-    pub fn new(line: u32, column: u32, offset: u32) -> Self {
-        Self { line, column, offset }
-    }
+    /// Position at start of file (0, 0, 0).
+    pub const ZERO: Self = Self { line: 0, column: 0, offset: 0 };
 
-    /// Create position at start of file.
-    pub fn start() -> Self {
-        Self::new(0, 0, 0)
+    /// Create a new position.
+    #[inline]
+    pub const fn new(line: u32, column: u32, offset: u32) -> Self {
+        Self { line, column, offset }
     }
 }
 
 impl Default for Position {
+    #[inline]
     fn default() -> Self {
-        Self::start()
+        Self::ZERO
     }
 }
 
@@ -57,44 +57,60 @@ pub struct Span {
 
 impl Span {
     /// Create a new span from start to end positions.
-    pub fn new(start: Position, end: Position) -> Self {
+    #[inline]
+    pub const fn new(start: Position, end: Position) -> Self {
         Self { start, end }
     }
 
     /// Create a zero-width span at a position.
-    pub fn point(pos: Position) -> Self {
-        Self::new(pos, pos)
+    #[inline]
+    pub const fn point(pos: Position) -> Self {
+        Self { start: pos, end: pos }
     }
 
     /// Check if this span contains a position.
+    #[inline]
     #[must_use]
     pub fn contains(&self, pos: Position) -> bool {
-        pos.offset >= self.start.offset && pos.offset < self.end.offset
+        (self.start.offset..self.end.offset).contains(&pos.offset)
     }
 
     /// Merge two spans into one that covers both.
+    #[inline]
     #[must_use]
     pub fn merge(self, other: Span) -> Span {
-        let start = if self.start.offset <= other.start.offset { self.start } else { other.start };
-        let end = if self.end.offset >= other.end.offset { self.end } else { other.end };
-        Span::new(start, end)
+        Span::new(
+            Position::new(
+                self.start.line.min(other.start.line),
+                self.start.column.min(other.start.column),
+                self.start.offset.min(other.start.offset),
+            ),
+            Position::new(
+                self.end.line.max(other.end.line),
+                self.end.column.max(other.end.column),
+                self.end.offset.max(other.end.offset),
+            ),
+        )
     }
 
     /// Get the length of this span in bytes.
+    #[inline]
     #[must_use]
     pub fn len(&self) -> u32 {
         self.end.offset.saturating_sub(self.start.offset)
     }
 
     /// Check if this span is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.start.offset >= self.end.offset
     }
 }
 
 impl Default for Span {
+    #[inline]
     fn default() -> Self {
-        Self::point(Position::default())
+        Self::point(Position::ZERO)
     }
 }
 
