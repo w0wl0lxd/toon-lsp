@@ -328,12 +328,18 @@ impl Parser {
                     self.advance();
                 }
                 TokenKind::Colon => {
-                    parts.push(String::from(":"));
+                    match parts.last_mut() {
+                        Some(last) => last.push(':'),
+                        None => parts.push(String::from(":")),
+                    }
                     end_span = self.current().span;
                     self.advance();
                 }
                 TokenKind::Comma => {
-                    parts.push(String::from(","));
+                    match parts.last_mut() {
+                        Some(last) => last.push(','),
+                        None => parts.push(String::from(",")),
+                    }
                     end_span = self.current().span;
                     self.advance();
                 }
