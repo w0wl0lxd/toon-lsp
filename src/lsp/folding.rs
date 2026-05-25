@@ -54,9 +54,9 @@ fn collect_folding_ranges_recursive(node: &AstNode) -> Vec<FoldingRange> {
                 ranges.extend(collect_folding_ranges_recursive(child));
             }
         }
-        AstNode::Object { entries, span } => {
+        AstNode::Object { entries, span }
             // Object can be folded if it spans multiple lines and has entries
-            if span.end.line > span.start.line && !entries.is_empty() {
+            if span.end.line > span.start.line && !entries.is_empty() => {
                 ranges.push(FoldingRange {
                     start_line: span.start.line,
                     start_character: None,
@@ -66,10 +66,9 @@ fn collect_folding_ranges_recursive(node: &AstNode) -> Vec<FoldingRange> {
                     collapsed_text: None,
                 });
             }
-        }
-        AstNode::Array { items, span, .. } => {
+        AstNode::Array { items, span, .. }
             // Array can be folded if it spans multiple lines and has items
-            if span.end.line > span.start.line && !items.is_empty() {
+            if span.end.line > span.start.line && !items.is_empty() => {
                 ranges.push(FoldingRange {
                     start_line: span.start.line,
                     start_character: None,
@@ -79,7 +78,6 @@ fn collect_folding_ranges_recursive(node: &AstNode) -> Vec<FoldingRange> {
                     collapsed_text: None,
                 });
             }
-        }
         _ => {}
     }
 
