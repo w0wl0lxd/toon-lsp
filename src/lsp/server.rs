@@ -23,26 +23,35 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 
+use crate::ast::AstNode;
+
+use super::code_actions::collect_code_actions;
+use super::code_lens::collect_code_lenses;
 use super::completion::get_completions_at_position;
 use super::diagnostics::errors_to_diagnostics;
+use super::document_highlight::collect_document_highlights;
+use super::document_links::collect_document_links;
+use super::folding::collect_folding_ranges;
 use super::formatting::{ToonFormattingOptions, format_document};
 use super::goto::get_definition_at_position;
 use super::hover::get_hover_at_position;
+use super::inlay_hints::collect_inlay_hints;
+use super::linked_editing::collect_linked_editing_ranges;
 use super::references::find_references_at_position;
 use super::rename::{prepare_rename, rename_key};
+use super::selection_ranges::get_selection_ranges;
 use super::state::DocumentState;
 use super::symbols::ast_to_document_symbols;
 use super::utf16::{span_to_range, utf8_to_utf16_col};
+use super::workspace_symbols::collect_workspace_symbols;
+
+/// Type alias for a shared reference to a document state.
+type DocRef = Arc<RwLock<DocumentState>>;
 
 /// The TOON Language Server.
-///
-/// Manages document state and provides LSP features for TOON files.
 pub struct ToonLanguageServer {
-    /// The LSP client for sending notifications
     client: Client,
-    /// Open documents with their parsed state
-    /// Uses nested locking: outer lock for document lifecycle, inner for content
-    documents: Arc<RwLock<HashMap<Url, Arc<RwLock<DocumentState>>>>>,
+    documents: Arc<RwLock<HashMap<Url, DocRef>>>,
 }
 
 impl ToonLanguageServer {
@@ -52,9 +61,19 @@ impl ToonLanguageServer {
     }
 
     /// Get a document's state by URI.
-    async fn get_document(&self, uri: &Url) -> Option<Arc<RwLock<DocumentState>>> {
-        let docs = self.documents.read().await;
-        docs.get(uri).cloned()
+    async fn get_document(&self, uri: &Url) -> Option<DocRef> {
+        self.documents.read().await.get(uri).cloned()
+    }
+
+    /// Try to access document AST and text for a given URI.
+    async fn with_ast<F, R>(&self, uri: &Url, f: F) -> Option<R>
+    where
+        F: FnOnce(&AstNode, &str) -> Option<R>,
+    {
+        let doc = self.get_document(uri).await?;
+        let doc = doc.read().await;
+        let ast = doc.ast()?;
+        f(ast, doc.text())
     }
 
     /// Publish diagnostics for a document.
@@ -108,12 +127,17 @@ impl LanguageServer for ToonLanguageServer {
                 })),
                 document_formatting_provider: Some(OneOf::Left(true)),
                 code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
-                code_lens_provider: Some(CodeLensOptions::default()),
+                code_lens_provider: Some(CodeLensOptions { resolve_provider: Some(false) }),
                 document_highlight_provider: Some(OneOf::Left(true)),
-                document_link_provider: Some(DocumentLinkOptions::default()),
+                document_link_provider: Some(DocumentLinkOptions {
+                    resolve_provider: Some(false),
+                    work_done_progress_options: WorkDoneProgressOptions::default(),
+                }),
                 folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
                 inlay_hint_provider: Some(OneOf::Left(true)),
-                linked_editing_range_provider: Some(LinkedEditingRangeServerCapabilities::default()),
+                linked_editing_range_provider: Some(LinkedEditingRangeServerCapabilities::Simple(
+                    true,
+                )),
                 selection_range_provider: Some(SelectionRangeProviderCapability::Simple(true)),
                 workspace_symbol_provider: Some(OneOf::Left(true)),
                 ..Default::default()
@@ -213,68 +237,49 @@ impl LanguageServer for ToonLanguageServer {
         &self,
         params: DocumentSymbolParams,
     ) -> Result<Option<DocumentSymbolResponse>> {
-        let uri = params.text_document.uri;
-
-        if let Some(doc_arc) = self.get_document(&uri).await {
-            let doc = doc_arc.read().await;
-            if let Some(ast) = doc.ast() {
-                let symbols = ast_to_document_symbols(ast, doc.text());
-                return Ok(Some(DocumentSymbolResponse::Nested(symbols)));
-            }
-        }
-
-        Ok(None)
+        let result = self
+            .with_ast(&params.text_document.uri, |ast, text| {
+                Some(DocumentSymbolResponse::Nested(ast_to_document_symbols(ast, text)))
+            })
+            .await;
+        Ok(result)
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        let uri = params.text_document_position_params.text_document.uri;
-        let position = params.text_document_position_params.position;
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
 
-        if let Some(doc_arc) = self.get_document(&uri).await {
-            let doc = doc_arc.read().await;
-            if let Some(ast) = doc.ast() {
-                // Convert UTF-16 column to UTF-8
-                let utf8_col = doc.utf8_col_at(position.line, position.character);
-
-                if let Some(hover_info) =
-                    get_hover_at_position(ast, doc.text(), position.line, utf8_col)
-                {
-                    return Ok(Some(Hover {
-                        contents: HoverContents::Markup(MarkupContent {
-                            kind: MarkupKind::Markdown,
-                            value: hover_info.contents,
-                        }),
-                        range: None,
-                    }));
-                }
-            }
-        }
-
-        Ok(None)
+        Ok(self.with_ast(uri, |ast, text| {
+            let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
+                text.lines().nth(pos.line as usize).unwrap_or(""),
+                pos.character,
+            );
+            get_hover_at_position(ast, text, pos.line, utf8_col).map(|hover_info| Hover {
+                contents: HoverContents::Markup(MarkupContent {
+                    kind: MarkupKind::Markdown,
+                    value: hover_info.contents,
+                }),
+                range: None,
+            })
+        }).await)
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
-        let uri = params.text_document_position.text_document.uri;
-        let position = params.text_document_position.position;
+        let uri = &params.text_document_position.text_document.uri;
+        let pos = params.text_document_position.position;
 
-        if let Some(doc_arc) = self.get_document(&uri).await {
-            let doc = doc_arc.read().await;
-            if let Some(ast) = doc.ast() {
-                // Convert UTF-16 column to UTF-8
-                let utf8_col = doc.utf8_col_at(position.line, position.character);
-
-                let completions =
-                    get_completions_at_position(ast, doc.text(), position.line, utf8_col);
-
-                if !completions.is_empty() {
-                    let items: Vec<CompletionItem> =
-                        completions.into_iter().map(Into::into).collect();
-                    return Ok(Some(CompletionResponse::Array(items)));
-                }
+        Ok(self.with_ast(uri, |ast, text| {
+            let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
+                text.lines().nth(pos.line as usize).unwrap_or(""),
+                pos.character,
+            );
+            let completions = get_completions_at_position(ast, text, pos.line, utf8_col);
+            if completions.is_empty() {
+                None
+            } else {
+                Some(CompletionResponse::Array(completions.into_iter().map(Into::into).collect()))
             }
-        }
-
-        Ok(None)
+        }).await)
     }
 
     async fn goto_definition(
@@ -528,6 +533,149 @@ impl LanguageServer for ToonLanguageServer {
         }
 
         Ok(None)
+    }
+
+    async fn symbol(
+        &self,
+        params: WorkspaceSymbolParams,
+    ) -> Result<Option<Vec<SymbolInformation>>> {
+        let query = params.query.to_lowercase();
+        let mut all_symbols = Vec::new();
+
+        let docs = self.documents.read().await;
+        for (uri, doc_arc) in docs.iter() {
+            let doc = doc_arc.read().await;
+            if let Some(ast) = doc.ast() {
+                let matching = collect_workspace_symbols(ast, uri)
+                    .into_iter()
+                    .filter(|ws| query.is_empty() || ws.name.to_lowercase().contains(&query))
+                    .map(|ws| {
+                        let location = match ws.location {
+                            OneOf::Left(loc) => loc,
+                            OneOf::Right(_) => Location { uri: uri.clone(), range: Range::default() },
+                        };
+                        SymbolInformation {
+                            name: ws.name,
+                            kind: ws.kind,
+                            tags: ws.tags,
+                            location,
+                            container_name: ws.container_name,
+                            #[allow(deprecated)]
+                            deprecated: None,
+                        }
+                    });
+                all_symbols.extend(matching);
+            }
+        }
+        drop(docs);
+
+        if all_symbols.is_empty() { Ok(None) } else { Ok(Some(all_symbols)) }
+    }
+
+    async fn folding_range(
+        &self,
+        params: FoldingRangeParams,
+    ) -> Result<Option<Vec<FoldingRange>>> {
+        Ok(self.with_ast(&params.text_document.uri, |ast, _text| {
+            let ranges = collect_folding_ranges(ast);
+            if ranges.is_empty() { None } else { Some(ranges) }
+        }).await)
+    }
+
+    async fn code_action(
+        &self,
+        params: CodeActionParams,
+    ) -> Result<Option<CodeActionResponse>> {
+        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
+            let actions = collect_code_actions(ast, text, &params.text_document.uri, params.range, &params.context.diagnostics);
+            if actions.is_empty() {
+                None
+            } else {
+                Some(actions.into_iter().map(CodeActionOrCommand::CodeAction).collect())
+            }
+        }).await)
+    }
+
+    async fn selection_range(
+        &self,
+        params: SelectionRangeParams,
+    ) -> Result<Option<Vec<SelectionRange>>> {
+        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
+            let positions: Vec<(u32, u32)> = params
+                .positions
+                .iter()
+                .map(|p| (p.line, crate::lsp::utf16::utf16_to_utf8_col(
+                    text.lines().nth(p.line as usize).unwrap_or(""),
+                    p.character,
+                )))
+                .collect();
+            let ranges = get_selection_ranges(ast, text, &positions);
+            let result: Vec<SelectionRange> = ranges.into_iter().flatten().collect();
+            if result.is_empty() { None } else { Some(result) }
+        }).await)
+    }
+
+    async fn document_link(
+        &self,
+        params: DocumentLinkParams,
+    ) -> Result<Option<Vec<DocumentLink>>> {
+        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
+            let links = collect_document_links(ast, text);
+            if links.is_empty() { None } else { Some(links) }
+        }).await)
+    }
+
+    async fn document_highlight(
+        &self,
+        params: DocumentHighlightParams,
+    ) -> Result<Option<Vec<DocumentHighlight>>> {
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+
+        Ok(self.with_ast(uri, |ast, text| {
+            let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
+                text.lines().nth(pos.line as usize).unwrap_or(""),
+                pos.character,
+            );
+            let highlights = collect_document_highlights(ast, text, pos.line, utf8_col);
+            if highlights.is_empty() { None } else { Some(highlights) }
+        }).await)
+    }
+
+    async fn inlay_hint(
+        &self,
+        params: InlayHintParams,
+    ) -> Result<Option<Vec<InlayHint>>> {
+        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
+            let hints = collect_inlay_hints(ast, text, Some(params.range));
+            if hints.is_empty() { None } else { Some(hints) }
+        }).await)
+    }
+
+    async fn code_lens(
+        &self,
+        params: CodeLensParams,
+    ) -> Result<Option<Vec<CodeLens>>> {
+        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
+            let lenses = collect_code_lenses(ast, text, &params.text_document.uri);
+            if lenses.is_empty() { None } else { Some(lenses) }
+        }).await)
+    }
+
+    async fn linked_editing_range(
+        &self,
+        params: LinkedEditingRangeParams,
+    ) -> Result<Option<LinkedEditingRanges>> {
+        let uri = &params.text_document_position_params.text_document.uri;
+        let pos = params.text_document_position_params.position;
+
+        Ok(self.with_ast(uri, |ast, text| {
+            let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
+                text.lines().nth(pos.line as usize).unwrap_or(""),
+                pos.character,
+            );
+            collect_linked_editing_ranges(ast, text, pos.line, utf8_col)
+        }).await)
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
