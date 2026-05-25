@@ -14,12 +14,24 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Parse error types with source position information.
+//!
+//! # Example
+//! ```rust
+//! use toon_lsp::{parse, ParseErrorKind};
+//!
+//! let result = parse("name Alice"); // Missing colon
+//! assert!(result.is_err());
+//! let error = result.unwrap_err();
+//! assert_eq!(error.kind, ParseErrorKind::ExpectedColon);
+//! ```
 
 use crate::ast::Span;
 use thiserror::Error;
 
 /// Error that occurred during parsing.
-#[derive(Debug, Error, Clone)]
+///
+/// Contains the error kind, source span, and optional context.
+#[derive(Debug, Clone)]
 pub struct ParseError {
     /// The kind of error
     pub kind: ParseErrorKind,
@@ -31,27 +43,41 @@ pub struct ParseError {
 
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} at line {}, column {}",
-            self.kind,
-            self.span.start.line + 1,
-            self.span.start.column + 1
-        )?;
-        if let Some(ctx) = &self.context {
-            write!(f, ": {}", ctx)?;
+        write!(f, "{}", self.kind)?;
+        if let Some(ref ctx) = self.context {
+            write!(f, " ({})", ctx)?;
         }
         Ok(())
     }
 }
 
+impl std::error::Error for ParseError {}
+
 impl ParseError {
     /// Create a new parse error.
+    ///
+    /// # Example
+    /// ```rust
+    /// use toon_lsp::{ParseError, ParseErrorKind, Span};
+    ///
+    /// let error = ParseError::new(ParseErrorKind::UnexpectedEof, Span::default());
+    /// assert_eq!(error.kind, ParseErrorKind::UnexpectedEof);
+    /// assert_eq!(error.context, None);
+    /// ```
     pub fn new(kind: ParseErrorKind, span: Span) -> Self {
         Self { kind, span, context: None }
     }
 
     /// Add context to this error.
+    ///
+    /// # Example
+    /// ```rust
+    /// use toon_lsp::{ParseError, ParseErrorKind, Span};
+    ///
+    /// let error = ParseError::new(ParseErrorKind::ExpectedKey, Span::default())
+    ///     .with_context("at object start");
+    /// assert_eq!(error.context, Some("at object start".to_string()));
+    /// ```
     pub fn with_context(mut self, context: impl Into<String>) -> Self {
         self.context = Some(context.into());
         self
@@ -59,6 +85,9 @@ impl ParseError {
 }
 
 /// Kinds of parse errors.
+///
+/// Each variant represents a specific category of parsing failure,
+/// useful for targeted error recovery in IDEs.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum ParseErrorKind {
     #[error("unexpected character")]
