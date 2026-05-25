@@ -98,7 +98,6 @@ impl Parser {
     /// Get the current token without consuming it.
     fn current(&self) -> &Token {
         self.tokens.get(self.position).unwrap_or_else(|| {
-            // Return last token (should be Eof)
             self.tokens.last().expect("tokens should never be empty")
         })
     }
@@ -158,14 +157,14 @@ impl Parser {
     // Error Handling
     // =========================================================================
 
-    /// Record a parse error.
+    /// Record a parse error and return it.
     fn error(&mut self, kind: ParseErrorKind, span: Span) -> ParseError {
         let error = ParseError::new(kind, span);
         self.errors.push(error.clone());
         error
     }
 
-    /// Record a parse error with context.
+    /// Record a parse error with context and return it.
     fn error_with_context(
         &mut self,
         kind: ParseErrorKind,
@@ -225,12 +224,14 @@ impl Parser {
 
     /// Parse a number token into NumberValue.
     fn parse_number(&mut self) -> Result<AstNode, ParseError> {
-        let token = self.advance().clone();
-        if let TokenKind::Number(text) = &token.kind {
-            let value = Self::parse_number_value(text, token.span)?;
-            Ok(AstNode::Number { value, span: token.span })
-        } else {
-            Err(ParseError::new(ParseErrorKind::ExpectedValue, token.span))
+        let token = self.advance();
+        let span = token.span;
+        match &token.kind {
+            TokenKind::Number(text) => {
+                let value = Self::parse_number_value(text, span)?;
+                Ok(AstNode::Number { value, span })
+            }
+            _ => Err(ParseError::new(ParseErrorKind::ExpectedValue, span)),
         }
     }
 
@@ -254,32 +255,32 @@ impl Parser {
 
     /// Parse a string token (already processed by scanner).
     fn parse_string(&mut self) -> Result<AstNode, ParseError> {
-        let token = self.advance().clone();
-        if let TokenKind::String(value) = token.kind {
-            Ok(AstNode::String { value, span: token.span })
-        } else {
-            Err(ParseError::new(ParseErrorKind::ExpectedValue, token.span))
+        let token = self.advance();
+        let span = token.span;
+        match &token.kind {
+            TokenKind::String(value) => Ok(AstNode::String { value: value.clone(), span }),
+            _ => Err(ParseError::new(ParseErrorKind::ExpectedValue, span)),
         }
     }
 
     /// Parse primitive keywords: true, false, null.
     fn parse_primitive(&mut self) -> Result<AstNode, ParseError> {
-        let token = self.advance().clone();
-        match token.kind {
-            TokenKind::True => Ok(AstNode::Bool { value: true, span: token.span }),
-            TokenKind::False => Ok(AstNode::Bool { value: false, span: token.span }),
-            TokenKind::Null => Ok(AstNode::Null { span: token.span }),
-            _ => Err(ParseError::new(ParseErrorKind::ExpectedValue, token.span)),
+        let token = self.advance();
+        let span = token.span;
+        match &token.kind {
+            TokenKind::True => Ok(AstNode::Bool { value: true, span }),
+            TokenKind::False => Ok(AstNode::Bool { value: false, span }),
+            TokenKind::Null => Ok(AstNode::Null { span }),
+            _ => Err(ParseError::new(ParseErrorKind::ExpectedValue, span)),
         }
     }
 
     /// Parse any value (dispatcher for all value types).
     fn parse_value(&mut self) -> Result<AstNode, ParseError> {
-        // Handle scanner errors
-        if let TokenKind::Error(msg) = &self.current().kind {
+        let kind = self.current().kind.clone();
+        if let TokenKind::Error(msg) = &kind {
             let span = self.current().span;
-            let msg_clone = msg.clone();
-            let err = self.error_with_context(ParseErrorKind::UnexpectedToken, span, &msg_clone);
+            let err = self.error_with_context(ParseErrorKind::UnexpectedToken, span, msg);
             self.advance();
             return Err(err);
         }
@@ -288,100 +289,60 @@ impl Parser {
             TokenKind::String(_) => self.parse_string(),
             TokenKind::Number(_) => self.parse_number(),
             TokenKind::True | TokenKind::False | TokenKind::Null => self.parse_primitive(),
-            TokenKind::Identifier(_) => {
-                // Could be start of nested object or inline array
-                if let Some(next) = self.peek() {
-                    match &next.kind {
-                        TokenKind::LeftBracket => self.parse_array_header(),
-                        TokenKind::Colon => self.parse_nested_value(),
-                        _ => self.parse_unquoted_string(),
-                    }
-                } else {
-                    self.parse_unquoted_string()
-                }
-            }
+            TokenKind::Identifier(_) => match self.peek() {
+                Some(Token { kind: TokenKind::LeftBracket, .. }) => self.parse_array_header(),
+                Some(Token { kind: TokenKind::Colon, .. }) => self.parse_nested_value(),
+                _ => self.parse_unquoted_string(),
+            },
             TokenKind::Indent => self.parse_nested_object(),
             TokenKind::Dash => self.parse_expanded_array(),
             TokenKind::Newline => {
-                // Value on next line - check for indent
-                self.advance(); // consume newline
-                if matches!(self.current().kind, TokenKind::Indent) {
-                    self.parse_nested_object()
-                } else if matches!(self.current().kind, TokenKind::Dash) {
-                    self.parse_expanded_array()
-                } else {
-                    // Implicit null
-                    let span = self.current().span;
-                    Ok(AstNode::Null { span: Span::point(span.start) })
+                self.advance();
+                match &self.current().kind {
+                    TokenKind::Indent => self.parse_nested_object(),
+                    TokenKind::Dash => self.parse_expanded_array(),
+                    _ => Ok(AstNode::Null {
+                        span: Span::point(self.current().span.start),
+                    }),
                 }
             }
-            TokenKind::Eof => {
-                // Implicit null at end
-                let span = self.current().span;
-                Ok(AstNode::Null { span: Span::point(span.start) })
-            }
-            _ => {
-                let span = self.current().span;
-                Err(self.error(ParseErrorKind::ExpectedValue, span))
-            }
+            TokenKind::Eof => Ok(AstNode::Null {
+                span: Span::point(self.current().span.start),
+            }),
+            _ => Err(self.error(ParseErrorKind::ExpectedValue, self.current().span)),
         }
     }
 
     /// Parse an unquoted string value (identifier not followed by colon).
     fn parse_unquoted_string(&mut self) -> Result<AstNode, ParseError> {
         let start_span = self.current().span;
-        let mut text = String::new();
+        let mut parts: Vec<String> = Vec::new();
         let mut end_span = start_span;
 
-        // Collect tokens until newline or end
         while !self.is_at_end() {
-            match &self.current().kind {
+            match self.current().kind.clone() {
                 TokenKind::Newline | TokenKind::Dedent | TokenKind::Eof => break,
-                TokenKind::Identifier(s) => {
-                    if !text.is_empty() {
-                        text.push(' ');
-                    }
-                    text.push_str(s);
-                    end_span = self.current().span;
-                    self.advance();
-                }
-                TokenKind::Number(s) => {
-                    if !text.is_empty() {
-                        text.push(' ');
-                    }
-                    text.push_str(s);
-                    end_span = self.current().span;
-                    self.advance();
-                }
-                TokenKind::String(s) => {
-                    if !text.is_empty() {
-                        text.push(' ');
-                    }
-                    text.push_str(s);
+                TokenKind::Identifier(s) | TokenKind::Number(s) | TokenKind::String(s) => {
+                    parts.push(s);
                     end_span = self.current().span;
                     self.advance();
                 }
                 TokenKind::Colon => {
-                    text.push(':');
+                    parts.push(String::from(":"));
                     end_span = self.current().span;
                     self.advance();
                 }
                 TokenKind::Comma => {
-                    text.push(',');
+                    parts.push(String::from(","));
                     end_span = self.current().span;
                     self.advance();
                 }
-                _ => {
-                    // Stop on other tokens
-                    break;
-                }
+                _ => break,
             }
         }
 
-        Ok(AstNode::String {
-            value: text.trim().to_string(),
-            span: Self::merge_spans(start_span, end_span),
-        })
+        let value = parts.join(" ").trim().to_string();
+        Ok(AstNode::String { value, span: Self::merge_spans(start_span, end_span) })
     }
 
     /// Parse a value that starts with identifier:
@@ -397,48 +358,41 @@ impl Parser {
 
     /// Parse a single object entry (key: value pair).
     fn parse_object_entry(&mut self) -> Result<ObjectEntry, ParseError> {
-        // Expect identifier (key)
-        let key_token = self.current().clone();
+        let key_token = self.current();
         let (key, key_span) = match &key_token.kind {
             TokenKind::Identifier(name) => {
+                let result = (name.clone(), key_token.span);
                 self.advance();
-                (name.clone(), key_token.span)
+                result
             }
             TokenKind::String(name) => {
+                let result = (name.clone(), key_token.span);
                 self.advance();
-                (name.clone(), key_token.span)
+                result
             }
-            _ => {
-                let span = key_token.span;
-                return Err(self.error(ParseErrorKind::ExpectedKey, span));
-            }
+            _ => return Err(self.error(ParseErrorKind::ExpectedKey, key_token.span)),
         };
 
         // Check for array header syntax: key[N]
         if matches!(self.current().kind, TokenKind::LeftBracket) {
-            // Rewind isn't possible, so handle inline
             let value = self.parse_array_with_key(&key, key_span)?;
             return Ok(ObjectEntry { key, key_span, value });
         }
 
         // Expect colon
         if !self.match_token(&TokenKind::Colon) {
-            let span = self.current().span;
-            return Err(self.error(ParseErrorKind::ExpectedColon, span));
+            return Err(self.error(ParseErrorKind::ExpectedColon, self.current().span));
         }
 
-        // Parse value
         let value = self.parse_value()?;
-
         Ok(ObjectEntry { key, key_span, value })
     }
 
     /// Parse object entries at the current indentation level.
     fn parse_object(&mut self, start_span: Span) -> Result<AstNode, ParseError> {
-        let mut entries = Vec::new();
+        let mut entries = Vec::with_capacity(16);
 
         while !self.is_at_end() {
-            // SECURITY: Enforce maximum object size to prevent memory exhaustion
             if entries.len() >= MAX_OBJECT_ENTRIES {
                 return Err(ParseError::new(
                     ParseErrorKind::TooManyObjectEntries,
@@ -448,12 +402,10 @@ impl Parser {
 
             self.skip_newlines();
 
-            // Stop at dedent or end
             if matches!(self.current().kind, TokenKind::Dedent | TokenKind::Eof) {
                 break;
             }
 
-            // Stop if not at a key
             if !matches!(self.current().kind, TokenKind::Identifier(_) | TokenKind::String(_)) {
                 break;
             }
@@ -465,18 +417,15 @@ impl Parser {
                         self.errors.push(e);
                     }
                     self.synchronize();
-                    continue;
                 }
             }
 
-            // Consume trailing newline
             if matches!(self.current().kind, TokenKind::Newline) {
                 self.advance();
             }
         }
 
-        let end_span = if let Some(last) = entries.last() { last.value.span() } else { start_span };
-
+        let end_span = entries.last().map_or(start_span, |e| e.value.span());
         Ok(AstNode::Object { entries, span: Self::merge_spans(start_span, end_span) })
     }
 
@@ -689,20 +638,17 @@ impl Parser {
         _expected_count: usize,
         delimiter: char,
     ) -> Result<AstNode, ParseError> {
-        let mut items = Vec::new();
-
-        // Handle empty array
         if matches!(self.current().kind, TokenKind::Newline | TokenKind::Eof | TokenKind::Dedent) {
             return Ok(AstNode::Array {
-                items,
+                items: Vec::new(),
                 form: crate::ast::ArrayForm::Inline,
                 span: start_span,
             });
         }
 
-        // Parse items
+        let mut items = Vec::new();
+
         loop {
-            // SECURITY: Enforce maximum array size to prevent memory exhaustion
             if items.len() >= MAX_ARRAY_ITEMS {
                 return Err(ParseError::new(
                     ParseErrorKind::TooManyArrayItems,
@@ -710,9 +656,6 @@ impl Parser {
                 ));
             }
 
-            // Skip leading whitespace (handled by scanner)
-
-            // Parse value
             let item = match &self.current().kind {
                 TokenKind::String(s) => {
                     let span = self.current().span;
@@ -742,7 +685,6 @@ impl Parser {
                     AstNode::Null { span }
                 }
                 TokenKind::Identifier(s) => {
-                    // Unquoted string value
                     let span = self.current().span;
                     let value = s.clone();
                     self.advance();
@@ -753,22 +695,20 @@ impl Parser {
 
             items.push(item);
 
-            // Check for delimiter
-            if delimiter == ',' && matches!(self.current().kind, TokenKind::Comma) {
-                self.advance();
-            } else if matches!(
-                self.current().kind,
-                TokenKind::Newline | TokenKind::Eof | TokenKind::Dedent
-            ) {
-                break;
-            } else {
-                // For other delimiters or end of items
+            let should_break = match self.current().kind {
+                TokenKind::Comma if delimiter == ',' => {
+                    self.advance();
+                    false
+                }
+                TokenKind::Newline | TokenKind::Eof | TokenKind::Dedent => true,
+                _ => true,
+            };
+            if should_break {
                 break;
             }
         }
 
         let end_span = items.last().map_or(start_span, AstNode::span);
-
         Ok(AstNode::Array {
             items,
             form: crate::ast::ArrayForm::Inline,
@@ -840,15 +780,13 @@ impl Parser {
         delimiter: char,
     ) -> Result<AstNode, ParseError> {
         let start_span = self.current().span;
-
-        // SECURITY: Check maximum nesting depth before recursion
         self.check_depth(start_span)?;
         self.depth += 1;
 
-        let mut entries = Vec::new();
+        let mut entries = Vec::with_capacity(field_names.len());
+        let num_fields = field_names.len();
 
         for (i, field_name) in field_names.iter().enumerate() {
-            // Parse value
             let value = match &self.current().kind {
                 TokenKind::String(s) => {
                     let span = self.current().span;
@@ -883,30 +821,21 @@ impl Parser {
                     self.advance();
                     AstNode::Null { span }
                 }
-                _ => {
-                    // Missing value
-                    AstNode::Null { span: self.current().span }
-                }
+                _ => AstNode::Null { span: self.current().span },
             };
 
             entries.push(ObjectEntry {
                 key: field_name.clone(),
-                key_span: start_span, // Use row start as key span
+                key_span: start_span,
                 value,
             });
 
-            // Check for delimiter (except after last field)
-            // For tab/pipe delimiters, values should already be split by scanner
-            if i < field_names.len() - 1
-                && delimiter == ','
-                && matches!(self.current().kind, TokenKind::Comma)
-            {
+            if i < num_fields - 1 && delimiter == ',' && matches!(self.current().kind, TokenKind::Comma) {
                 self.advance();
             }
         }
 
         let end_span = entries.last().map_or(start_span, |e| e.value.span());
-
         self.depth -= 1;
         Ok(AstNode::Object { entries, span: Self::merge_spans(start_span, end_span) })
     }
