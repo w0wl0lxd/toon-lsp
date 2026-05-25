@@ -14,8 +14,6 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Integration tests for the symbols command.
-//!
-//! T060-T070: Tests for User Story 5 - Extract Symbols from TOON Files
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -34,7 +32,7 @@ fn toon_lsp() -> Command {
 }
 
 // =============================================================================
-***REMOVED***Integration test for basic symbol extraction
+// Integration test for basic symbol extraction
 // =============================================================================
 
 #[test]
@@ -71,7 +69,7 @@ fn test_symbols_basic_with_default_tree_format() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for tree format output (default)
+// Integration test for tree format output (default)
 // =============================================================================
 
 #[test]
@@ -109,7 +107,7 @@ fn test_symbols_tree_format_explicit() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for JSON format output
+// Integration test for JSON format output
 // =============================================================================
 
 #[test]
@@ -171,7 +169,7 @@ fn test_symbols_json_format_is_parseable() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for flat format output
+// Integration test for flat format output
 // =============================================================================
 
 #[test]
@@ -206,7 +204,7 @@ fn test_symbols_flat_format_dot_notation() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for position flag
+// Integration test for position flag
 // =============================================================================
 
 #[test]
@@ -238,7 +236,7 @@ fn test_symbols_positions_multiline() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for types flag
+// Integration test for types flag
 // =============================================================================
 
 #[test]
@@ -276,7 +274,7 @@ fn test_symbols_types_all_value_types() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for combined flags
+// Integration test for combined flags
 // =============================================================================
 
 #[test]
@@ -327,7 +325,7 @@ fn test_symbols_combined_json_format_with_types() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for stdin input
+// Integration test for stdin input
 // =============================================================================
 
 #[test]
@@ -386,7 +384,7 @@ fn test_symbols_stdin_without_dash() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for invalid TOON handling
+// Integration test for invalid TOON handling
 // =============================================================================
 
 #[test]
@@ -445,7 +443,7 @@ fn test_symbols_malformed_json_in_toon() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for empty file handling
+// Integration test for empty file handling
 // =============================================================================
 
 #[test]
@@ -510,7 +508,7 @@ fn test_symbols_empty_file_with_types() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for array symbols
+// Integration test for array symbols
 // =============================================================================
 
 #[test]

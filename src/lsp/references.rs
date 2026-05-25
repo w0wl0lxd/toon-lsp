@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_find_references_all_occurrences() {
-        ***REMOVED***Test find_references returns all occurrences
+        // Test find_references returns all occurrences
         let source = "name: Alice\nuser:\n  name: Bob";
         let (ast, errors) = parse_with_errors(source);
         assert!(errors.is_empty(), "Parse should succeed");
@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn test_find_references_nested() {
-        ***REMOVED***Test find_references with nested objects
+        // Test find_references with nested objects
         let source = "data:\n  id: 1\n  nested:\n    id: 2";
         let (ast, errors) = parse_with_errors(source);
         assert!(errors.is_empty(), "Parse should succeed");
@@ -182,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_find_references_exact_match() {
-        ***REMOVED***Test find_references exact match only (no partial)
+        // Test find_references exact match only (no partial)
         let source = "name: x\nfullname: y";
         let (ast, errors) = parse_with_errors(source);
         assert!(errors.is_empty(), "Parse should succeed");
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_find_references_not_on_key() {
-        ***REMOVED***Test find_references returns empty when cursor not on key
+        // Test find_references returns empty when cursor not on key
         let source = "name: Alice";
         let (ast, errors) = parse_with_errors(source);
         assert!(errors.is_empty(), "Parse should succeed");
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_find_references_include_declaration() {
-        ***REMOVED***Test find_references handles include_declaration flag
+        // Test find_references handles include_declaration flag
         let source = "id: 1\ndata:\n  id: 2";
         let (ast, errors) = parse_with_errors(source);
         assert!(errors.is_empty(), "Parse should succeed");
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn test_find_references_tabular_arrays() {
-        ***REMOVED***Test find_references with tabular arrays
+        // Test find_references with tabular arrays
         // Tabular arrays use inline syntax where headers are array values, not object keys
         // Test with actual object structure inside array instead
         let source = "users:\n  item:\n    name: Alice\n  item:\n    name: Bob";
