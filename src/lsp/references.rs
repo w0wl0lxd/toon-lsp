@@ -65,7 +65,9 @@ pub struct KeyReference {
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```
+/// # use toon_lsp::lsp::references::find_references_at_position;
+/// # use toon_lsp::parser::parse_with_errors;
 /// let source = "name: Alice\nuser:\n  name: Bob";
 /// let (ast, _) = parse_with_errors(source);
 /// let refs = find_references_at_position(&ast.unwrap(), source, 0, 0, true);

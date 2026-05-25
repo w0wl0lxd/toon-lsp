@@ -118,15 +118,14 @@ impl FormattingContext {
 ///
 /// # Examples
 ///
-/// ```ignore
-/// use toon_lsp::lsp::formatting::{format_document, ToonFormattingOptions};
-/// use toon_lsp::parser::parse_with_errors;
-///
-/// let source = "user:\n    name: Alice";
+/// ```
+/// # use toon_lsp::lsp::formatting::{format_document, ToonFormattingOptions};
+/// # use toon_lsp::parser::parse_with_errors;
+/// let source = "user:\n  name: Alice\n  age: 30";
 /// let (ast, _) = parse_with_errors(source);
-/// let opts = ToonFormattingOptions { indent_size: 2, use_tabs: false };
+/// let opts = ToonFormattingOptions { indent_size: 2 };
 /// let formatted = format_document(&ast.unwrap(), opts).unwrap();
-/// assert!(formatted.contains("  name: Alice")); // 2-space indent
+/// assert!(formatted.contains("  name: Alice")); // 2-space indent preserved
 /// ```
 ///
 /// # Implementation Notes
