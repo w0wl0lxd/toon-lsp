@@ -76,21 +76,25 @@ impl Span {
     }
 
     /// Merge two spans into one that covers both.
+    ///
+    /// Uses offset-based comparison to select whole positions rather than
+    /// independently computing min/max of each field, which would produce
+    /// inconsistent positions (e.g., line from one position with column
+    /// from another).
     #[inline]
     #[must_use]
     pub fn merge(self, other: Span) -> Span {
-        Span::new(
-            Position::new(
-                self.start.line.min(other.start.line),
-                self.start.column.min(other.start.column),
-                self.start.offset.min(other.start.offset),
-            ),
-            Position::new(
-                self.end.line.max(other.end.line),
-                self.end.column.max(other.end.column),
-                self.end.offset.max(other.end.offset),
-            ),
-        )
+        let start = if self.start.offset <= other.start.offset {
+            self.start
+        } else {
+            other.start
+        };
+        let end = if self.end.offset >= other.end.offset {
+            self.end
+        } else {
+            other.end
+        };
+        Span::new(start, end)
     }
 
     /// Get the length of this span in bytes.
