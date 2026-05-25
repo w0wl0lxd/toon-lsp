@@ -98,6 +98,16 @@ pub enum AstNode {
 
 impl AstNode {
     /// Get the span of this node.
+    ///
+    /// # Example
+    /// ```rust
+    /// use toon_lsp::{parse, AstNode};
+    ///
+    /// let ast = parse("name: Alice").unwrap();
+    /// if let AstNode::Document { children, .. } = ast {
+    ///     assert!(!children.is_empty());
+    /// }
+    /// ```
     #[inline]
     #[must_use]
     pub fn span(&self) -> Span {
@@ -113,6 +123,18 @@ impl AstNode {
     }
 
     /// Get the kind of this node as a string.
+    ///
+    /// # Example
+    /// ```rust
+    /// use toon_lsp::{parse, AstNode};
+    ///
+    /// let ast = parse("name: Alice").unwrap();
+    /// if let AstNode::Document { children, .. } = &ast {
+    ///     if let Some(first) = children.first() {
+    ///         assert_eq!(first.kind(), "object");
+    ///     }
+    /// }
+    /// ```
     #[inline]
     #[must_use]
     pub const fn kind(&self) -> &'static str {
@@ -152,6 +174,15 @@ pub enum NumberValue {
 
 impl NumberValue {
     /// Convert to f64.
+    ///
+    /// # Example
+    /// ```rust
+    /// use toon_lsp::NumberValue;
+    ///
+    /// assert_eq!(NumberValue::PosInt(42).as_f64(), 42.0);
+    /// assert_eq!(NumberValue::NegInt(-10).as_f64(), -10.0);
+    /// assert_eq!(NumberValue::Float(3.14).as_f64(), 3.14);
+    /// ```
     #[inline]
     pub fn as_f64(self) -> f64 {
         match self {
