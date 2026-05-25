@@ -31,10 +31,7 @@ fn ast_to_selection_range(node: &AstNode) -> SelectionRange {
                 line: span.start.line,
                 character: span.start.column,
             },
-            end: tower_lsp::lsp_types::Position {
-                line: span.end.line,
-                character: span.end.column,
-            },
+            end: tower_lsp::lsp_types::Position { line: span.end.line, character: span.end.column },
         },
         parent: None,
     }
