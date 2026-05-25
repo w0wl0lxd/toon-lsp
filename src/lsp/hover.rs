@@ -85,15 +85,15 @@ fn find_key_hover_at_position(
     column: u32,
     offset: u32,
 ) -> Option<HoverInfo> {
-    find_key_hover_recursive(ast, line, column, offset, &[])
+    find_key_hover_recursive(ast, line, column, offset, &mut Vec::new())
 }
 
-fn find_key_hover_recursive(
-    node: &AstNode,
+fn find_key_hover_recursive<'a>(
+    node: &'a AstNode,
     line: u32,
     column: u32,
     offset: u32,
-    path: &[&str],
+    path: &mut Vec<&'a str>,
 ) -> Option<HoverInfo> {
     match node {
         AstNode::Document { children, .. } => {
@@ -116,12 +116,12 @@ fn find_key_hover_recursive(
     }
 }
 
-fn check_entry_for_key_hover(
-    entry: &ObjectEntry,
+fn check_entry_for_key_hover<'a>(
+    entry: &'a ObjectEntry,
     line: u32,
     column: u32,
     offset: u32,
-    path: &[&str],
+    path: &mut Vec<&'a str>,
 ) -> Option<HoverInfo> {
     let key_span = &entry.key_span;
     let pos = Position::new(line, column, offset);
@@ -147,23 +147,24 @@ fn check_entry_for_key_hover(
     }
 
     // Recursively check nested objects/arrays in value
-    let mut new_path: Vec<&str> = path.to_vec();
-    new_path.push(&entry.key);
+    path.push(&entry.key);
 
     match &entry.value {
         AstNode::Object { entries, .. } => {
             for child_entry in entries {
                 if let Some(hover) =
-                    check_entry_for_key_hover(child_entry, line, column, offset, &new_path)
+                    check_entry_for_key_hover(child_entry, line, column, offset, path)
                 {
+                    path.pop();
                     return Some(hover);
                 }
             }
         }
         AstNode::Array { items, .. } => {
             for item in items {
-                if let Some(hover) = find_key_hover_recursive(item, line, column, offset, &new_path)
+                if let Some(hover) = find_key_hover_recursive(item, line, column, offset, path)
                 {
+                    path.pop();
                     return Some(hover);
                 }
             }
@@ -171,6 +172,7 @@ fn check_entry_for_key_hover(
         _ => {}
     }
 
+    path.pop();
     None
 }
 

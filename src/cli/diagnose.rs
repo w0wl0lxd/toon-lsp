@@ -338,7 +338,7 @@ fn path_to_file_uri(path: &str) -> String {
 
 /// Format diagnostics as SARIF 2.1.0.
 fn format_sarif(report: &DiagnosticReport, file_path: &str) -> CliResult<String> {
-    let artifact_uri = path_to_file_uri(file_path);
+    let file_uri = path_to_file_uri(file_path);
 
     let results: Vec<SarifResult> = report
         .diagnostics
@@ -357,7 +357,7 @@ fn format_sarif(report: &DiagnosticReport, file_path: &str) -> CliResult<String>
                 message: SarifMessage { text: diag.message.clone() },
                 locations: vec![SarifLocation {
                     physical_location: SarifPhysicalLocation {
-                        artifact_location: SarifArtifactLocation { uri: artifact_uri.clone() },
+                        artifact_location: SarifArtifactLocation { uri: file_uri.clone() },
                         region: SarifRegion {
                             start_line: diag.range.start.line + 1, // SARIF is 1-based
                             start_column: diag.range.start.character + 1,
@@ -416,8 +416,8 @@ mod tests {
         // Line 1 = index 1 (0-indexed, so line 2 in 1-based)
         let span = Span::new(AstPosition::new(1, 0, 7), AstPosition::new(1, 5, 12));
 
-        let context = extract_context(content, &span);
-        assert_eq!(context, Some("line 2 with error".to_string()));
+        let result = extract_context(content, &span);
+        assert_eq!(result, Some("line 2 with error".to_string()));
     }
 
     #[test]
@@ -426,8 +426,8 @@ mod tests {
         // Invalid line number
         let span = Span::new(AstPosition::new(99, 0, 999), AstPosition::new(99, 5, 1004));
 
-        let context = extract_context(content, &span);
-        assert_eq!(context, None);
+        let result = extract_context(content, &span);
+        assert_eq!(result, None);
     }
 
     #[test]
