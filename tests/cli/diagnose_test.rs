@@ -15,8 +15,6 @@
 
 //! Integration tests for the diagnose command.
 //!
-//! T071-T081: Tests for User Story 6 - Diagnostic analysis with JSON/SARIF output
-//!
 //! These tests validate the `toon-lsp diagnose` command functionality including:
 //! - JSON and SARIF output formats
 //! - Source code context inclusion
@@ -63,7 +61,7 @@ fn validate_sarif_structure(sarif: &Value) -> bool {
 }
 
 // =============================================================================
-***REMOVED***Basic diagnostic output (JSON default)
+// Basic diagnostic output (JSON default)
 // =============================================================================
 
 #[test]
@@ -101,7 +99,7 @@ fn test_diagnose_invalid_file_produces_json_diagnostics() {
 }
 
 // =============================================================================
-***REMOVED***JSON format explicit
+// JSON format explicit
 // =============================================================================
 
 #[test]
@@ -154,7 +152,7 @@ fn test_diagnose_json_format_short_flag() {
 }
 
 // =============================================================================
-***REMOVED***SARIF format output
+// SARIF format output
 // =============================================================================
 
 #[test]
@@ -223,7 +221,7 @@ fn test_diagnose_sarif_format_has_runs_array() {
 }
 
 // =============================================================================
-***REMOVED***Context flag shows source
+// Context flag shows source
 // =============================================================================
 
 #[test]
@@ -277,7 +275,7 @@ fn test_diagnose_context_short_flag() {
 }
 
 // =============================================================================
-***REMOVED***Severity filtering - errors only (default)
+// Severity filtering - errors only (default)
 // =============================================================================
 
 #[test]
@@ -337,7 +335,7 @@ fn test_diagnose_severity_error_explicit() {
 }
 
 // =============================================================================
-***REMOVED***Severity filtering - warnings and above
+// Severity filtering - warnings and above
 // =============================================================================
 
 #[test]
@@ -403,7 +401,7 @@ fn test_diagnose_severity_short_flag() {
 }
 
 // =============================================================================
-***REMOVED***Valid file produces empty diagnostics
+// Valid file produces empty diagnostics
 // =============================================================================
 
 #[test]
@@ -453,7 +451,7 @@ fn test_diagnose_valid_file_with_nesting() {
 }
 
 // =============================================================================
-***REMOVED***Stdin input
+// Stdin input
 // =============================================================================
 
 #[test]
@@ -532,7 +530,7 @@ fn test_diagnose_stdin_with_format() {
 }
 
 // =============================================================================
-***REMOVED***Nonexistent file handling
+// Nonexistent file handling
 // =============================================================================
 
 #[test]
@@ -576,7 +574,7 @@ fn test_diagnose_permission_denied() {
 }
 
 // =============================================================================
-***REMOVED***Empty file handling
+// Empty file handling
 // =============================================================================
 
 #[test]
@@ -599,7 +597,7 @@ fn test_diagnose_empty_file_handling() {
 }
 
 // =============================================================================
-***REMOVED***Summary field validation
+// Summary field validation
 // =============================================================================
 
 #[test]
