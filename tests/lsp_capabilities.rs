@@ -11,7 +11,7 @@ use tower_lsp::lsp_types::{InitializeParams, OneOf, SemanticTokenModifier, Seman
 async fn get_server_capabilities() -> tower_lsp::lsp_types::ServerCapabilities {
     // Create a test server with LspService
     let (service, _socket) =
-        tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        tower_lsp::LspService::build(ToonLanguageServer::new).finish();
 
     // Call initialize through the service
     let params = InitializeParams::default();
