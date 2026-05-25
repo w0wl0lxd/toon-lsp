@@ -220,7 +220,7 @@ mod tests {
         };
         let text = diag.format_text();
         assert!(text.contains("test.toon"));
-        assert!(text.contains("5"));
+        assert!(text.contains('5'));
         assert!(text.contains("10"));
         assert!(text.contains("test error"));
     }

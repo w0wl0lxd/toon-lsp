@@ -54,8 +54,7 @@ fn is_valid_json(s: &str) -> bool {
 /// Helper to validate SARIF 2.1.0 structure
 fn validate_sarif_structure(sarif: &Value) -> bool {
     // SARIF must have version 2.1.0
-    let version_ok =
-        sarif.get("version").and_then(|v| v.as_str()).map(|v| v == "2.1.0").unwrap_or(false);
+    let version_ok = sarif.get("version").and_then(|v| v.as_str()).is_some_and(|v| v == "2.1.0");
 
     version_ok && sarif.get("runs").is_some()
 }

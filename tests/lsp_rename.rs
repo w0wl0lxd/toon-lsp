@@ -155,7 +155,7 @@ mod rename_key_tests {
     /// Helper to apply edits to source text
     fn apply_edits(source: &str, edits: &[toon_lsp::lsp::rename::RenameEdit]) -> String {
         let mut sorted_edits = edits.to_vec();
-        sorted_edits.sort_by(|a, b| b.span.start.offset.cmp(&a.span.start.offset));
+        sorted_edits.sort_by_key(|e| std::cmp::Reverse(e.span.start.offset));
 
         let mut result = source.to_string();
         for edit in sorted_edits {
