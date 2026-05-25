@@ -919,6 +919,15 @@ pub fn parse(source: &str) -> Result<AstNode, ParseError> {
 /// assert!(ast.is_some()); // Partial AST with valid portions
 /// assert!(!errors.is_empty()); // Contains error for missing colon
 /// ```
+///
+/// # Multiple errors
+/// ```rust
+/// use toon_lsp::parse_with_errors;
+///
+/// let (ast, errors) = parse_with_errors("name: Alice\nage\nactive: true");
+/// assert!(ast.is_some()); // Still parses what it can
+/// assert_eq!(errors.len(), 2); // Errors for missing colon after age and incomplete value
+/// ```
 #[must_use]
 pub fn parse_with_errors(source: &str) -> (Option<AstNode>, Vec<ParseError>) {
     // SECURITY: Enforce maximum document size to prevent memory exhaustion
