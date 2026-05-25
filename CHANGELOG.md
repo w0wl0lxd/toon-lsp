@@ -22,13 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All new LSP capabilities declared in server capabilities negotiation
 
 ### Changed
-- **Major codebase refactoring** to senior-level idiomatic Rust:
-  - AST: `#[inline]` attributes, `const fn` methods, `Position::ZERO` constant
-  - Parser: eliminated `.clone()` on tokens, iterator combinators, simplified control flow
+- Refactored codebase for idiomatic Rust patterns:
+  - AST: added `#[inline]` attributes, `const fn` methods, `Position::ZERO` constant
+  - Parser: eliminated `.clone()` on tokens, used iterator combinators, simplified control flow
   - Scanner: `&str` slices instead of `String`, `#[inline]` on hot paths
   - LSP server: `with_ast` helper to flatten deeply nested `if let` chains, `DocRef` type alias
   - Replaced manual loops with iterator combinators across LSP modules
-  - Removed AI artifact comments (phase markers, task ids) from codebase
 
 ### Fixed
 - `Span::merge` producing inconsistent `Position` values by independently computing min/max of line, column, and offset fields — now uses offset-based position selection

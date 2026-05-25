@@ -448,8 +448,8 @@ mod tests {
 
         // Should format empty inline array
         assert!(result.contains("values"), "Missing 'values' key");
-        assert!(result.contains("["), "Expected opening bracket");
-        assert!(result.contains("]"), "Expected closing bracket");
+        assert!(result.contains('['), "Expected opening bracket");
+        assert!(result.contains(']'), "Expected closing bracket");
     }
 
     // Test format preserves expanded array form
@@ -481,11 +481,11 @@ mod tests {
         // Should preserve tabular array format (formatted as objects with pipe delimiters)
         assert!(result.contains("data"), "Missing 'data' key");
         // Tabular arrays are converted to objects by parser, formatted with pipes
-        assert!(result.contains("|"), "Expected pipe delimiters in tabular format");
-        assert!(result.contains("1"), "Expected value '1'");
-        assert!(result.contains("2"), "Expected value '2'");
-        assert!(result.contains("3"), "Expected value '3'");
-        assert!(result.contains("4"), "Expected value '4'");
+        assert!(result.contains('|'), "Expected pipe delimiters in tabular format");
+        assert!(result.contains('1'), "Expected value '1'");
+        assert!(result.contains('2'), "Expected value '2'");
+        assert!(result.contains('3'), "Expected value '3'");
+        assert!(result.contains('4'), "Expected value '4'");
     }
 
     // Test format produces AST-equivalent output
