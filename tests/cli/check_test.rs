@@ -14,8 +14,6 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Integration tests for the check command.
-//!
-//! T035-T038: Tests for User Story 3 - Validate TOON Files in CI
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -34,7 +32,7 @@ fn toon_lsp() -> Command {
 }
 
 // =============================================================================
-***REMOVED***Integration test for check command with valid file
+// Integration test for check command with valid file
 // =============================================================================
 
 #[test]
@@ -80,7 +78,7 @@ fn test_check_empty_file_succeeds() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for check with invalid file (exit 2)
+// Integration test for check with invalid file (exit 2)
 // =============================================================================
 
 #[test]
@@ -125,7 +123,7 @@ fn test_check_nonexistent_file_fails() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for check with --format github
+// Integration test for check with --format github
 // =============================================================================
 
 #[test]
@@ -168,7 +166,7 @@ fn test_check_json_format() {
 }
 
 // =============================================================================
-***REMOVED***Integration test for check with multiple files (batch)
+// Integration test for check with multiple files (batch)
 // =============================================================================
 
 #[test]

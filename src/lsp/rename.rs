@@ -172,7 +172,7 @@ mod tests {
     use super::*;
     use crate::parser::parse_with_errors;
 
-    ***REMOVED***Test prepare_rename validates cursor is on key
+    // Test prepare_rename validates cursor is on key
     #[test]
     fn test_prepare_rename_on_key() {
         let source = "name: Alice";
@@ -186,7 +186,7 @@ mod tests {
         assert_eq!(result.unwrap().placeholder, "name");
     }
 
-    ***REMOVED***Test prepare_rename returns range and placeholder
+    // Test prepare_rename returns range and placeholder
     #[test]
     fn test_prepare_rename_range_and_placeholder() {
         let source = "username: bob";
@@ -205,7 +205,7 @@ mod tests {
         assert_eq!(result.range.end.column, 8);
     }
 
-    ***REMOVED***Test prepare_rename rejects cursor on value
+    // Test prepare_rename rejects cursor on value
     #[test]
     fn test_prepare_rename_on_value_rejected() {
         let source = "name: Alice";
@@ -218,7 +218,7 @@ mod tests {
         assert!(result.is_none(), "Should reject rename on value");
     }
 
-    ***REMOVED***Test rename_key updates all occurrences
+    // Test rename_key updates all occurrences
     #[test]
     fn test_rename_updates_all_occurrences() {
         let source = "id: 1\ndata:\n  id: 2";
@@ -235,7 +235,7 @@ mod tests {
         assert_eq!(edits[1].new_text, "identifier");
     }
 
-    ***REMOVED***Test rename preserves document validity
+    // Test rename preserves document validity
     #[test]
     fn test_rename_preserves_validity() {
         let source = "key: value";
@@ -257,7 +257,7 @@ mod tests {
         assert!(new_ast.is_some(), "Should have AST after rename");
     }
 
-    ***REMOVED***Test rename handles special characters
+    // Test rename handles special characters
     #[test]
     fn test_rename_special_characters() {
         // Test with underscore (valid in TOON keys)
@@ -276,7 +276,7 @@ mod tests {
         assert_eq!(edits[0].span.end.column, 6); // "my_key" is 6 chars
     }
 
-    ***REMOVED***Test rename warns when creating duplicate keys at same level
+    // Test rename warns when creating duplicate keys at same level
     #[test]
     fn test_rename_duplicate_key_warning() {
         let source = "name: Alice\nage: 30";

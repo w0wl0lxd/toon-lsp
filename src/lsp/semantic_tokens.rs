@@ -312,7 +312,7 @@ mod tests {
     use super::*;
     use crate::ast::Position;
 
-    ***REMOVED***Write failing tests first
+    
 
     #[test]
     fn test_token_type_indices() {
@@ -426,13 +426,13 @@ mod tests {
     }
 
     // ===================================================================
-    ***REMOVED***Semantic Token Collection Tests (T010-T017)
-    // These tests are EXPECTED to FAIL until implementation in T018-T023
+    
+    
     // ===================================================================
 
     use crate::parser::parse_with_errors;
 
-    /***REMOVED***Test semantic tokens for object keys
+    Test semantic tokens for object keys
     ///
     /// Validates that object keys are correctly identified as Property tokens.
     /// Should detect all keys at the top level of an object.
@@ -466,7 +466,7 @@ mod tests {
         assert_eq!(properties[1].length, 3, "age is 3 characters");
     }
 
-    /***REMOVED***Test semantic tokens for string values
+    Test semantic tokens for string values
     ///
     /// Validates that string literals are correctly classified as String tokens
     /// with READONLY modifier (immutable literals).
@@ -506,7 +506,7 @@ mod tests {
         );
     }
 
-    /***REMOVED***Test semantic tokens for number values
+    Test semantic tokens for number values
     ///
     /// Validates that numeric literals (integer, float, negative) are correctly
     /// classified as Number tokens with READONLY modifier.
@@ -546,7 +546,7 @@ mod tests {
         assert_eq!(numbers[2].length, 2, "-5 is 2 characters");
     }
 
-    /***REMOVED***Test semantic tokens for boolean and null keywords
+    Test semantic tokens for boolean and null keywords
     ///
     /// Validates that true, false, and null are correctly classified as
     /// Keyword tokens with READONLY modifier.
@@ -594,7 +594,7 @@ mod tests {
         );
     }
 
-    /***REMOVED***Test semantic tokens for nested objects and arrays
+    Test semantic tokens for nested objects and arrays
     ///
     /// Validates that tokens are correctly collected from nested structures,
     /// including keys at different indentation levels and values within arrays.
@@ -636,7 +636,7 @@ mod tests {
         assert_eq!(properties[2].start_col, 2, "tags should be indented 2 spaces");
     }
 
-    /***REMOVED***Test encode_tokens produces correct relative positions
+    Test encode_tokens produces correct relative positions
     ///
     /// Validates the LSP delta-encoding algorithm:
     /// - delta_line, delta_start, length, token_type, token_modifiers_bitset
@@ -677,7 +677,7 @@ mod tests {
         }
     }
 
-    /***REMOVED***Test semantic tokens handles documents with parse errors
+    Test semantic tokens handles documents with parse errors
     ///
     /// Validates graceful degradation - even with parse errors, should
     /// return tokens for successfully parsed portions of the document.
@@ -702,7 +702,7 @@ mod tests {
         }
     }
 
-    /***REMOVED***Test semantic tokens handles empty documents
+    Test semantic tokens handles empty documents
     ///
     /// Validates edge case: empty document should produce empty token list
     /// without panicking or returning errors.
@@ -721,7 +721,7 @@ mod tests {
         );
     }
 
-    /***REMOVED***Test semantic tokens handles whitespace-only documents
+    /// Test semantic tokens handles whitespace-only documents
     ///
     /// Validates edge case: document with only whitespace/comments should
     /// produce empty token list.
