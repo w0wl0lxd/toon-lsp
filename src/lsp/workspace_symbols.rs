@@ -51,23 +51,14 @@ fn collect_symbols_recursive(node: &AstNode, uri: &Url, prefix: &str) -> Vec<Wor
                 };
 
                 let full_range = Range {
-                    start: Position {
-                        line: entry.key_span.start.line,
-                        character: 0,
-                    },
-                    end: Position {
-                        line: span.end.line,
-                        character: 0,
-                    },
+                    start: Position { line: entry.key_span.start.line, character: 0 },
+                    end: Position { line: span.end.line, character: 0 },
                 };
 
                 let symbol = WorkspaceSymbol {
                     name: entry.key.clone(),
                     kind: SymbolKind::KEY,
-                    location: OneOf::Left(Location {
-                        uri: uri.clone(),
-                        range: full_range,
-                    }),
+                    location: OneOf::Left(Location { uri: uri.clone(), range: full_range }),
                     container_name: if prefix.is_empty() { None } else { Some(prefix.to_string()) },
                     tags: None,
                     data: None,
@@ -84,7 +75,8 @@ fn collect_symbols_recursive(node: &AstNode, uri: &Url, prefix: &str) -> Vec<Wor
                         for (idx, item) in items.iter().enumerate() {
                             if let AstNode::Object { .. } = item {
                                 let array_prefix = format!("{}[{}]", key_path, idx);
-                                let child_symbols = collect_symbols_recursive(item, uri, &array_prefix);
+                                let child_symbols =
+                                    collect_symbols_recursive(item, uri, &array_prefix);
                                 symbols.extend(child_symbols);
                             }
                         }
