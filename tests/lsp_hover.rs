@@ -82,7 +82,7 @@ mod hover_over_array {
         assert!(hover.is_some());
         let hover = hover.unwrap();
         // Should indicate it's an array with 3 items
-        assert!(hover.contents.contains("3") || hover.contents.contains("items"));
+        assert!(hover.contents.contains('3') || hover.contents.contains("items"));
     }
 }
 

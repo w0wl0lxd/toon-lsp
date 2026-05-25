@@ -458,7 +458,11 @@ mod property_tests {
         /// Line count increases correctly with newlines
         #[test]
         fn newlines_increase_line_count(num_lines in 1usize..10) {
-            let input: String = (0..num_lines).map(|i| format!("line{}\n", i)).collect();
+            use std::fmt::Write;
+            let mut input = String::new();
+            for i in 0..num_lines {
+                let _ = writeln!(input, "line{}", i);
+            }
             let tokens = scan_tokens(&input);
             let eof = tokens.last().unwrap();
             // Last line after all newlines
