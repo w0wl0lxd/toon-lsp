@@ -6,252 +6,90 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSING.md)
 
-A Language Server Protocol (LSP) implementation for [TOON](https://github.com/toon-format/toon) `(Token-Oriented Object Notation)`.
+a language server protocol implementation for [toon](https://github.com/toon-format/toon) (token-oriented object notation). toon is a compact config format designed to be easy for both humans and lms to read/write.
 
-## Overview
+## what's in this crate
 
-`TOON` is a compact, human-readable encoding of the JSON data model designed for LLM prompts. This project provides:
+- full parser with position tracking on every node
+- 9 lsp features: diagnostics, hover, completion, go-to-definition, find-references, rename, semantic tokens, document symbols, formatting
+- 6 cli commands: encode, decode, check, format, symbols, diagnose
+- error recovery so the parser keeps going even when your file has syntax errors
+- 467+ tests covering the scanner, parser, lsp, and cli
 
-- **Full AST with source positions** - Parse TOON into an abstract syntax tree with span information
-- **LSP Server** - Complete language server for IDE integration with 9 LSP features
-- **CLI Tools** - 6 commands for encoding, decoding, validation, formatting, and analysis
-- **Error recovery** - Partial parsing for better IDE experience
-- **Comprehensive tests** - 467+ tests covering scanner, parser, LSP, and CLI
+## the lsp features
 
-## Features
+- diagnostics with syntax error recovery
+- document symbols (outline view)
+- hover info (shows type and path)
+- completions (sibling keys, true/false)
+- go-to-definition for duplicate keys
+- semantic tokens (syntax highlighting)
+- find-references
+- rename symbol
+- code actions and formatting
 
-### Parser
-- [x] Lexer/Scanner with position tracking
-- [x] Full TOON spec parser (objects, arrays, primitives)
-- [x] Expanded arrays (dash-prefixed items)
-- [x] Inline arrays (`key[count]: val1,val2,val3`)
-- [x] Tabular arrays (`key[count]{col1,col2}:`)
-- [x] Error recovery for partial documents
-- [x] AST with complete span information
+## cli
 
-### LSP Features
-- [x] Diagnostics (syntax errors with recovery)
-- [x] Document symbols (outline with hierarchy)
-- [x] Hover information (type and path display)
-- [x] Go to definition (duplicate key navigation)
-- [x] Completions (sibling keys, boolean values)
-- [x] Semantic tokens (syntax highlighting)
-- [x] Find references (key usage navigation)
-- [x] Rename symbol (refactor keys across document)
-- [x] Formatting (configurable indentation)
-
-### CLI Commands
-- [x] `encode` - Convert JSON/YAML to TOON
-- [x] `decode` - Convert TOON to JSON/YAML
-- [x] `check` - Validate TOON syntax
-- [x] `format` - Format TOON files
-- [x] `symbols` - Extract document symbols
-- [x] `diagnose` - Structured diagnostics output
-
-## Installation
+### encode - json/yaml to toon
 
 ```bash
-cargo install toon-lsp
-```
-
-Or build from source:
-
-```bash
-git clone https://github.com/w0wl0lxd/toon-lsp
-cd toon-lsp
-cargo build --release
-```
-
-## CLI Usage
-
-### `encode` - Convert JSON/YAML to TOON
-
-```bash
-# Convert JSON to TOON
 toon-lsp encode config.json -o config.toon
-
-# Convert YAML to TOON
 toon-lsp encode config.yaml -o config.toon
-
-# From stdin
-echo '{"name": "Alice", "age": 30}' | toon-lsp encode -
-
-# With custom indentation
+echo '{"name": "Alice"}' | toon-lsp encode -
 toon-lsp encode data.json --indent 4
 ```
 
-**Options:**
-- `-o, --output <FILE>` - Output file (stdout if omitted)
-- `-f, --input-format <json|yaml>` - Input format (auto-detected from extension)
-- `-i, --indent <N>` - Indentation size (default: 2)
-- `--tabs` - Use tabs instead of spaces
-
-### `decode` - Convert TOON to JSON/YAML
+### decode - toon to json/yaml
 
 ```bash
-# Convert TOON to JSON
 toon-lsp decode config.toon -o config.json
-
-# Convert TOON to YAML
 toon-lsp decode config.toon --format yaml
-
-# Pretty-print JSON
 toon-lsp decode data.toon --pretty
-
-# From stdin
 echo 'name: Alice' | toon-lsp decode -
 ```
 
-**Options:**
-- `-o, --output <FILE>` - Output file (stdout if omitted)
-- `-f, --output-format <json|yaml>` - Output format (default: json)
-- `-p, --pretty` - Pretty-print JSON output
-
-### `check` - Validate TOON Syntax
+### check - validate toon syntax
 
 ```bash
-# Check single file
 toon-lsp check config.toon
-
-# Check multiple files
 toon-lsp check *.toon
-
-# JSON output for tooling
 toon-lsp check config.toon --format json
-
-# GitHub Actions annotations
 toon-lsp check config.toon --format github
-
-# From stdin
 echo 'key: value' | toon-lsp check -
 ```
 
-**Options:**
-- `-f, --format <text|json|github>` - Output format (default: text)
-- `-s, --severity <error|warning|info|hint>` - Minimum severity (default: error)
+exit codes: 0 = valid, 1 = io error, 2 = validation errors
 
-**Exit Codes:**
-- `0` - Valid TOON
-- `1` - I/O error
-- `2` - Validation errors found
-
-### `format` - Format TOON Files
+### format - format toon files
 
 ```bash
-# Format to stdout
-toon-lsp format config.toon
-
-# Format in place
-toon-lsp format config.toon -o config.toon
-
-# Check if file needs formatting (CI mode)
-toon-lsp format --check config.toon
-
-# Custom indentation
+toon-lsp format config.toon                    # stdout
+toon-lsp format config.toon -o config.toon     # in place
+toon-lsp format --check config.toon            # ci mode, exit 1 if unformatted
 toon-lsp format config.toon --indent 4
-
-# Use tabs
 toon-lsp format config.toon --tabs
 ```
 
-**Options:**
-- `-o, --output <FILE>` - Output file (stdout if omitted)
-- `-i, --indent <N>` - Indentation size (default: 2)
-- `--tabs` - Use tabs instead of spaces
-- `--check` - Check formatting without modifying (exit 1 if unformatted)
-
-### `symbols` - Extract Document Symbols
+### symbols - extract document outline
 
 ```bash
-# Tree view (default)
-toon-lsp symbols config.toon
-# Output:
-#   server
-#     host
-#     port
-#   database
-#     url
-
-# JSON output for tooling
-toon-lsp symbols config.toon --format json
-
-# Flat list with dot notation
-toon-lsp symbols config.toon --format flat
-# Output:
-#   server
-#   server.host
-#   server.port
-
-# Show types
-toon-lsp symbols config.toon --types
-# Output:
-#   server [object]
-#     host [string]
-#     port [number]
-
-# Show positions
-toon-lsp symbols config.toon --positions
-# Output:
-#   server  (L1:C1)
-#     host  (L2:C3)
+toon-lsp symbols config.toon                  # tree view (default)
+toon-lsp symbols config.toon --format json     # json for tooling
+toon-lsp symbols config.toon --format flat     # dot notation paths
+toon-lsp symbols config.toon --types         # show types
+toon-lsp symbols config.toon --positions     # show line:col
 ```
 
-**Options:**
-- `-f, --format <tree|json|flat>` - Output format (default: tree)
-- `-t, --types` - Show value types
-- `-p, --positions` - Show line:column positions
-
-### `diagnose` - Structured Diagnostics
+### diagnose - structured error output
 
 ```bash
-# JSON diagnostics (default)
-toon-lsp diagnose config.toon
-
-# SARIF format for security tools
-toon-lsp diagnose config.toon --format sarif
-
-# Include source context
-toon-lsp diagnose config.toon --context
-
-# Filter by severity
+toon-lsp diagnose config.toon                # json (default)
+toon-lsp diagnose config.toon --format sarif # security tool format
+toon-lsp diagnose config.toon --context      # include source lines
 toon-lsp diagnose config.toon --severity warning
 ```
 
-**Options:**
-- `-f, --format <json|sarif>` - Output format (default: json)
-- `-c, --context` - Include source code context
-- `-s, --severity <error|warning|info|hint>` - Minimum severity (default: error)
-
-**JSON Output:**
-```json
-{
-  "file": "config.toon",
-  "diagnostics": [
-    {
-      "range": {"start": {"line": 5, "character": 3}, "end": {"line": 5, "character": 10}},
-      "severity": "error",
-      "code": "E004",
-      "message": "expected value",
-      "source": "toon-lsp"
-    }
-  ],
-  "summary": {"error_count": 1, "warning_count": 0, "hint_count": 0}
-}
-```
-
-**SARIF Output:** Compliant with [SARIF 2.1.0](https://sarifweb.azurewebsites.net/) for integration with GitHub Code Scanning, VS Code SARIF Viewer, and other security tools.
-
-### LSP Server
-
-Start the language server (communicates over stdio):
-
-```bash
-toon-lsp
-# or explicitly:
-toon-lsp lsp
-```
-
-## Library Usage
+## using as a library
 
 ```rust
 use toon_lsp::{parse, AstNode, ObjectEntry};
@@ -268,14 +106,12 @@ user:
 
     let ast = parse(source)?;
 
-    // Pattern match with let-else (Rust 2024 idiom)
     let AstNode::Document { children, span } = &ast else {
         return Ok(());
     };
 
     println!("Document spans lines {}-{}", span.start.line + 1, span.end.line + 1);
 
-    // Functional iteration with pattern matching
     children
         .iter()
         .filter_map(|node| match node {
@@ -291,93 +127,66 @@ user:
 fn print_entry(entry: &ObjectEntry, depth: usize) {
     let indent = "  ".repeat(depth);
     let pos = &entry.key_span.start;
-
     println!("{indent}{}: L{}:C{}", entry.key, pos.line + 1, pos.column + 1);
 
-    // Recursive descent into nested objects
     if let AstNode::Object { entries, .. } = &entry.value {
         entries.iter().for_each(|e| print_entry(e, depth + 1));
     }
 }
 ```
 
-**Error recovery for IDEs** — parsing succeeds even with syntax errors:
+error recovery for ide use:
 
 ```rust
 use toon_lsp::parse_with_errors;
 
 let (ast, errors) = parse_with_errors(source);
 
-// IDE features work with partial AST
 if let Some(ref ast) = ast {
-    // Completions, hover, symbols available despite errors
+    // completions, hover, symbols work even with errors
 }
 
-// Errors include spans for diagnostic rendering
-errors.iter().for_each(|err| {
-    eprintln!(
-        "L{}:C{}: {}",
+for err in &errors {
+    eprintln!("L{}:C{}: {}",
         err.span.start.line + 1,
         err.span.start.column + 1,
-        err.kind
-    );
-});
+        err.kind);
+}
 ```
 
-## Architecture
+## architecture
 
 ```mermaid
 flowchart LR
     CLI[toon-lsp] --> LSP[LSP Server]
     CLI --> CMD[Commands]
 
-    LSP --> F1[Diagnostics<br>Hover<br>Completion]
-    LSP --> F2[Symbols<br>References<br>Rename]
-    LSP --> F3[Tokens<br>Formatting<br>Definition]
-
     LSP --> P[Parser]
     CMD --> P
     P --> AST[AST]
-
-    CMD --> C1[encode<br>decode]
-    CMD --> C2[check<br>format]
-    CMD --> C3[symbols<br>diagnose]
 ```
 
-## Development
+## dev setup
 
 ```bash
-cargo build                      # Build the project
-cargo test                       # Run all 467+ tests
-cargo clippy -- -D warnings      # Lint with warnings as errors
-cargo fmt --check                # Check formatting
-RUST_LOG=debug cargo run         # Run LSP server with debug logging
+cargo build
+cargo test
+cargo clippy -- -D warnings
+cargo fmt --check
+RUST_LOG=debug cargo run
 ```
 
-## Related Projects
+## related
 
-- [toon-format/toon](https://github.com/toon-format/toon) - Official TOON specification
-- [toon-format/toon-rust](https://github.com/toon-format/toon-rust) - Rust implementation (serde-based)
-- [tower-lsp](https://github.com/ebkalderon/tower-lsp) - LSP framework used by this project
+- [toon-format/toon](https://github.com/toon-format/toon) - spec
+- [toon-format/toon-rust](https://github.com/toon-format/toon-rust) - serde-based rust lib
+- [tower-lsp](https://github.com/ebkalderon/tower-lsp) - lsp framework
 
-## Contributing
+## license
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+dual licensed:
 
-All contributions require a DCO sign-off (`git commit -s`).
+- **agpl-3.0** - open source and personal use
+- **commercial** - for proprietary embedding (see [licensing.md](LICENSING.md))
 
-## License
-
-**Dual Licensed**: AGPL-3.0-only OR Commercial
-
-- **Open Source**: [AGPL-3.0](LICENSE) - Free for open source and personal use
-- **Commercial**: Available for proprietary use - See [LICENSING.md](LICENSING.md)
-
-| Use Case | License |
-|----------|---------|
-| Personal/internal development | Free (AGPL) |
-| Open source project (AGPL-compatible) | Free (AGPL) |
-| Proprietary IDE/editor embedding | Commercial required |
-| Cloud IDE / SaaS platform | Commercial required |
-
-Contact: w0wl0lxd@tuta.com | [GitHub Discussions](https://github.com/w0wl0lxd/toon-lsp/discussions)
+questions? w0wl0lxd@tuta.com
