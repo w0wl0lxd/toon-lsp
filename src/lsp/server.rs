@@ -718,21 +718,11 @@ impl LanguageServer for ToonLanguageServer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tower_lsp::lsp_types::*;
-
-    fn create_test_server() -> ToonLanguageServer {
-        // Use a null sender that discards messages - the server methods don't actually
-        // send messages in these tests (the tests check the return values)
-        use std::sync::Arc;
-        use tower_lsp::service::ServerState;
-        let state = Arc::new(ServerState::default());
-        let (_, client) = tower_lsp::Client::new(state);
-        ToonLanguageServer::new(client)
-    }
 
     #[tokio::test]
     async fn test_initialize_returns_capabilities() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let result = server.initialize(InitializeParams::default()).await.unwrap();
 
         assert!(result.capabilities.hover_provider.is_some());
@@ -740,18 +730,22 @@ mod tests {
         assert!(result.capabilities.definition_provider.is_some());
         assert!(result.capabilities.references_provider.is_some());
         assert!(result.capabilities.rename_provider.is_some());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_shutdown_returns_ok() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let result = server.shutdown().await;
         assert!(result.is_ok());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_did_open_parses_document() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -766,11 +760,13 @@ mod tests {
             .await;
 
         assert!(server.get_document(&uri).await.is_some());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_did_change_updates_document() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         // Open document first
@@ -803,11 +799,13 @@ mod tests {
         let doc = server.get_document(&uri).await.unwrap();
         let doc = doc.read().await;
         assert_eq!(doc.text(), "new: value");
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_did_close_removes_document() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         // Open document
@@ -830,11 +828,13 @@ mod tests {
             .await;
 
         assert!(server.get_document(&uri).await.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_document_symbol_returns_nested() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -858,11 +858,13 @@ mod tests {
             .unwrap();
 
         assert!(result.is_some());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_workspace_symbol_finds_matches() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -886,13 +888,15 @@ mod tests {
             .unwrap();
 
         assert!(result.is_some());
-        let symbols = result.unwrap().unwrap_or_default();
+        let symbols = result.unwrap();
         assert!(!symbols.is_empty());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_workspace_symbol_empty_result() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
 
         let result = server
             .symbol(WorkspaceSymbolParams {
@@ -904,20 +908,24 @@ mod tests {
             .unwrap();
 
         assert!(result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_with_ast_returns_none_for_missing_doc() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///nonexistent.toon").unwrap();
 
         let result = server.with_ast(&uri, |_ast, _text| Some(())).await;
         assert!(result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_folding_range_returns_ranges() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -942,11 +950,13 @@ mod tests {
 
         // May or may not have ranges depending on content
         assert!(result.is_some() || result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_code_action_returns_actions() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -979,11 +989,13 @@ mod tests {
 
         // Result may have actions or not
         assert!(result.is_some() || result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_selection_range_returns_ranges() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -1008,11 +1020,13 @@ mod tests {
             .unwrap();
 
         assert!(result.is_some());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_document_link_returns_links() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -1036,11 +1050,13 @@ mod tests {
             .unwrap();
 
         assert!(result.is_some() || result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_document_highlight_returns_highlights() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -1067,11 +1083,13 @@ mod tests {
             .unwrap();
 
         assert!(result.is_some() || result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_inlay_hint_returns_hints() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -1092,16 +1110,19 @@ mod tests {
                     start: Position { line: 0, character: 0 },
                     end: Position { line: 0, character: 12 },
                 },
+                work_done_progress_params: Default::default(),
             })
             .await
             .unwrap();
 
         assert!(result.is_some() || result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_code_lens_returns_lenses() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -1125,11 +1146,13 @@ mod tests {
             .unwrap();
 
         assert!(result.is_some() || result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_linked_editing_range_returns_ranges() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -1149,18 +1172,19 @@ mod tests {
                     text_document: TextDocumentIdentifier { uri },
                     position: Position { line: 0, character: 1 },
                 },
-                partial_result_params: Default::default(),
                 work_done_progress_params: Default::default(),
             })
             .await
             .unwrap();
 
         assert!(result.is_some() || result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_formatting_returns_text_edits() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -1188,11 +1212,13 @@ mod tests {
             .unwrap();
 
         assert!(result.is_some() || result.is_none());
+        std::mem::forget(service);
     }
 
     #[tokio::test]
     async fn test_formatting_skips_on_errors() {
-        let server = create_test_server();
+        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
         server
@@ -1221,5 +1247,6 @@ mod tests {
 
         // Should return None when document has errors
         assert!(result.is_none());
+        std::mem::forget(service);
     }
 }
