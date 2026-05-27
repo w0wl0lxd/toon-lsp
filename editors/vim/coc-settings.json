@@ -1,0 +1,16 @@
+{
+  "languageserver": {
+    "toon": {
+      "command": "toon-lsp",
+      "filetypes": ["toon"],
+      "rootPatterns": [".git"],
+      "initializationOptions": {
+        "formatting": {
+          "tabSize": 2,
+          "useTabs": false
+        }
+      }
+    }
+  },
+  "coc.preferences.formatOnSave": true
+}
