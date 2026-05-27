@@ -1,0 +1,16 @@
+# TOON Language Configuration for Helix
+# Add this to ~/.config/helix/languages.toml
+
+[[language]]
+name = "toon"
+scope = "source.toon"
+injection-regex = "toon"
+file-types = ["toon"]
+roots = []
+comment-token = "#"
+indent = { tab-width = 2, unit = "  " }
+language-servers = ["toon-lsp"]
+auto-format = true
+
+[language-server.toon-lsp]
+command = "toon-lsp"
