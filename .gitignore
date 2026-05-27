@@ -28,6 +28,13 @@ Thumbs.db
 .env
 .env.*
 
+# Tooling metadata (auto-generated)
+.arbor/
+.codegraph/
+.cursor/
+.kilo/
+.envrc
+
 # Coverage reports
 *.profraw
 coverage/
