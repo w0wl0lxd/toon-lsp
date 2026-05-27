@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<!--
+  TOON Language Server configuration for Eclipse LSP4E
+  This is a template - actual plugin requires building with Eclipse PDE
+-->
+<plugin>
+   <extension point="org.eclipse.lsp4e.languageServer">
+      <server
+            id="toon-lsp"
+            label="TOON Language Server"
+            class="org.toon.lsp.ToonLanguageServer">
+      </server>
+   </extension>
+
+   <extension point="org.eclipse.core.contenttype.contentTypes">
+      <content-type
+            base-type="org.eclipse.core.runtime.text"
+            file-extensions="toon"
+            id="org.toon.contenttype"
+            name="TOON File"
+            priority="normal">
+      </content-type>
+   </extension>
+
+   <extension point="org.eclipse.lsp4e.languageServer">
+      <contentTypeMapping
+            contentType="org.toon.contenttype"
+            languageId="toon"
+            serverId="toon-lsp">
+      </contentTypeMapping>
+   </extension>
+</plugin>

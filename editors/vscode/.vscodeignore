@@ -1,0 +1,16 @@
+.vscode/**
+.vscode-test/**
+src/**
+!out/**
+!syntaxes/**
+!binaries/**
+!images/**
+!language-configuration.json
+node_modules/**
+.gitignore
+*.map
+*.ts
+tsconfig.json
+.eslintrc.json
+*.md
+!README.md

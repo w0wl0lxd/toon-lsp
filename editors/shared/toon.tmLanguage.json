@@ -1,0 +1,140 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TOON",
+  "scopeName": "source.toon",
+  "fileTypes": ["toon"],
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#key-value" },
+    { "include": "#array-item" },
+    { "include": "#tabular-row" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.toon",
+      "match": "#.*$"
+    },
+    "key-value": {
+      "patterns": [
+        {
+          "match": "^(\\s*)(\\w[\\w-]*)(:)\\s*(\\[)(.*)?(\\])?\\s*$",
+          "captures": {
+            "2": { "name": "entity.name.tag.toon" },
+            "3": { "name": "punctuation.separator.key-value.toon" },
+            "4": { "name": "punctuation.definition.array.begin.toon" },
+            "5": { "patterns": [{ "include": "#inline-array-values" }] },
+            "6": { "name": "punctuation.definition.array.end.toon" }
+          }
+        },
+        {
+          "match": "^(\\s*)(\\w[\\w-]*)(:)\\s*(.*)$",
+          "captures": {
+            "2": { "name": "entity.name.tag.toon" },
+            "3": { "name": "punctuation.separator.key-value.toon" },
+            "4": { "patterns": [{ "include": "#value" }] }
+          }
+        }
+      ]
+    },
+    "array-item": {
+      "match": "^(\\s*)(-)(\\s+)(.*)$",
+      "captures": {
+        "2": { "name": "punctuation.definition.array-item.toon" },
+        "4": { "patterns": [{ "include": "#value" }] }
+      }
+    },
+    "tabular-row": {
+      "match": "^(\\s*)(\\|)(.*)$",
+      "captures": {
+        "2": { "name": "punctuation.definition.table.toon" },
+        "3": { "patterns": [{ "include": "#table-cells" }] }
+      }
+    },
+    "table-cells": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.table.toon",
+          "match": "\\|"
+        },
+        { "include": "#value" }
+      ]
+    },
+    "inline-array-values": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.array.toon",
+          "match": ","
+        },
+        { "include": "#value" }
+      ]
+    },
+    "value": {
+      "patterns": [
+        { "include": "#string-quoted-double" },
+        { "include": "#string-quoted-single" },
+        { "include": "#constant-boolean" },
+        { "include": "#constant-null" },
+        { "include": "#constant-numeric" },
+        { "include": "#string-unquoted" }
+      ]
+    },
+    "string-quoted-double": {
+      "name": "string.quoted.double.toon",
+      "begin": "\"",
+      "end": "\"",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.toon" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.toon" }
+      },
+      "patterns": [
+        {
+          "name": "constant.character.escape.toon",
+          "match": "\\\\(?:[\"\\\\bfnrt]|u[0-9A-Fa-f]{4})"
+        }
+      ]
+    },
+    "string-quoted-single": {
+      "name": "string.quoted.single.toon",
+      "begin": "'",
+      "end": "'",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.toon" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.toon" }
+      },
+      "patterns": [
+        {
+          "name": "constant.character.escape.toon",
+          "match": "\\\\(?:['\\\\bfnrt]|u[0-9A-Fa-f]{4})"
+        }
+      ]
+    },
+    "constant-boolean": {
+      "name": "constant.language.boolean.toon",
+      "match": "\\b(true|false)\\b"
+    },
+    "constant-null": {
+      "name": "constant.language.null.toon",
+      "match": "\\b(null)\\b"
+    },
+    "constant-numeric": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.toon",
+          "match": "-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?"
+        },
+        {
+          "name": "constant.numeric.integer.toon",
+          "match": "-?(?:0|[1-9]\\d*)"
+        }
+      ]
+    },
+    "string-unquoted": {
+      "name": "string.unquoted.toon",
+      "match": "[^\\s#\\[\\]|,][^#\\[\\]|,]*"
+    }
+  }
+}
