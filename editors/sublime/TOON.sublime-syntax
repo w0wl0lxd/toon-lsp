@@ -1,0 +1,114 @@
+%YAML 1.2
+---
+# TOON Syntax Definition for Sublime Text
+# Place in: ~/.config/sublime-text/Packages/User/TOON.sublime-syntax
+
+name: TOON
+file_extensions:
+  - toon
+scope: source.toon
+first_line_match: '^#.*[Tt][Oo][Oo][Nn]'
+
+contexts:
+  main:
+    - include: comments
+    - include: key-value
+    - include: array-item
+    - include: table-row
+
+  comments:
+    - match: '#.*$'
+      scope: comment.line.number-sign.toon
+
+  key-value:
+    - match: '^(\s*)([\w][\w-]*)(:)\s*(\[)'
+      captures:
+        2: entity.name.tag.toon
+        3: punctuation.separator.key-value.toon
+        4: punctuation.definition.array.begin.toon
+      push: inline-array
+
+    - match: '^(\s*)([\w][\w-]*)(:)\s*'
+      captures:
+        2: entity.name.tag.toon
+        3: punctuation.separator.key-value.toon
+      push: value
+
+  array-item:
+    - match: '^(\s*)(-)\s*'
+      captures:
+        2: punctuation.definition.array-item.toon
+      push: value
+
+  table-row:
+    - match: '^(\s*)(\|)'
+      captures:
+        2: punctuation.definition.table.toon
+      push: table-cells
+
+  table-cells:
+    - match: '\|'
+      scope: punctuation.separator.table.toon
+    - match: '$'
+      pop: true
+    - include: values
+
+  inline-array:
+    - match: '\]'
+      scope: punctuation.definition.array.end.toon
+      pop: true
+    - match: ','
+      scope: punctuation.separator.array.toon
+    - include: values
+
+  value:
+    - match: '$'
+      pop: true
+    - include: values
+
+  values:
+    - include: comments
+    - include: string-double
+    - include: string-single
+    - include: boolean
+    - include: null
+    - include: number
+    - include: string-unquoted
+
+  string-double:
+    - match: '"'
+      scope: punctuation.definition.string.begin.toon
+      push:
+        - meta_scope: string.quoted.double.toon
+        - match: '"'
+          scope: punctuation.definition.string.end.toon
+          pop: true
+        - match: '\\(?:["\\/bfnrt]|u[0-9A-Fa-f]{4})'
+          scope: constant.character.escape.toon
+
+  string-single:
+    - match: "'"
+      scope: punctuation.definition.string.begin.toon
+      push:
+        - meta_scope: string.quoted.single.toon
+        - match: "'"
+          scope: punctuation.definition.string.end.toon
+          pop: true
+        - match: "\\\\(?:['\\\\/bfnrt]|u[0-9A-Fa-f]{4})"
+          scope: constant.character.escape.toon
+
+  boolean:
+    - match: '\b(true|false)\b'
+      scope: constant.language.boolean.toon
+
+  null:
+    - match: '\bnull\b'
+      scope: constant.language.null.toon
+
+  number:
+    - match: '-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?'
+      scope: constant.numeric.toon
+
+  string-unquoted:
+    - match: '[^\s#\[\]|,][^#\[\]|,\n]*'
+      scope: string.unquoted.toon
