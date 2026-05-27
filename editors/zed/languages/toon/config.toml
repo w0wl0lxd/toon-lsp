@@ -1,0 +1,15 @@
+# TOON Language Configuration for Zed
+name = "TOON"
+grammar = "toon"
+path_suffixes = [".toon"]
+line_comments = ["#"]
+autoclose_before = "}])"
+brackets = [
+  { start = "[", end = "]", close = true, newline = true },
+  { start = "{", end = "}", close = true, newline = true },
+  { start = "\"", end = "\"", close = true, newline = false, not_in = ["string"] },
+  { start = "'", end = "'", close = true, newline = false, not_in = ["string"] },
+]
+
+[overrides.element]
+line_comments = { remove = ["#"] }

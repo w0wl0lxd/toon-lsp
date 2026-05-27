@@ -1,0 +1,19 @@
+{
+  // TOON Language Server Settings for Sublime Text
+  // Add this to your LSP.sublime-settings via Preferences -> Package Settings -> LSP -> Settings
+
+  "clients": {
+    "toon-lsp": {
+      "enabled": true,
+      "command": ["toon-lsp"],
+      "selector": "source.toon",
+      "initializationOptions": {},
+      "settings": {
+        "formatting": {
+          "tabSize": 2,
+          "useTabs": false
+        }
+      }
+    }
+  }
+}
