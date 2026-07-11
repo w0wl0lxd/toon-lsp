@@ -16,7 +16,7 @@
 | 3 | Emit: numbers + scalar dispatch | DONE (driver) | codex: PASS (0 findings) | a5017fb |
 | 4 | Encoder: objects/nesting/inline arrays | DONE (driver) | with 5 | 8ae776f |
 | 5 | Encoder: tabular detection + emission | DONE (driver) | claude: 4 findings (1 fixed, 3 dispositioned) | pending |
-| 6 | Decoder A (Scanner-driven) | - | - | - |
+| 6 | Decoder A (Scanner-driven) | DONE (driver) | self (round-trip gate = Task 8) | pending |
 | 7 | Decoder B (byte scanner) | - | - | - |
 | 8 | Conformance + round-trip + differential | - | - | - |
 | 9 | Benchmark decoders + pick winner | - | - | - |
@@ -36,3 +36,5 @@
   - F1 (error swallowing): rejected — `emit_json_scalar` returns bool (not Result) and every call site is inside a proven-scalar match arm; no error path swallowed. `EncodeResult` kept for API symmetry.
   - F2 (tabular false-negative for array field inside expanded list item): ACCEPTED + FIXED — extracted `encode_array_body` shared by plain and nested array fields; added regression test `tabular_applies_to_array_field_inside_expanded_item`.
   - F3 (indent!=2 misaligns expanded-item continuation) & F4 (root bare arrays never inline/tabular): DEFERRED to Task 8 — exact canonical layout must be pinned by spec fixtures, not guessed (spec is the authority). Tracked as known limitations.
+- Task 6: driver-direct, empirically dumped the Scanner token stream (examples/dump_tokens.rs, since deleted) to design against real tokens rather than guessing. Recursive-descent parser over `Vec<Token>`: objects, nested blocks (Indent/Dedent), inline arrays, tabular, expanded arrays (scalar/object/nested items), references decoded back to `${path}` strings. Added `[features] default=[decoder_a] decoder_a decoder_b` + mutual-exclusion `compile_error!`, `DecodeError::new`. RED→GREEN 3/3, clippy/doc/full-suite clean.
+  - Known round-trip edge (for Task 8): emit escapes exotic control chars as `\uXXXX` but the Scanner only understands `\n \r \t \" \\` (errors on `\u`); and hex Number tokens won't parse via serde_json. Both to be pinned/fixed under conformance.
