@@ -4,14 +4,11 @@
 [advisories]
 # Database of known vulnerabilities
 db-path = "~/.cargo/advisory-db"
-# Update advisory database on each check
-# Ignore unmaintained transitive dependencies from toon-format
-ignore = [
-    # paste via ratatui - no safe upgrade, used by toon-format
-    "RUSTSEC-2024-0436",
-    # yaml-rust via syntect - no safe upgrade, used by toon-format
-    "RUSTSEC-2024-0320",
-]
+# No ignores needed: disabling toon-format's default `cli` feature removed the
+# transitive syntect/ratatui/bincode tree that previously pulled in unmaintained
+# advisories (RUSTSEC-2024-0436 paste, RUSTSEC-2024-0320 yaml-rust,
+# RUSTSEC-2025-0141 bincode).
+ignore = []
 
 [licenses]
 # List of allowed licenses

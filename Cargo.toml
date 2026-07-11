@@ -19,8 +19,11 @@ name = "toon-lsp"
 path = "src/main.rs"
 
 [dependencies]
-# TOON Format
-toon-format = "0.4"
+# TOON Format — core encode/decode only. The default `cli` feature pulls in a
+# large TUI/highlighting tree (syntect→bincode, ratatui→paste, arboard, clap,
+# tiktoken-rs, …) that we do not use; disabling it removes those transitive
+# deps and their unmaintained-crate advisories.
+toon-format = { version = "0.4", default-features = false }
 
 # LSP Framework
 tower-lsp = "0.20"
