@@ -27,7 +27,7 @@ use std::io::{Read, Write};
 ///
 /// Returns `CliError::Encode` if encoding fails.
 pub fn encode_json(value: &JsonValue) -> CliResult<String> {
-    toon_format::encode_default(value)
+    crate::toon::encode(value)
         .map_err(|e| CliError::encode(format!("Failed to encode JSON to TOON: {e}")))
 }
 
@@ -37,20 +37,17 @@ pub fn encode_json(value: &JsonValue) -> CliResult<String> {
 ///
 /// Returns `CliError::Encode` if encoding fails.
 pub fn encode_json_with_indent(value: &JsonValue, indent: usize) -> CliResult<String> {
-    let opts = toon_format::EncodeOptions::new().with_spaces(indent);
-    toon_format::encode(value, &opts)
+    crate::toon::encode_with_indent(value, indent)
         .map_err(|e| CliError::encode(format!("Failed to encode JSON to TOON: {e}")))
 }
 
 /// Decode TOON string to JSON value.
 ///
-/// This is a thin wrapper around `toon_format::decode_default()`.
-///
 /// # Errors
 ///
 /// Returns `CliError::Decode` if decoding fails.
 pub fn decode_toon(toon: &str) -> CliResult<JsonValue> {
-    toon_format::decode_default(toon)
+    crate::toon::decode(toon)
         .map_err(|e| CliError::decode(format!("Failed to decode TOON to JSON: {e}")))
 }
 
