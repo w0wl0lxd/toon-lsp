@@ -105,6 +105,15 @@ mod scanner_driven {
             self.skip_newlines();
             match self.kind() {
                 TokenKind::Dash => self.parse_expanded_array(),
+                TokenKind::LeftBracket
+                    if matches!(self.kind_at(1), TokenKind::RightBracket) =>
+                {
+                    // Literal empty array `[]` at document root.
+                    self.bump();
+                    self.bump();
+                    self.consume_line_end()?;
+                    Ok(Value::Array(Vec::new()))
+                }
                 TokenKind::Identifier(_) | TokenKind::String(_)
                     if self.starts_object_entry() =>
                 {
@@ -152,6 +161,16 @@ mod scanner_driven {
                 return Ok(());
             }
             self.expect(&TokenKind::Colon)?;
+            if matches!(self.kind(), TokenKind::LeftBracket)
+                && matches!(self.kind_at(1), TokenKind::RightBracket)
+            {
+                // Literal empty array `key: []`.
+                self.bump();
+                self.bump();
+                self.consume_line_end()?;
+                map.insert(key, Value::Array(Vec::new()));
+                return Ok(());
+            }
             if matches!(self.kind(), TokenKind::Newline | TokenKind::Eof) {
                 self.skip_newlines();
                 if matches!(self.kind(), TokenKind::Indent) {
@@ -160,7 +179,8 @@ mod scanner_driven {
                     self.expect(&TokenKind::Dedent)?;
                     map.insert(key, child);
                 } else {
-                    map.insert(key, Value::Null);
+                    // Bare `key:` with no indented block is an empty object.
+                    map.insert(key, Value::Object(Map::new()));
                 }
             } else {
                 let value = self.parse_scalar()?;
@@ -270,7 +290,8 @@ mod scanner_driven {
                     self.expect(&TokenKind::Dedent)?;
                     return Ok(child);
                 }
-                return Ok(Value::Null);
+                // A dash with no value or child is an empty object.
+                return Ok(Value::Object(Map::new()));
             }
 
             let is_object_item = matches!(
