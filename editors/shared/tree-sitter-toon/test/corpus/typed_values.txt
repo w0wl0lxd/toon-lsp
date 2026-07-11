@@ -1,0 +1,99 @@
+=================================
+Typed values
+=================================
+
+count: 42
+score: 3.14
+active: true
+empty: null
+name: Alice
+data: [1, 2, 3]
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (number))
+  (newline)
+  (pair
+    key: (key)
+    value: (number))
+  (newline)
+  (pair
+    key: (key)
+    value: (boolean))
+  (newline)
+  (pair
+    key: (key)
+    value: (null))
+  (newline)
+  (pair
+    key: (key)
+    value: (unquoted_string))
+  (newline)
+  (pair
+    key: (key)
+    value: (inline_array
+      (number)
+      (number)
+      (number)))
+  (newline))
+
+=================================
+Strings with quotes
+=================================
+
+greeting: "Hello World"
+single: 'test string'
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (string
+      (double_quoted_string)))
+  (newline)
+  (pair
+    key: (key)
+    value: (string
+      (single_quoted_string)))
+  (newline))
+
+=================================
+Comments
+=================================
+
+# top comment
+name: Alice # inline
+
+---
+
+(document
+  (comment)
+  (pair
+    key: (key)
+    value: (unquoted_string))
+  (newline))
+
+=================================
+Array items
+=================================
+
+items:
+- a
+- b
+
+---
+
+(document
+  (pair
+    key: (key))
+  (newline)
+  (array_item
+    (unquoted_string))
+  (newline)
+  (array_item
+    (unquoted_string))
+  (newline))

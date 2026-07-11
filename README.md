@@ -6,31 +6,68 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSING.md)
 
-a language server protocol implementation for [toon](https://github.com/toon-format/toon) (token-oriented object notation). toon is a compact config format designed to be easy for both humans and lms to read/write.
+A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation and command-line toolkit for [TOON](https://github.com/toon-format/toon) (Token-Oriented Object Notation), a compact, indentation-based config format.
 
-## what's in this crate
+This project provides both a library (`toon_lsp`) that you can embed in your own tools, and a `toon-lsp` binary that runs as an LSP server or as a standalone CLI for converting, validating, and inspecting TOON documents.
 
-- full parser with position tracking on every node
-- 9 lsp features: diagnostics, hover, completion, go-to-definition, find-references, rename, semantic tokens, document symbols, formatting
-- 6 cli commands: encode, decode, check, format, symbols, diagnose
-- error recovery so the parser keeps going even when your file has syntax errors
-- 467+ tests covering the scanner, parser, lsp, and cli
+## Installation
 
-## the lsp features
+From crates.io:
 
-- diagnostics with syntax error recovery
-- document symbols (outline view)
-- hover info (shows type and path)
-- completions (sibling keys, true/false)
-- go-to-definition for duplicate keys
-- semantic tokens (syntax highlighting)
-- find-references
-- rename symbol
-- code actions and formatting
+```bash
+cargo install toon-lsp
+```
 
-## cli
+Build from source:
 
-### encode - json/yaml to toon
+```bash
+git clone https://github.com/w0wl0lxd/toon-lsp
+cd toon-lsp
+cargo build --release
+# binary at target/release/toon-lsp
+```
+
+Run the LSP server by launching the binary with no subcommand; most editor integrations start it automatically (see below).
+
+## Editor support
+
+TOON is supported in 11 editors through bundled language-server wiring: VS Code, Neovim, Vim, Helix, Zed, Sublime Text, Kate, Emacs, JetBrains IDEs, Eclipse, and Notepad++. Setup instructions for each are in [`docs/ide-support.md`](docs/ide-support.md).
+
+## Language server features
+
+The server advertises the following LSP capabilities. Diagnostics are published on document open and change, and the parser recovers from syntax errors so that other features keep working on incomplete files.
+
+**Navigation and symbols**
+
+- Go to definition (resolves duplicate-key references)
+- Document symbols (outline)
+- Workspace symbols (fuzzy search across open documents)
+- Find references
+- Selection ranges
+- Document highlight
+
+**Editing**
+
+- Rename, with `prepareRename` support
+- Document formatting (skipped when the document has parse errors)
+- Code actions
+- Code lens
+- Linked editing ranges (edit matching key/value pairs together)
+
+**Understanding and introspection**
+
+- Hover (shows type and path)
+- Completion (sibling keys, `true`/`false`, structure)
+- Folding ranges
+- Inlay hints
+- Document links
+- Semantic tokens (property, string, number, keyword, operator)
+
+## Command-line interface
+
+With no subcommand the binary runs as an LSP server. Otherwise it exposes six commands.
+
+### `encode` — JSON/YAML to TOON
 
 ```bash
 toon-lsp encode config.json -o config.toon
@@ -39,7 +76,7 @@ echo '{"name": "Alice"}' | toon-lsp encode -
 toon-lsp encode data.json --indent 4
 ```
 
-### decode - toon to json/yaml
+### `decode` — TOON to JSON/YAML
 
 ```bash
 toon-lsp decode config.toon -o config.json
@@ -48,7 +85,7 @@ toon-lsp decode data.toon --pretty
 echo 'name: Alice' | toon-lsp decode -
 ```
 
-### check - validate toon syntax
+### `check` — validate TOON syntax
 
 ```bash
 toon-lsp check config.toon
@@ -58,38 +95,38 @@ toon-lsp check config.toon --format github
 echo 'key: value' | toon-lsp check -
 ```
 
-exit codes: 0 = valid, 1 = io error, 2 = validation errors
+Exit codes: `0` = valid, `1` = I/O error, `2` = validation errors.
 
-### format - format toon files
+### `format` — format TOON files
 
 ```bash
 toon-lsp format config.toon                    # stdout
 toon-lsp format config.toon -o config.toon     # in place
-toon-lsp format --check config.toon            # ci mode, exit 1 if unformatted
+toon-lsp format --check config.toon            # CI mode, exit 1 if unformatted
 toon-lsp format config.toon --indent 4
 toon-lsp format config.toon --tabs
 ```
 
-### symbols - extract document outline
+### `symbols` — extract document outline
 
 ```bash
 toon-lsp symbols config.toon                  # tree view (default)
-toon-lsp symbols config.toon --format json     # json for tooling
-toon-lsp symbols config.toon --format flat     # dot notation paths
-toon-lsp symbols config.toon --types         # show types
-toon-lsp symbols config.toon --positions     # show line:col
+toon-lsp symbols config.toon --format json     # JSON for tooling
+toon-lsp symbols config.toon --format flat     # dot-notation paths
+toon-lsp symbols config.toon --types           # show types
+toon-lsp symbols config.toon --positions       # show line:col
 ```
 
-### diagnose - structured error output
+### `diagnose` — structured error output
 
 ```bash
-toon-lsp diagnose config.toon                # json (default)
-toon-lsp diagnose config.toon --format sarif # security tool format
+toon-lsp diagnose config.toon                # JSON (default)
+toon-lsp diagnose config.toon --format sarif # SARIF for security tooling
 toon-lsp diagnose config.toon --context      # include source lines
 toon-lsp diagnose config.toon --severity warning
 ```
 
-## using as a library
+## Using the library
 
 ```rust
 use toon_lsp::{parse, AstNode, ObjectEntry};
@@ -135,7 +172,7 @@ fn print_entry(entry: &ObjectEntry, depth: usize) {
 }
 ```
 
-error recovery for ide use:
+Parsing recovers from errors so IDE features work on incomplete input:
 
 ```rust
 use toon_lsp::parse_with_errors;
@@ -143,18 +180,20 @@ use toon_lsp::parse_with_errors;
 let (ast, errors) = parse_with_errors(source);
 
 if let Some(ref ast) = ast {
-    // completions, hover, symbols work even with errors
+    // completions, hover, and symbols work even with errors present
 }
 
 for err in &errors {
-    eprintln!("L{}:C{}: {}",
+    eprintln!(
+        "L{}:C{}: {}",
         err.span.start.line + 1,
         err.span.start.column + 1,
-        err.kind);
+        err.kind
+    );
 }
 ```
 
-## architecture
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -166,27 +205,33 @@ flowchart LR
     P --> AST[AST]
 ```
 
-## dev setup
+The parser tracks source positions on every node and continues past syntax errors. The AST is shared by both the LSP server and the CLI commands.
+
+## Development
+
+Requires Rust 1.85 or newer (edition 2024). The repository pins a nightly toolchain via `rust-toolchain.toml`; CI also builds on nightly.
 
 ```bash
 cargo build
 cargo test
-cargo clippy -- -D warnings
-cargo fmt --check
+cargo clippy --all-features -- -D warnings
+cargo fmt --all -- --check
 RUST_LOG=debug cargo run
 ```
 
-## related
+The suite includes over 550 tests across the scanner, parser, LSP handlers, and CLI, plus a tree-sitter grammar with a corpus under `editors/shared/tree-sitter-toon/test/corpus`.
 
-- [toon-format/toon](https://github.com/toon-format/toon) - spec
-- [toon-format/toon-rust](https://github.com/toon-format/toon-rust) - serde-based rust lib
-- [tower-lsp](https://github.com/ebkalderon/tower-lsp) - lsp framework
+## Related
 
-## license
+- [toon-format/toon](https://github.com/toon-format/toon) — the TOON specification
+- [toon-format/toon-rust](https://github.com/toon-format/toon-rust) — serde-based Rust library
+- [tower-lsp](https://github.com/ebkalderon/tower-lsp) — the LSP framework this server is built on
 
-dual licensed:
+## License
 
-- **agpl-3.0** - open source and personal use
-- **commercial** - for proprietary embedding (see [licensing.md](LICENSING.md))
+Dual licensed:
 
-questions? w0wl0lxd@tuta.com
+- **AGPL-3.0-only** — open source and personal use
+- **Commercial** — for proprietary embedding (see [LICENSING.md](LICENSING.md))
+
+Questions: w0wl0lxd@tuta.com

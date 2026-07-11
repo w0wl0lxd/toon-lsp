@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.toon.lsp</id>
     <name>TOON Language</name>
-    <version>0.1.0</version>
+    <version>0.4.0</version>
     <vendor email="support@toon-format.org" url="https://github.com/toon-format/toon-lsp">
         TOON Format
     </vendor>
@@ -12,13 +12,19 @@
         Features:
         <ul>
             <li>Syntax highlighting</li>
-            <li>Error diagnostics</li>
+            <li>Error diagnostics with recovery</li>
             <li>Hover information</li>
+            <li>Completion (keys, literals)</li>
             <li>Go to definition</li>
             <li>Find references</li>
-            <li>Rename symbol</li>
+            <li>Rename symbol (with prepare)</li>
             <li>Document formatting</li>
             <li>Document symbols (outline)</li>
+            <li>Workspace symbols</li>
+            <li>Code actions and code lens</li>
+            <li>Document highlight, links, and folding ranges</li>
+            <li>Inlay hints and linked editing ranges</li>
+            <li>Selection ranges and semantic tokens</li>
         </ul>
 
         TOON is a compact, human-readable encoding of the JSON data model,
@@ -26,6 +32,11 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <h3>0.4.0</h3>
+        <ul>
+            <li>Full LSP capability set: code actions, code lens, document highlight/link, folding, inlay hints, linked editing, selection ranges, workspace symbols, semantic tokens</li>
+            <li>Updated to IntelliJ 2024.2 / LSP4IJ 0.20.1</li>
+        </ul>
         <h3>0.1.0</h3>
         <ul>
             <li>Initial release</li>
@@ -34,7 +45,7 @@
         </ul>
     ]]></change-notes>
 
-    <idea-version since-build="231" until-build="243.*"/>
+    <idea-version since-build="242" until-build="251.*"/>
 
     <depends>com.redhat.devtools.lsp4ij</depends>
     <depends>com.intellij.modules.platform</depends>
@@ -58,8 +69,11 @@
             name="TOON Language Server"
             factoryClass="com.toon.lsp.ToonLanguageServerFactory">
             <description><![CDATA[
-                Language server for TOON files providing diagnostics,
-                hover, definition, references, rename, and formatting.
+                Language server for TOON files providing diagnostics with
+                recovery, hover, completion, definition, references, rename,
+                formatting, code actions, code lens, document highlight/link,
+                folding, inlay hints, linked editing, selection ranges,
+                workspace and document symbols, and semantic tokens.
             ]]></description>
         </server>
 
