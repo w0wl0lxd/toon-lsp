@@ -129,7 +129,7 @@ fn test_format_check_does_not_modify_file() {
     // When: User runs format with --check
     let mut cmd = toon_lsp();
     cmd.arg("format").arg("--check").arg(&toon_path);
-    cmd.assert(); // Don't care about exit code
+    let _ = cmd.assert(); // Don't care about exit code
 
     // Then: File content is unchanged
     let after = fs::read_to_string(&toon_path).expect("read file");
