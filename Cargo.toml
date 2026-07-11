@@ -49,6 +49,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Bitflags
 bitflags = "2.4"
 
+[features]
+default = ["decoder_a"]
+# Prototype A: drives the existing LSP Scanner token stream.
+decoder_a = []
+# Prototype B: purpose-built line/byte scanner (benchmarked against A in Task 9).
+decoder_b = []
+
 [dev-dependencies]
 pretty_assertions = "1.4"
 insta = { version = "1.34", features = ["json"] }

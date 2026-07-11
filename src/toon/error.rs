@@ -30,6 +30,17 @@ pub enum DecodeError {
     Structure(String),
 }
 
+impl DecodeError {
+    /// Creates a [`DecodeError::Structure`] from a message.
+    ///
+    /// Convenience for decoders that report structural problems without precise
+    /// line/column information.
+    #[must_use]
+    pub fn new(message: impl Into<String>) -> Self {
+        Self::Structure(message.into())
+    }
+}
+
 /// Result alias for encoding operations.
 pub type EncodeResult<T> = Result<T, EncodeError>;
 
