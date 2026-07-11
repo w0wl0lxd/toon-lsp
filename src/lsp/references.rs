@@ -109,7 +109,7 @@ pub fn find_references_at_position(
         .map(|(key, span)| {
             // Determine if this is a definition (first occurrence at nesting level)
             // For now, mark all as definitions - will refine later if needed
-            KeyReference { key_name: key.clone(), span, is_definition: true }
+            KeyReference { key_name: key, span, is_definition: true }
         })
         .collect();
 

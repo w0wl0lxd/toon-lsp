@@ -187,7 +187,7 @@ mod tests {
         let (ast, errors) = parse_with_errors(&new_text);
 
         // Update with pre-parsed data
-        state.update_parsed(new_text.clone(), 2, ast, errors);
+        state.update_parsed(new_text, 2, ast, errors);
 
         assert_eq!(state.text(), "new: value");
         assert_eq!(state.version(), 2);
@@ -204,7 +204,7 @@ mod tests {
         let (ast, errors) = parse_with_errors(&invalid_text);
 
         // Update with pre-parsed data including errors
-        state.update_parsed(invalid_text.clone(), 2, ast, errors);
+        state.update_parsed(invalid_text, 2, ast, errors);
 
         assert_eq!(state.text(), "invalid syntax [[[");
         assert_eq!(state.version(), 2);

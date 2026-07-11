@@ -289,7 +289,7 @@ impl<'a> Scanner<'a> {
         let mut iter = self.chars.clone();
         let c0 = iter.next().map(|(_, c)| c);
         let c1 = iter.next().map(|(_, c)| c);
-        let c2 = iter.next().map(|(_, c)| c);
+        let c2 = iter.peek().map(|(_, c)| *c);
         c0 == Some('"') && c1 == Some('"') && c2 == Some('"')
     }
 
@@ -702,25 +702,6 @@ impl<'a> Scanner<'a> {
 
         let raw = &self.source[start_offset..self.offset as usize - 1];
         self.make_token(TokenKind::Reference(raw.to_string()), start)
-    }
-
-    /// Scan unquoted string value (after colon in key: value).
-    /// Consumes until newline or end of input.
-    #[allow(dead_code)]
-    fn scan_unquoted_string(&mut self) -> Token {
-        let start = self.current_position();
-        let start_offset = self.offset as usize;
-
-        while let Some(ch) = self.peek() {
-            if ch == '\n' || ch == '\r' {
-                break;
-            }
-            self.advance();
-        }
-
-        let end = self.offset as usize;
-        let text = self.source[start_offset..end].trim_end();
-        self.make_token(TokenKind::String(text.into()), start)
     }
 
     /// Scan all tokens from the source.

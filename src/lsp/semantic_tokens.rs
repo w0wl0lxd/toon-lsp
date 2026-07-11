@@ -273,9 +273,14 @@ pub fn encode_tokens(
     // Split text into lines for UTF-16 conversion
     let lines: Vec<&str> = text.lines().collect();
 
-    // Note: tokens are already in document order from depth-first AST traversal
-    for token in tokens {
-        let delta_line = token.line - prev_line;
+    // LSP delta encoding requires ascending (line, column) order; error recovery
+    // can emit spans out of order, so sort defensively.
+    let mut ordered: Vec<&SemanticToken> = tokens.iter().collect();
+    ordered.sort_by(|a, b| a.line.cmp(&b.line).then(a.start_col.cmp(&b.start_col)));
+
+    for token in ordered {
+        // saturating_sub: degrade to 0 rather than panic on any residual disorder.
+        let delta_line = token.line.saturating_sub(prev_line);
 
         // Convert UTF-8 positions to UTF-16 for LSP compliance
         let line_idx = token.line as usize;
@@ -283,12 +288,13 @@ pub fn encode_tokens(
 
         let utf16_col = super::utf16::utf8_to_utf16_col(line_text, token.start_col);
         let utf16_length =
-            super::utf16::utf8_to_utf16_col(line_text, token.start_col + token.length) - utf16_col;
+            super::utf16::utf8_to_utf16_col(line_text, token.start_col + token.length)
+                .saturating_sub(utf16_col);
 
         let utf16_delta_col = if delta_line == 0 {
             // Same line: compute delta in UTF-16 space
             let prev_utf16_col = super::utf16::utf8_to_utf16_col(line_text, prev_col);
-            utf16_col - prev_utf16_col
+            utf16_col.saturating_sub(prev_utf16_col)
         } else {
             // New line: use absolute UTF-16 column
             utf16_col
@@ -732,5 +738,81 @@ mod tests {
             "Whitespace-only document should produce no tokens, found {}",
             tokens.len()
         );
+    }
+
+    /// Encoding out-of-order tokens must not panic (u32 delta underflow) and
+    /// must still yield a valid, monotonically decodable delta stream. The LSP
+    /// spec requires ascending order; `encode_tokens` sorts defensively.
+    #[test]
+    fn test_encode_tokens_out_of_order_does_not_panic() {
+        let source = "aaa: 1\nbbb: 2\nccc: 3";
+        // Deliberately reversed / interleaved order.
+        let tokens = vec![
+            SemanticToken {
+                line: 2,
+                start_col: 0,
+                length: 3,
+                token_type: ToonTokenType::Property,
+                modifiers: ToonTokenModifier::empty(),
+            },
+            SemanticToken {
+                line: 0,
+                start_col: 0,
+                length: 3,
+                token_type: ToonTokenType::Property,
+                modifiers: ToonTokenModifier::empty(),
+            },
+            SemanticToken {
+                line: 1,
+                start_col: 0,
+                length: 3,
+                token_type: ToonTokenType::Property,
+                modifiers: ToonTokenModifier::empty(),
+            },
+        ];
+
+        let encoded = encode_tokens(&tokens, source);
+
+        assert_eq!(encoded.len(), 3);
+        // After sorting: line 0 (delta 0), line 1 (delta 1), line 2 (delta 1).
+        assert_eq!(encoded[0].delta_line, 0);
+        assert_eq!(encoded[1].delta_line, 1);
+        assert_eq!(encoded[2].delta_line, 1);
+        // Decoded absolute lines must be strictly ascending — no underflow wrap.
+        let mut abs = 0u32;
+        for t in &encoded {
+            abs += t.delta_line;
+        }
+        assert_eq!(abs, 2, "absolute line of last token should be 2");
+    }
+
+    /// Two tokens on the same line, supplied out of column order, must produce a
+    /// non-wrapping (saturating) column delta rather than a panic.
+    #[test]
+    fn test_encode_tokens_same_line_reversed_columns() {
+        let source = "aa bbbb cc";
+        let tokens = vec![
+            SemanticToken {
+                line: 0,
+                start_col: 8,
+                length: 2,
+                token_type: ToonTokenType::String,
+                modifiers: ToonTokenModifier::empty(),
+            },
+            SemanticToken {
+                line: 0,
+                start_col: 0,
+                length: 2,
+                token_type: ToonTokenType::String,
+                modifiers: ToonTokenModifier::empty(),
+            },
+        ];
+
+        let encoded = encode_tokens(&tokens, source);
+        assert_eq!(encoded.len(), 2);
+        // Sorted: col 0 first (delta 0), then col 8 (delta 8).
+        assert_eq!(encoded[0].delta_start, 0);
+        assert_eq!(encoded[1].delta_line, 0);
+        assert_eq!(encoded[1].delta_start, 8);
     }
 }

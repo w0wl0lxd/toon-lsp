@@ -33,9 +33,8 @@ pub fn collect_inlay_hints(
 ) -> Vec<InlayHint> {
     let mut hints = Vec::new();
     let lines: Vec<&str> = source.lines().collect();
-    let source_len = source.len() as u32;
 
-    collect_hints_recursive(ast, ast, &lines, source_len, &mut hints);
+    collect_hints_recursive(ast, ast, &lines, &mut hints);
 
     // Filter hints to the requested range if provided
     if let Some(range) = range {
@@ -57,18 +56,16 @@ pub fn collect_inlay_hints(
     hints
 }
 
-#[allow(clippy::only_used_in_recursion)]
 fn collect_hints_recursive(
     node: &AstNode,
     root: &AstNode,
     lines: &[&str],
-    source_len: u32,
     hints: &mut Vec<InlayHint>,
 ) {
     match node {
         AstNode::Document { children, .. } => {
             for child in children {
-                collect_hints_recursive(child, root, lines, source_len, hints);
+                collect_hints_recursive(child, root, lines, hints);
             }
         }
         AstNode::Object { entries, span } => {
@@ -104,12 +101,12 @@ fn collect_hints_recursive(
                 }
 
                 // Recurse into nested structures
-                collect_hints_recursive(&entry.value, root, lines, source_len, hints);
+                collect_hints_recursive(&entry.value, root, lines, hints);
             }
         }
         AstNode::Array { items, .. } => {
             for item in items {
-                collect_hints_recursive(item, root, lines, source_len, hints);
+                collect_hints_recursive(item, root, lines, hints);
             }
         }
         AstNode::Reference { path, is_env, span } => {

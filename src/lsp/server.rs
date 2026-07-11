@@ -175,10 +175,21 @@ impl LanguageServer for ToonLanguageServer {
         let text_clone = text.clone();
         let parse_result =
             tokio::task::spawn_blocking(move || crate::parser::parse_with_errors(&text_clone))
-                .await
-                .expect("parsing task panicked");
+                .await;
 
-        let (ast, errors) = parse_result;
+        // A parse-task panic must not crash the server; degrade to an empty doc.
+        let (ast, errors) = match parse_result {
+            Ok(parsed) => parsed,
+            Err(join_err) => {
+                self.client
+                    .log_message(
+                        MessageType::ERROR,
+                        format!("TOON parse task failed for {uri}: {join_err}"),
+                    )
+                    .await;
+                (None, Vec::new())
+            }
+        };
 
         // Create document state with pre-parsed data
         let mut doc_state = DocumentState::new(String::new(), 0);
@@ -211,10 +222,21 @@ impl LanguageServer for ToonLanguageServer {
         let text_clone = text.clone();
         let parse_result =
             tokio::task::spawn_blocking(move || crate::parser::parse_with_errors(&text_clone))
-                .await
-                .expect("parsing task panicked");
+                .await;
 
-        let (ast, errors) = parse_result;
+        // A parse-task panic must not crash the server; keep the prior state.
+        let (ast, errors) = match parse_result {
+            Ok(parsed) => parsed,
+            Err(join_err) => {
+                self.client
+                    .log_message(
+                        MessageType::ERROR,
+                        format!("TOON parse task failed for {uri}: {join_err}"),
+                    )
+                    .await;
+                return;
+            }
+        };
 
         // Update document state with pre-parsed data
         if let Some(doc_arc) = self.get_document(&uri).await {

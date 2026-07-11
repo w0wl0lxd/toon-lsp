@@ -285,8 +285,8 @@ mod tests {
 
         let completions = get_completions_at_position(&ast, source, 1, 0);
         // Should suggest existing keys
-        let labels: Vec<&str> = completions.iter().map(|c| c.label.as_str()).collect();
-        assert!(labels.contains(&"name") || completions.is_empty());
+        let has_name = completions.iter().any(|c| c.label == "name");
+        assert!(has_name || completions.is_empty());
     }
 
     #[test]
