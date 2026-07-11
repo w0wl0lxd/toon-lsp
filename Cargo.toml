@@ -2,6 +2,7 @@
 name = "toon-lsp"
 version = "0.4.1"
 edition = "2024"
+resolver = "3"
 authors = ["w0wl0lxd"]
 description = "Language Server Protocol implementation for TOON (Token-Oriented Object Notation)"
 license = "AGPL-3.0-only"
