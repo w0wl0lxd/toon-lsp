@@ -121,6 +121,45 @@ pub fn emit_scalar_string(out: &mut String, s: &str, delim: Delimiter) {
     }
 }
 
+/// Appends the canonical TOON rendering of `n` to `out`.
+///
+/// Delegates to [`serde_json::Number`]'s own `Display`, which is backed by
+/// `ryu`/`itoa`, guaranteeing byte-for-byte round-trip parity with `serde_json`:
+/// integers print without a decimal point, floats in their minimal form.
+pub fn emit_number(out: &mut String, n: &serde_json::Number) {
+    use std::fmt::Write as _;
+    let _ = write!(out, "{n}");
+}
+
+/// Appends the TOON rendering of `v` to `out` when it is a scalar.
+///
+/// Returns `true` if `v` was a scalar (null, bool, number, or string) and was
+/// written, `false` for objects and arrays (which the caller must handle
+/// structurally, leaving `out` untouched).
+#[must_use]
+pub fn emit_json_scalar(out: &mut String, v: &serde_json::Value, delim: Delimiter) -> bool {
+    use serde_json::Value;
+    match v {
+        Value::Null => {
+            out.push_str("null");
+            true
+        }
+        Value::Bool(b) => {
+            out.push_str(if *b { "true" } else { "false" });
+            true
+        }
+        Value::Number(n) => {
+            emit_number(out, n);
+            true
+        }
+        Value::String(s) => {
+            emit_scalar_string(out, s, delim);
+            true
+        }
+        Value::Array(_) | Value::Object(_) => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,5 +201,25 @@ mod tests {
         let mut s2 = String::new();
         emit_scalar_string(&mut s2, "hello", Delimiter::Comma);
         assert_eq!(s2, "hello");
+    }
+
+    #[test]
+    fn numbers_canonical() {
+        let mut s = String::new();
+        emit_number(&mut s, &serde_json::Number::from(42));
+        assert_eq!(s, "42");
+        let mut s2 = String::new();
+        emit_number(&mut s2, &serde_json::Number::from_f64(1.5).unwrap());
+        assert_eq!(s2, "1.5");
+    }
+
+    #[test]
+    fn scalar_dispatch() {
+        let mut s = String::new();
+        assert!(emit_json_scalar(&mut s, &serde_json::json!(true), Delimiter::Comma));
+        assert_eq!(s, "true");
+        let mut s2 = String::new();
+        assert!(!emit_json_scalar(&mut s2, &serde_json::json!({"a":1}), Delimiter::Comma));
+        assert!(s2.is_empty());
     }
 }
