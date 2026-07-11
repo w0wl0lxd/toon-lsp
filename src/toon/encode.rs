@@ -266,7 +266,12 @@ fn encode_array_field_inline_key(
     delim: Delimiter,
 ) -> EncodeResult<()> {
     emit_key(out, key, delim);
-    encode_array_body(out, arr, level, indent, delim)
+    if arr.is_empty() {
+        out.push_str(": []\n");
+        Ok(())
+    } else {
+        encode_array_body(out, arr, level, indent, delim)
+    }
 }
 
 fn emit_key(out: &mut String, key: &str, delim: Delimiter) {

@@ -334,7 +334,7 @@ impl<'a> Scanner<'a> {
 
         // Blank lines and comment-only lines do not affect indentation: leave
         // the indent stack untouched and let the newline be tokenized normally.
-        if matches!(self.peek(), None | Some('\n' | '#')) {
+        if matches!(self.peek(), None | Some('\n' | '\r' | '#')) {
             return None;
         }
 

@@ -11,14 +11,14 @@ use crate::toon::error::{DecodeError, DecodeResult};
 /// Returns [`DecodeError`] on malformed TOON (unexpected tokens, scanner
 /// errors, or unparseable numbers).
 pub fn decode(input: &str) -> DecodeResult<Value> {
-    let normalized = remove_block_comments(input);
+    let normalized = remove_block_comments(input)?;
     let mut parser = Parser::new(&normalized);
     parser.parse_document()
 }
 
 /// Pre-processes the input to replace block comments `/* ... */` with spaces.
 /// This preserves character offsets and line/column positions.
-fn remove_block_comments(input: &str) -> String {
+fn remove_block_comments(input: &str) -> DecodeResult<String> {
     let mut out = String::with_capacity(input.len());
     let mut chars = input.char_indices().peekable();
     while let Some((_, ch)) = chars.next() {
@@ -61,15 +61,26 @@ fn remove_block_comments(input: &str) -> String {
                     }
                 }
             }
+        } else if ch == '#' {
+            // Line comment: preserve all characters until newline
+            out.push(ch);
+            while let Some((_, c)) = chars.next() {
+                out.push(c);
+                if c == '\n' {
+                    break;
+                }
+            }
         } else if ch == '/' && chars.peek().map(|(_, c)| *c) == Some('*') {
             chars.next(); // consume '*'
             out.push(' ');
             out.push(' ');
+            let mut found_end = false;
             while let Some((_, c)) = chars.next() {
                 if c == '*' && chars.peek().map(|(_, ch)| *ch) == Some('/') {
                     chars.next(); // consume '/'
                     out.push(' ');
                     out.push(' ');
+                    found_end = true;
                     break;
                 } else if c == '\n' {
                     out.push('\n');
@@ -77,11 +88,14 @@ fn remove_block_comments(input: &str) -> String {
                     out.push(' ');
                 }
             }
+            if !found_end {
+                return Err(DecodeError::new("Unterminated block comment"));
+            }
         } else {
             out.push(ch);
         }
     }
-    out
+    Ok(out)
 }
 
 struct Parser<'a> {
@@ -667,6 +681,41 @@ impl<'a> Parser<'a> {
         Ok(items)
     }
 
+    fn parse_escaped_char(chars: &mut std::iter::Peekable<std::str::Chars>) -> DecodeResult<char> {
+        let Some(ch) = chars.next() else {
+            return Err(DecodeError::new("Unterminated escape sequence"));
+        };
+        match ch {
+            'n' => Ok('\n'),
+            'r' => Ok('\r'),
+            't' => Ok('\t'),
+            '"' => Ok('"'),
+            '\\' => Ok('\\'),
+            'u' => {
+                let mut hex = String::new();
+                for _ in 0..4 {
+                    if let Some(&c) = chars.peek() {
+                        if c.is_ascii_hexdigit() {
+                            hex.push(c);
+                            chars.next();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                if hex.len() != 4 {
+                    return Err(DecodeError::new("Invalid \\u escape"));
+                }
+                let code = u32::from_str_radix(&hex, 16)
+                    .map_err(|e| DecodeError::new(format!("invalid unicode: {e}")))?;
+                let c = char::from_u32(code)
+                    .ok_or_else(|| DecodeError::new("invalid unicode code point"))?;
+                Ok(c)
+            }
+            other => Err(DecodeError::new(format!("Invalid escape: \\{other}"))),
+        }
+    }
+
     fn parse_scalar_from_chars(
         &self,
         chars: &mut std::iter::Peekable<std::str::Chars>,
@@ -699,44 +748,12 @@ impl<'a> Parser<'a> {
             } else {
                 chars.next();
                 let mut val = String::new();
-                let mut escaped = false;
                 loop {
                     let Some(ch) = chars.next() else {
                         return Err(DecodeError::new("Unterminated quoted string"));
                     };
-                    if escaped {
-                        match ch {
-                            'n' => val.push('\n'),
-                            'r' => val.push('\r'),
-                            't' => val.push('\t'),
-                            '"' => val.push('"'),
-                            '\\' => val.push('\\'),
-                            'u' => {
-                                let mut hex = String::new();
-                                for _ in 0..4 {
-                                    if let Some(&c) = chars.peek() {
-                                        if c.is_ascii_hexdigit() {
-                                            hex.push(c);
-                                            chars.next();
-                                        } else {
-                                            break;
-                                        }
-                                    }
-                                }
-                                if hex.len() != 4 {
-                                    return Err(DecodeError::new("Invalid \\u escape"));
-                                }
-                                let code = u32::from_str_radix(&hex, 16)
-                                    .map_err(|e| DecodeError::new(format!("invalid unicode: {e}")))?;
-                                let c = char::from_u32(code)
-                                    .ok_or_else(|| DecodeError::new("invalid unicode code point"))?;
-                                val.push(c);
-                            }
-                            other => return Err(DecodeError::new(format!("Invalid escape: \\{other}"))),
-                        }
-                        escaped = false;
-                    } else if ch == '\\' {
-                        escaped = true;
+                    if ch == '\\' {
+                        val.push(Self::parse_escaped_char(chars)?);
                     } else if ch == '"' {
                         break;
                     } else {
@@ -811,21 +828,21 @@ impl<'a> Parser<'a> {
         let trimmed_line = truncate_comment_from_line(&line_str);
         let s = trimmed_line.trim();
 
-        if s.starts_with('"') {
-            if s.ends_with('"') && s.len() >= 2 {
-                let mut chars = s.chars().peekable();
-                return self.parse_scalar_from_chars(&mut chars, '\n');
-            } else {
-                return Err(DecodeError::new("Unterminated quoted string"));
-            }
-        }
-
         if s.starts_with("\"\"\"") {
             if s.ends_with("\"\"\"") && s.len() >= 6 {
                 let mut chars = s.chars().peekable();
                 return self.parse_scalar_from_chars(&mut chars, '\n');
             } else {
                 return Err(DecodeError::new("Unterminated block string"));
+            }
+        }
+
+        if s.starts_with('"') {
+            if s.ends_with('"') && s.len() >= 2 {
+                let mut chars = s.chars().peekable();
+                return self.parse_scalar_from_chars(&mut chars, '\n');
+            } else {
+                return Err(DecodeError::new("Unterminated quoted string"));
             }
         }
 
@@ -875,36 +892,7 @@ impl<'a> Parser<'a> {
             let mut chars = s[1..s.len()-1].chars().peekable();
             while let Some(ch) = chars.next() {
                 if ch == '\\' {
-                    match chars.next() {
-                        Some('n') => out.push('\n'),
-                        Some('r') => out.push('\r'),
-                        Some('t') => out.push('\t'),
-                        Some('"') => out.push('"'),
-                        Some('\\') => out.push('\\'),
-                        Some('u') => {
-                            let mut hex = String::new();
-                            for _ in 0..4 {
-                                if let Some(&c) = chars.peek() {
-                                    if c.is_ascii_hexdigit() {
-                                        hex.push(c);
-                                        chars.next();
-                                    } else {
-                                        break;
-                                    }
-                                }
-                            }
-                            if hex.len() != 4 {
-                                return Err(DecodeError::new("Invalid \\u escape: expected 4 hex digits"));
-                            }
-                            let val = u32::from_str_radix(&hex, 16)
-                                .map_err(|e| DecodeError::new(format!("invalid unicode escape: {e}")))?;
-                            let c = char::from_u32(val)
-                                .ok_or_else(|| DecodeError::new("invalid unicode code point"))?;
-                            out.push(c);
-                        }
-                        Some(other) => return Err(DecodeError::new(format!("Invalid escape sequence: \\{other}"))),
-                        None => return Err(DecodeError::new("Unterminated escape sequence")),
-                    }
+                    out.push(Self::parse_escaped_char(&mut chars)?);
                 } else {
                     out.push(ch);
                 }
@@ -1083,44 +1071,12 @@ fn parse_delimited_strings(s: &str, delim: char) -> DecodeResult<Vec<String>> {
         let mut item = String::new();
         if chars.peek() == Some(&'"') {
             chars.next(); // consume '"'
-            let mut escaped = false;
             loop {
                 let Some(ch) = chars.next() else {
                     return Err(DecodeError::new("Unterminated quoted string in columns"));
                 };
-                if escaped {
-                    match ch {
-                        'n' => item.push('\n'),
-                        'r' => item.push('\r'),
-                        't' => item.push('\t'),
-                        '"' => item.push('"'),
-                        '\\' => item.push('\\'),
-                        'u' => {
-                            let mut hex = String::new();
-                            for _ in 0..4 {
-                                if let Some(&c) = chars.peek() {
-                                    if c.is_ascii_hexdigit() {
-                                        hex.push(c);
-                                        chars.next();
-                                    } else {
-                                        break;
-                                    }
-                                }
-                            }
-                            if hex.len() != 4 {
-                                return Err(DecodeError::new("Invalid \\u escape in columns"));
-                            }
-                            let val = u32::from_str_radix(&hex, 16)
-                                .map_err(|e| DecodeError::new(format!("invalid unicode escape: {e}")))?;
-                            let c = char::from_u32(val)
-                                .ok_or_else(|| DecodeError::new("invalid unicode code point"))?;
-                            item.push(c);
-                        }
-                        other => return Err(DecodeError::new(format!("Invalid escape: \\{other}"))),
-                    }
-                    escaped = false;
-                } else if ch == '\\' {
-                    escaped = true;
+                if ch == '\\' {
+                    item.push(Parser::parse_escaped_char(&mut chars)?);
                 } else if ch == '"' {
                     break;
                 } else {

@@ -31,7 +31,8 @@ impl Delimiter {
 /// round-trip as a number rather than a string if emitted unquoted.
 ///
 /// Bare sign/dot tokens and the non-finite words (`inf`, `nan`, ...) are treated
-/// as strings, not numbers.
+/// as strings, not numbers. Hexadecimal literals (0x/0X prefix) are also treated
+/// as strings to ensure they remain quoted.
 fn is_toon_number(s: &str) -> bool {
     if s.is_empty() || s == "-" || s == "+" || s == "." {
         return false;
@@ -41,6 +42,11 @@ fn is_toon_number(s: &str) -> bool {
         lower.as_str(),
         "inf" | "+inf" | "-inf" | "infinity" | "+infinity" | "-infinity" | "nan" | "+nan" | "-nan"
     ) {
+        return false;
+    }
+    // Reject hexadecimal literals (0x/0X prefix) - they should be quoted as strings
+    let hex_check = s.strip_prefix('-').unwrap_or(s);
+    if hex_check.starts_with("0x") || hex_check.starts_with("0X") {
         return false;
     }
     s.parse::<f64>().is_ok()
