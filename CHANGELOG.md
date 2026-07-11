@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-07-11
+
+### Changed
+- **Dependencies**: build `toon-format` with `default-features = false`. Only its
+  core encode/decode API is used, so the default `cli` feature — which pulled in
+  a large TUI/highlighting tree (`syntect`→`bincode`, `ratatui`→`paste`,
+  `arboard`, `clap`, `tiktoken-rs`, …) — is now disabled. This removes those
+  transitive crates entirely, eliminating the unmaintained-crate advisories
+  RUSTSEC-2025-0141 (bincode), RUSTSEC-2024-0320 (yaml-rust) and
+  RUSTSEC-2024-0436 (paste), and significantly shrinks the dependency graph.
+
+### Fixed
+- **CI**: stopped tracking a machine-specific `.cargo/config.toml` (sccache
+  wrapper, mold linker, absolute `/mnt/build` cache/target dirs) that broke
+  every CI job — including the release pipeline — with
+  `could not execute process sccache`.
+- **CI**: corrected the Security Audit job to use `rustsec/audit-check@v2.0.0`
+  (the previously referenced `rustsec/audit-action` does not exist).
+- **LSP robustness**: parse-task `JoinError` is now handled gracefully instead
+  of panicking; semantic tokens are emitted in ascending order with
+  `saturating_sub` guarding against `u32` underflow; mermaid graph labels are
+  escaped. Clippy `pedantic` is enforced project-wide.
+
 ## [0.5.0] - 2026-07-10
 
 ### Added
