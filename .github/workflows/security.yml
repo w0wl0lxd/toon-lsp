@@ -16,6 +16,13 @@ on:
       - 'deny.toml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   audit:
     name: Security Audit
@@ -23,14 +30,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
-
       - name: Run cargo audit
-        run: cargo audit
+        uses: rustsec/audit-action@v2
+        with:
+          token: ${{ github.token }}
 
   deny:
     name: Dependency Policy
