@@ -1,6 +1,10 @@
 # Build artifacts
 /target
 
+# Local machine-specific Cargo build acceleration (sccache/mold/cranelift,
+# absolute target dirs). Must not be committed — breaks CI runners.
+/.cargo/config.toml
+
 # IDE and editor
 .idea/
 .vscode/
