@@ -137,3 +137,55 @@ mod hexadecimal {
         assert!(matches!(kinds[0], TokenKind::Number(ref s) if s == "0xFF"));
     }
 }
+
+#[cfg(test)]
+mod references {
+    use super::*;
+    use toon_lsp::resolve::{ResolvedRef, collect_references, resolve};
+
+    #[test]
+    fn parses_document_reference() {
+        let ast = parse("db:\n  port: 5432\nservice:\n  db_port: ${db.port}").expect("parse");
+        let mut refs = Vec::new();
+        collect_references(&ast, &mut refs);
+        assert_eq!(refs.len(), 1);
+        match refs[0] {
+            AstNode::Reference { path, is_env, .. } => {
+                assert_eq!(path.as_str(), "db.port");
+                assert!(!is_env);
+            }
+            other => panic!("expected reference, got {:?}", other.kind()),
+        }
+    }
+
+    #[test]
+    fn parses_env_reference() {
+        let ast = parse("key: ${env:API_KEY}").expect("parse");
+        let mut refs = Vec::new();
+        collect_references(&ast, &mut refs);
+        assert_eq!(refs.len(), 1);
+        match refs[0] {
+            AstNode::Reference { path, is_env, .. } => {
+                assert_eq!(path.as_str(), "env:API_KEY");
+                assert!(is_env);
+            }
+            other => panic!("expected reference, got {:?}", other.kind()),
+        }
+    }
+
+    #[test]
+    fn scanner_emits_reference_token() {
+        let kinds = scan_kinds("${db.port}");
+        assert!(matches!(kinds[0], TokenKind::Reference(ref s) if s == "db.port"));
+    }
+
+    #[test]
+    fn reference_resolves_against_document() {
+        let ast = parse("db:\n  port: 5432\nservice:\n  db_port: ${db.port}").expect("parse");
+        match resolve(&ast, "db.port").expect("resolvable") {
+            ResolvedRef::Node { node, .. } => assert!(matches!(node, AstNode::Number { .. })),
+            ResolvedRef::Env(value) => panic!("expected node, got env value {:?}", value),
+        }
+    }
+}
+

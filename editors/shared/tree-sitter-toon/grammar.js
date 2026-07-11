@@ -48,8 +48,11 @@ module.exports = grammar({
       $.number,
       $.boolean,
       $.null,
+      $.reference,
       $.unquoted_string,
     ),
+
+    reference: $ => token(prec(2, seq('${', /[^{}]*/, '}'))),
 
     array_item: $ => seq(
       '-',
