@@ -25,7 +25,7 @@ This document provides detailed setup instructions for all supported editors and
 | Selection Range | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Workspace Symbols | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 
-> The `toon-lsp` server advertises all 18 capabilities above. Individual editors surface them according to their LSP client (all listed clients support the full set).
+> The `toon-lsp` server implements every capability in the table above. Each editor surfaces them through its own LSP client.
 
 ## Priority 1 Editors (Full Support)
 

@@ -23,16 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `could not execute process sccache`.
 - **CI**: corrected the Security Audit job to use `rustsec/audit-check@v2.0.0`
   (the previously referenced `rustsec/audit-action` does not exist).
-- **LSP robustness**: parse-task `JoinError` is now handled gracefully instead
-  of panicking; semantic tokens are emitted in ascending order with
+- **LSP robustness**: a panicking parse task no longer aborts the handler
+  (`JoinError` is handled); semantic tokens are emitted in ascending order with
   `saturating_sub` guarding against `u32` underflow; mermaid graph labels are
   escaped. Clippy `pedantic` is enforced project-wide.
 
 ## [0.5.0] - 2026-07-10
-
-### Added
-- **Editor polish**: tree-sitter grammar highlights are comprehensive and the
-  grammar corpus passes **14/14** parses.
 
 ### Changed
 - **CI hardening** (`.github/workflows/build-extensions.yml`): removed all
@@ -41,9 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Parser performance**: `scan_all` now pre-sizes the token buffer from the
   source length; `parse_inline_array` reserves `Vec` capacity from the declared
   item count (clamped to `MAX_ARRAY_ITEMS`) to avoid repeated reallocations.
-- **README**: rewritten with an accurate architecture diagram, the full set of
-  18 LSP capabilities, complete CLI and library documentation, and CI/build
-  badges.
+- **README**: rewritten with an accurate architecture diagram, the list of LSP
+  handlers, CLI and library documentation, and CI/build badges.
 
 ## [0.4.2] - 2026-07-10
 
