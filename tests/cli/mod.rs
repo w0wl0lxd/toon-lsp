@@ -20,4 +20,5 @@ mod decode_test;
 mod diagnose_test;
 mod encode_test;
 mod format_test;
+mod graph_test;
 mod symbols_test;

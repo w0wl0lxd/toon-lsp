@@ -95,7 +95,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
-        continue-on-error: true
 
   # Build VSCode extension
   build-vscode:
@@ -148,14 +147,12 @@ jobs:
         with:
           name: vscode-${{ matrix.platform }}
           path: editors/vscode/*.vsix
-        continue-on-error: true
 
       - name: Upload VSCode VSIX to Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: editors/vscode/*.vsix
-        continue-on-error: true
 
   # Build JetBrains plugin
   build-jetbrains:
@@ -192,14 +189,12 @@ jobs:
         with:
           name: jetbrains-plugin
           path: editors/jetbrains/build/distributions/*.zip
-        continue-on-error: true
 
       - name: Upload JetBrains Plugin to Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: editors/jetbrains/build/distributions/*.zip
-        continue-on-error: true
 
   # Build tree-sitter grammar
   build-tree-sitter:
@@ -224,7 +219,6 @@ jobs:
       - name: Test grammar
         working-directory: editors/shared/tree-sitter-toon
         run: tree-sitter test
-        continue-on-error: true
 
       - name: Upload grammar artifact
         uses: actions/upload-artifact@v4

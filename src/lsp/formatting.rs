@@ -253,14 +253,27 @@ fn format_object_entry(entry: &ObjectEntry, ctx: &mut FormattingContext) {
 fn format_array(items: &[AstNode], form: ArrayForm, ctx: &mut FormattingContext, _is_value: bool) {
     match form {
         ArrayForm::Inline => {
-            ctx.push("[");
-            for (i, item) in items.iter().enumerate() {
-                if i > 0 {
-                    ctx.push(", ");
+            if items.len() > 3 {
+                ctx.push("[\n");
+                ctx.indent_level += 1;
+                for item in items {
+                    ctx.push(&ctx.indent());
+                    format_node(item, ctx, true);
+                    ctx.push(",\n");
                 }
-                format_node(item, ctx, true);
+                ctx.indent_level -= 1;
+                ctx.push(&ctx.indent());
+                ctx.push("]");
+            } else {
+                ctx.push("[");
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 {
+                        ctx.push(", ");
+                    }
+                    format_node(item, ctx, true);
+                }
+                ctx.push("]");
             }
-            ctx.push("]");
         }
 
         ArrayForm::Expanded => {
@@ -543,5 +556,14 @@ mod tests {
         // Should successfully format valid AST
         let result = format_document(&ast, opts);
         assert!(result.is_some(), "Should format valid AST");
+    }
+
+    #[test]
+    fn test_format_multiline_array_trailing_comma() {
+        let source = "list[4]: 1, 2, 3, 4";
+        let ast = parse(source);
+        let opts = ToonFormattingOptions::default();
+        let formatted = format_document(&ast, opts).unwrap();
+        assert_eq!(formatted, "list: [\n  1,\n  2,\n  3,\n  4,\n]\n");
     }
 }

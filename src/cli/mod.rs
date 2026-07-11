@@ -25,6 +25,7 @@ pub mod diagnose;
 pub mod encode;
 pub mod error;
 pub mod format;
+pub mod graph;
 pub mod io_utils;
 pub mod symbols;
 
@@ -62,6 +63,9 @@ pub enum Command {
 
     /// Run diagnostics and output structured results
     Diagnose(DiagnoseArgs),
+
+    /// Export reference dependency graph as Mermaid flowchart
+    Graph(GraphArgs),
 
     /// Start LSP server (stdin/stdout communication)
     Lsp,
@@ -181,6 +185,18 @@ pub struct DiagnoseArgs {
     /// Minimum severity level to report
     #[arg(short, long, value_enum, default_value = "error")]
     pub severity: Severity,
+}
+
+/// Arguments for graph command
+#[derive(Debug, Parser)]
+pub struct GraphArgs {
+    /// Input file (TOON), or stdin if omitted
+    #[arg(value_name = "FILE")]
+    pub input: Option<PathBuf>,
+
+    /// Output file, or stdout if omitted
+    #[arg(short, long, value_name = "FILE")]
+    pub output: Option<PathBuf>,
 }
 
 /// Diagnostic output format
@@ -339,6 +355,17 @@ mod tests {
             assert_eq!(args.severity, Severity::Error);
         } else {
             panic!("Expected Diagnose command");
+        }
+    }
+
+    #[test]
+    fn test_graph_defaults() {
+        let cli = Cli::parse_from(["toon-lsp", "graph"]);
+        if let Some(Command::Graph(args)) = cli.command {
+            assert!(args.input.is_none());
+            assert!(args.output.is_none());
+        } else {
+            panic!("Expected Graph command");
         }
     }
 

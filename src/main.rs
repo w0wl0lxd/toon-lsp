@@ -21,7 +21,7 @@ use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use toon_lsp::cli::error::{CliError, ExitCode};
-use toon_lsp::cli::{Cli, Command, check, decode, diagnose, encode, format, symbols};
+use toon_lsp::cli::{Cli, Command, check, decode, diagnose, encode, format, graph, symbols};
 use toon_lsp::lsp::ToonLanguageServer;
 
 /// Handle CLI command result with error reporting and exit code.
@@ -91,6 +91,9 @@ async fn main() {
         }
         Some(Command::Diagnose(args)) => {
             handle_result(diagnose::execute(&args), diagnose::error_exit_code);
+        }
+        Some(Command::Graph(args)) => {
+            handle_result(graph::execute(&args), CliError::exit_code);
         }
     }
 }

@@ -4,18 +4,17 @@
 //! Document highlight generation for LSP.
 //!
 //! This module provides functions to highlight all occurrences of a key
-//! when the cursor is positioned on it, enabling editor highlighting.
+//! and all its active references in the document when the cursor is positioned on it.
 
 use tower_lsp::lsp_types::{DocumentHighlight, DocumentHighlightKind};
 
-use super::ast_utils::{calculate_offset, collect_all_keys, find_node_at_position};
+use super::ast_utils::{calculate_offset, find_node_at_position};
 use crate::ast::AstNode;
 
-/// Collect document highlights for the key at the given position.
+/// Collect document highlights for the key or reference at the given position.
 ///
-/// When the cursor is on a key, returns all occurrences of that key
-/// in the document with READ or WRITE highlight kind. The occurrence
-/// under the cursor is marked as WRITE, all others as READ.
+/// When the cursor is on a key or a reference, returns the definition key span
+/// and all reference usage spans in the document.
 ///
 /// # Arguments
 /// * `ast` - The root AST node
@@ -24,7 +23,8 @@ use crate::ast::AstNode;
 /// * `column` - 0-based UTF-8 column
 ///
 /// # Returns
-/// Vector of document highlights, or empty if cursor is not on a key
+/// Vector of document highlights
+#[allow(clippy::collapsible_if)]
 pub fn collect_document_highlights(
     ast: &AstNode,
     source: &str,
@@ -37,37 +37,62 @@ pub fn collect_document_highlights(
     };
     let pos = crate::ast::Position::new(line, column, offset);
 
-    // Find the key at cursor position
+    // Find the key/reference at cursor position
     let node_at_pos = match find_node_at_position(ast, line, column, offset) {
         Some(n) => n,
         None => return vec![],
     };
-    let entry = match node_at_pos.on_key {
-        Some(e) => e,
-        None => return vec![],
+
+    let target_path = if let Some(entry) = node_at_pos.on_key {
+        let parent_path = super::ast_utils::build_key_path(&node_at_pos.path);
+        if parent_path.is_empty() {
+            entry.key.clone()
+        } else {
+            format!("{}.{}", parent_path, entry.key)
+        }
+    } else if let AstNode::Reference { path, .. } = node_at_pos.node {
+        path.clone()
+    } else {
+        return vec![];
     };
 
-    let key_name = &entry.key;
-    let cursor_pos = pos;
+    let mut highlights = Vec::new();
 
-    // Collect all keys with matching name
-    let all_keys = collect_all_keys(ast);
-
-    let highlights: Vec<DocumentHighlight> = all_keys
-        .into_iter()
-        .filter(|(k, _)| k == key_name)
-        .map(|(_, span)| {
-            let is_under_cursor = span.contains(cursor_pos);
-            DocumentHighlight {
+    // 1. Find definition site of target_path (if it's not an env var)
+    if !target_path.starts_with("env:") {
+        if let Ok(crate::resolve::ResolvedRef::Node { key_span: Some(span), .. }) =
+            crate::resolve::resolve(ast, &target_path)
+        {
+            let is_under_cursor = span.contains(pos);
+            highlights.push(DocumentHighlight {
                 range: super::utf16::span_to_range(&span, source),
                 kind: if is_under_cursor {
                     Some(DocumentHighlightKind::WRITE)
                 } else {
                     Some(DocumentHighlightKind::READ)
                 },
+            });
+        }
+    }
+
+    // 2. Find all references in the document matching target_path
+    let mut refs = Vec::new();
+    crate::resolve::collect_references(ast, &mut refs);
+    for r in refs {
+        if let AstNode::Reference { path, span, .. } = r {
+            if path == &target_path {
+                let is_under_cursor = span.contains(pos);
+                highlights.push(DocumentHighlight {
+                    range: super::utf16::span_to_range(span, source),
+                    kind: if is_under_cursor {
+                        Some(DocumentHighlightKind::WRITE)
+                    } else {
+                        Some(DocumentHighlightKind::READ)
+                    },
+                });
             }
-        })
-        .collect();
+        }
+    }
 
     highlights
 }
@@ -89,18 +114,15 @@ mod tests {
     }
 
     #[test]
-    fn test_highlight_multiple_occurrences() {
+    fn test_highlight_distinct_paths() {
         let source = "name: Alice\nuser:\n  name: Bob";
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
+        // Hovering "name" on line 0 should only highlight "name" (path: name)
         let highlights = collect_document_highlights(&ast, source, 0, 0);
-        assert_eq!(highlights.len(), 2);
-
-        // First occurrence (under cursor) should be WRITE
+        assert_eq!(highlights.len(), 1);
         assert_eq!(highlights[0].kind, Some(DocumentHighlightKind::WRITE));
-        // Second occurrence should be READ
-        assert_eq!(highlights[1].kind, Some(DocumentHighlightKind::READ));
     }
 
     #[test]
@@ -115,13 +137,13 @@ mod tests {
     }
 
     #[test]
-    fn test_highlight_nested() {
-        let source = "data:\n  id: 1\n  nested:\n    id: 2";
+    fn test_highlight_reference_usages() {
+        let source = "db:\n  port: 5432\nconnection: ${db.port}";
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
-        // Position on first "id"
+        // Position on key "port"
         let highlights = collect_document_highlights(&ast, source, 1, 2);
-        assert_eq!(highlights.len(), 2);
+        assert_eq!(highlights.len(), 2); // The key definition and the reference usage
     }
 }
