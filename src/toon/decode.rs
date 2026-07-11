@@ -177,7 +177,7 @@ mod scanner_driven {
                 map.insert(key, Value::Array(Vec::new()));
                 return Ok(());
             }
-            if matches!(self.kind(), TokenKind::Newline | TokenKind::Eof) {
+            if matches!(self.kind(), TokenKind::Newline | TokenKind::Eof | TokenKind::Dedent) {
                 self.skip_newlines();
                 if matches!(self.kind(), TokenKind::Indent) {
                     self.bump();
@@ -208,8 +208,13 @@ mod scanner_driven {
             }
 
             self.expect(&TokenKind::Colon)?;
-            if matches!(self.kind(), TokenKind::Newline | TokenKind::Eof) {
+            if matches!(self.kind(), TokenKind::Newline | TokenKind::Eof | TokenKind::Dedent) {
                 self.skip_newlines();
+                if matches!(self.kind(), TokenKind::Dedent) {
+                    // The block is already closed (e.g. last field in an
+                    // expanded block). Emit an empty array regardless of count.
+                    return Ok(Value::Array(Vec::new()));
+                }
                 if matches!(self.kind(), TokenKind::Indent) {
                     self.bump();
                     let items = self.parse_expanded_items()?;
