@@ -291,13 +291,6 @@ impl LineIndex {
         let line_start = self.offsets.get(line as usize)?;
         Some(line_start.saturating_add(column))
     }
-
-    /// Get the number of lines in the document.
-    #[inline]
-    #[allow(dead_code)]
-    pub fn line_count(&self) -> usize {
-        self.offsets.len()
-    }
 }
 
 /// Calculate byte offset from line and column position.

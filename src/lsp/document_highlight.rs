@@ -24,7 +24,6 @@ use crate::ast::AstNode;
 ///
 /// # Returns
 /// Vector of document highlights
-#[allow(clippy::collapsible_if)]
 pub fn collect_document_highlights(
     ast: &AstNode,
     source: &str,
@@ -59,38 +58,37 @@ pub fn collect_document_highlights(
     let mut highlights = Vec::new();
 
     // 1. Find definition site of target_path (if it's not an env var)
-    if !target_path.starts_with("env:") {
-        if let Ok(crate::resolve::ResolvedRef::Node { key_span: Some(span), .. }) =
+    if !target_path.starts_with("env:")
+        && let Ok(crate::resolve::ResolvedRef::Node { key_span: Some(span), .. }) =
             crate::resolve::resolve(ast, &target_path)
-        {
-            let is_under_cursor = span.contains(pos);
-            highlights.push(DocumentHighlight {
-                range: super::utf16::span_to_range(&span, source),
-                kind: if is_under_cursor {
-                    Some(DocumentHighlightKind::WRITE)
-                } else {
-                    Some(DocumentHighlightKind::READ)
-                },
-            });
-        }
+    {
+        let is_under_cursor = span.contains(pos);
+        highlights.push(DocumentHighlight {
+            range: super::utf16::span_to_range(&span, source),
+            kind: if is_under_cursor {
+                Some(DocumentHighlightKind::WRITE)
+            } else {
+                Some(DocumentHighlightKind::READ)
+            },
+        });
     }
 
     // 2. Find all references in the document matching target_path
     let mut refs = Vec::new();
     crate::resolve::collect_references(ast, &mut refs);
     for r in refs {
-        if let AstNode::Reference { path, span, .. } = r {
-            if path == &target_path {
-                let is_under_cursor = span.contains(pos);
-                highlights.push(DocumentHighlight {
-                    range: super::utf16::span_to_range(span, source),
-                    kind: if is_under_cursor {
-                        Some(DocumentHighlightKind::WRITE)
-                    } else {
-                        Some(DocumentHighlightKind::READ)
-                    },
-                });
-            }
+        if let AstNode::Reference { path, span, .. } = r
+            && path == &target_path
+        {
+            let is_under_cursor = span.contains(pos);
+            highlights.push(DocumentHighlight {
+                range: super::utf16::span_to_range(span, source),
+                kind: if is_under_cursor {
+                    Some(DocumentHighlightKind::WRITE)
+                } else {
+                    Some(DocumentHighlightKind::READ)
+                },
+            });
         }
     }
 

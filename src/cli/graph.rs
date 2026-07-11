@@ -100,6 +100,20 @@ fn collect_reference_edges(
     }
 }
 
+/// Escape a key for a Mermaid quoted node label (`["..."]`); a raw `"` or
+/// newline would otherwise produce invalid flowchart syntax.
+fn escape_mermaid_label(label: &str) -> String {
+    let mut out = String::with_capacity(label.len());
+    for ch in label.chars() {
+        match ch {
+            '"' => out.push_str("&quot;"),
+            '\n' | '\r' => out.push(' '),
+            other => out.push(other),
+        }
+    }
+    out
+}
+
 /// Generate a Mermaid flowchart from AST references.
 pub fn generate_mermaid_graph(ast: &AstNode, _source: &str) -> String {
     let mut current_path = Vec::new();
@@ -115,35 +129,61 @@ pub fn generate_mermaid_graph(ast: &AstNode, _source: &str) -> String {
     let mut output = String::new();
     output.push_str("flowchart TD\n");
 
-    for key in &keys {
+    let mut ensure_node = |key: &str, output: &mut String, id_map: &mut HashMap<String, String>| {
         if !id_map.contains_key(key) {
             let id = format!("n{}", next_id);
-            id_map.insert(key.clone(), id.clone());
             next_id += 1;
-            let _ = writeln!(output, "    {}[\"{}\"]", id, key);
+            let _ = writeln!(output, "    {}[\"{}\"]", id, escape_mermaid_label(key));
+            id_map.insert(key.to_string(), id);
         }
+    };
+
+    for key in &keys {
+        ensure_node(key, &mut output, &mut id_map);
     }
 
     for (src, dest) in &edges {
-        if !id_map.contains_key(src) {
-            let id = format!("n{}", next_id);
-            id_map.insert(src.clone(), id.clone());
-            next_id += 1;
-            let _ = writeln!(output, "    {}[\"{}\"]", id, src);
-        }
-        if !id_map.contains_key(dest) {
-            let id = format!("n{}", next_id);
-            id_map.insert(dest.clone(), id.clone());
-            next_id += 1;
-            let _ = writeln!(output, "    {}[\"{}\"]", id, dest);
-        }
+        ensure_node(src, &mut output, &mut id_map);
+        ensure_node(dest, &mut output, &mut id_map);
     }
 
     for (src, dest) in &edges {
-        let src_id = id_map.get(src).unwrap();
-        let dest_id = id_map.get(dest).unwrap();
-        let _ = writeln!(output, "    {} --> {}", src_id, dest_id);
+        // Endpoints registered above; skip defensively rather than panic.
+        if let (Some(src_id), Some(dest_id)) = (id_map.get(src), id_map.get(dest)) {
+            let _ = writeln!(output, "    {} --> {}", src_id, dest_id);
+        }
     }
 
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn escapes_double_quotes_in_labels() {
+        assert_eq!(escape_mermaid_label("a\"b"), "a&quot;b");
+    }
+
+    #[test]
+    fn replaces_newlines_with_spaces() {
+        assert_eq!(escape_mermaid_label("a\nb\rc"), "a b c");
+    }
+
+    #[test]
+    fn leaves_plain_labels_unchanged() {
+        assert_eq!(escape_mermaid_label("service.name"), "service.name");
+    }
+
+    #[test]
+    fn mermaid_output_escapes_quoted_reference_keys() {
+        // A key containing a quote must not break the flowchart syntax.
+        let source = "\"we\\\"ird\": ${target}\ntarget: 42\n";
+        let (ast, _) = parse_with_errors(source);
+        if let Some(ast) = ast {
+            let out = generate_mermaid_graph(&ast, source);
+            assert!(!out.contains("we\"ird"), "raw quote must be escaped in output");
+        }
+    }
 }
