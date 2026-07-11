@@ -5,14 +5,18 @@
 use serde_json::{Map, Value};
 use crate::toon::error::{DecodeError, DecodeResult};
 
-/// Decodes TOON `input` into a [`serde_json::Value`].
+pub fn decode(input: &str) -> DecodeResult<Value> {
+    decode_with_config(input, &crate::toon::ToonConfig::default())
+}
+
+/// Decodes TOON `input` into a [`serde_json::Value`] using custom configuration options.
 ///
 /// # Errors
-/// Returns [`DecodeError`] on malformed TOON (unexpected tokens, scanner
-/// errors, or unparseable numbers).
-pub fn decode(input: &str) -> DecodeResult<Value> {
+/// Returns [`DecodeError`] on malformed TOON.
+pub fn decode_with_config(input: &str, config: &crate::toon::ToonConfig) -> DecodeResult<Value> {
     let normalized = remove_block_comments(input);
     let mut parser = Parser::new(&normalized);
+    parser.delimiter_stack = vec![config.delimiter.as_char()];
     parser.parse_document()
 }
 
@@ -793,6 +797,9 @@ impl<'a> Parser<'a> {
         if let Ok(val) = parse_number(&s) {
             return Ok(val);
         }
+        if s.starts_with('[') || s.starts_with('{') || s == "-" || s.starts_with("- ") {
+            return Err(DecodeError::new("unquoted scalar cannot start with '[', '{', or '-' followed by space"));
+        }
 
         Ok(Value::String(s))
     }
@@ -845,6 +852,9 @@ impl<'a> Parser<'a> {
         }
         if let Ok(val) = parse_number(s) {
             return Ok(val);
+        }
+        if s.starts_with('[') || s.starts_with('{') || s == "-" || s.starts_with("- ") {
+            return Err(DecodeError::new("unquoted scalar cannot start with '[', '{', or '-' followed by space"));
         }
 
         Ok(Value::String(s.to_string()))

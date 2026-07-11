@@ -9,13 +9,8 @@ use serde_json::{Map, Value};
 use crate::toon::emit::{Delimiter, emit_json_scalar, emit_scalar_string};
 use crate::toon::error::EncodeResult;
 
-/// Encodes `value` as TOON using the default 2-space indent.
-///
-/// # Errors
-/// Returns [`crate::toon::EncodeError`] if `value` contains something with no
-/// TOON representation.
 pub fn encode(value: &Value) -> EncodeResult<String> {
-    encode_with_indent(value, 2)
+    encode_with_config(value, &crate::toon::ToonConfig::default())
 }
 
 /// Encodes `value` as TOON using `indent` spaces per nesting level.
@@ -24,8 +19,20 @@ pub fn encode(value: &Value) -> EncodeResult<String> {
 /// Returns [`crate::toon::EncodeError`] if `value` contains something with no
 /// TOON representation.
 pub fn encode_with_indent(value: &Value, indent: usize) -> EncodeResult<String> {
+    let mut config = crate::toon::ToonConfig::default();
+    config.indent = indent;
+    encode_with_config(value, &config)
+}
+
+/// Encodes `value` as TOON using custom configuration options.
+///
+/// # Errors
+/// Returns [`crate::toon::EncodeError`] if `value` contains something with no
+/// TOON representation.
+pub fn encode_with_config(value: &Value, config: &crate::toon::ToonConfig) -> EncodeResult<String> {
     let mut out = String::new();
-    let delim = Delimiter::Comma;
+    let delim = config.delimiter;
+    let indent = config.indent;
     match value {
         Value::Object(map) => encode_object(&mut out, map, 0, indent, delim)?,
         Value::Array(arr) => {

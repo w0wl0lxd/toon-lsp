@@ -18,6 +18,10 @@ path = "src/lib.rs"
 name = "toon-lsp"
 path = "src/main.rs"
 
+[[bin]]
+name = "cargo-toon"
+path = "src/main.rs"
+
 [dependencies]
 # TOON Format — core encode/decode only. The default `cli` feature pulls in a
 # large TUI/highlighting tree (syntect→bincode, ratatui→paste, arboard, clap,
