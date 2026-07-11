@@ -332,6 +332,12 @@ impl<'a> Scanner<'a> {
             );
         }
 
+        // Blank lines and comment-only lines do not affect indentation: leave
+        // the indent stack untouched and let the newline be tokenized normally.
+        if matches!(self.peek(), None | Some('\n' | '#')) {
+            return None;
+        }
+
         let &current_indent = self.indent_stack.last().unwrap_or(&0);
 
         match spaces.cmp(&current_indent) {
@@ -602,6 +608,37 @@ impl<'a> Scanner<'a> {
                         Some('\\') => {
                             self.advance();
                             value.push('\\');
+                        }
+                        Some('u') => {
+                            self.advance(); // consume 'u'
+                            let hex_start = self.offset as usize;
+                            let mut digits = 0;
+                            while digits < 4
+                                && self.peek().is_some_and(|c| c.is_ascii_hexdigit())
+                            {
+                                self.advance();
+                                digits += 1;
+                            }
+                            if digits != 4 {
+                                return self.make_token(
+                                    TokenKind::Error(
+                                        "Invalid \\u escape: expected 4 hex digits".to_string(),
+                                    ),
+                                    start,
+                                );
+                            }
+                            let hex = &self.source[hex_start..self.offset as usize];
+                            match u32::from_str_radix(hex, 16).ok().and_then(char::from_u32) {
+                                Some(c) => value.push(c),
+                                None => {
+                                    return self.make_token(
+                                        TokenKind::Error(format!(
+                                            "Invalid \\u escape: U+{hex} is not a scalar value"
+                                        )),
+                                        start,
+                                    );
+                                }
+                            }
                         }
                         Some(ch) => {
                             return self.make_token(
