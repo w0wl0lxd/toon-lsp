@@ -5,5 +5,7 @@ pub mod emit;
 pub mod encode;
 pub mod decode;
 
+#[cfg(feature = "decoder_a")]
+pub use decode::decode;
 pub use encode::{encode, encode_with_indent};
 pub use error::{DecodeError, DecodeResult, EncodeError, EncodeResult};
