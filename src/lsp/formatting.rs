@@ -197,6 +197,9 @@ fn format_node(node: &AstNode, ctx: &mut FormattingContext, is_value: bool) {
         AstNode::Null { .. } => {
             ctx.push("null");
         }
+        AstNode::Reference { path, .. } => {
+            ctx.push(&format!("${{{}}}", path));
+        }
     }
 }
 

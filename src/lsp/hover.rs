@@ -18,7 +18,7 @@
 //! This module provides functions to generate hover information for TOON
 //! document elements including keys, values, and arrays.
 
-use super::ast_utils::{NodePathEntry, calculate_offset, find_node_at_position};
+use super::ast_utils::{NodePathEntry, build_key_path, calculate_offset, find_node_at_position};
 use crate::ast::{AstNode, NumberValue, ObjectEntry, Position};
 
 /// Hover information result.
@@ -198,6 +198,13 @@ fn describe_value(value: &AstNode) -> String {
         AstNode::Bool { value, .. } => format!("Boolean {}", value),
         AstNode::Null { .. } => "Null".to_string(),
         AstNode::Document { .. } => "Document".to_string(),
+        AstNode::Reference { path, is_env, .. } => {
+            if *is_env {
+                format!("Environment Reference \"{}\"", path)
+            } else {
+                format!("Document Reference \"{}\"", path)
+            }
+        }
     }
 }
 
@@ -268,13 +275,15 @@ fn format_hover_content(node: &AstNode, path: &[NodePathEntry<'_>]) -> String {
         AstNode::Document { children, .. } => {
             format!("**Document** ({} top-level entries)", children.len())
         }
+        AstNode::Reference { path, is_env, .. } => {
+            let ref_type = if *is_env { "Environment Variable" } else { "Document Variable" };
+            if key_path.is_empty() {
+                format!("**Reference** ({}): `{}`", ref_type, path)
+            } else {
+                format!("**{}** : Reference ({})\n\n`{}`", key_path, ref_type, path)
+            }
+        }
     }
-}
-
-/// Build a dot-separated key path from the node path.
-fn build_key_path(path: &[NodePathEntry<'_>]) -> String {
-    let keys: Vec<&str> = path.iter().filter_map(|entry| entry.key).collect();
-    keys.join(".")
 }
 
 #[cfg(test)]
