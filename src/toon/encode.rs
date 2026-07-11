@@ -81,6 +81,19 @@ fn encode_array_field(
 ) -> EncodeResult<()> {
     push_indent(out, level, indent);
     emit_key(out, key, delim);
+    encode_array_body(out, arr, level, indent, delim)
+}
+
+/// Emits an array value starting from the `[count]...` header, choosing inline,
+/// tabular, or expanded form. The key (and any leading indent) must already be
+/// written by the caller.
+fn encode_array_body(
+    out: &mut String,
+    arr: &[Value],
+    level: usize,
+    indent: usize,
+    delim: Delimiter,
+) -> EncodeResult<()> {
     if arr.iter().all(is_scalar) {
         out.push('[');
         out.push_str(&arr.len().to_string());
@@ -95,6 +108,8 @@ fn encode_array_field(
             }
         }
         out.push('\n');
+    } else if let Some(fields) = tabular_fields(arr) {
+        emit_tabular(out, arr, &fields, level, indent, delim);
     } else {
         out.push('[');
         out.push_str(&arr.len().to_string());
@@ -102,6 +117,66 @@ fn encode_array_field(
         encode_expanded_items(out, arr, level + 1, indent, delim)?;
     }
     Ok(())
+}
+
+/// Returns the ordered field list if `arr` qualifies for TOON tabular emission:
+/// non-empty, every element an object with an identical key set (field order
+/// taken from the first element), and every value a scalar.
+fn tabular_fields(arr: &[Value]) -> Option<Vec<String>> {
+    let Some(Value::Object(first)) = arr.first() else {
+        return None;
+    };
+    if first.is_empty() || first.values().any(|v| !is_scalar(v)) {
+        return None;
+    }
+    let fields: Vec<String> = first.keys().cloned().collect();
+    for item in &arr[1..] {
+        let Value::Object(map) = item else {
+            return None;
+        };
+        if map.len() != fields.len() || map.values().any(|v| !is_scalar(v)) {
+            return None;
+        }
+        if fields.iter().any(|f| !map.contains_key(f)) {
+            return None;
+        }
+    }
+    Some(fields)
+}
+
+fn emit_tabular(
+    out: &mut String,
+    arr: &[Value],
+    fields: &[String],
+    level: usize,
+    indent: usize,
+    delim: Delimiter,
+) {
+    out.push('[');
+    out.push_str(&arr.len().to_string());
+    out.push_str("]{");
+    for (i, field) in fields.iter().enumerate() {
+        if i > 0 {
+            out.push(delim.as_char());
+        }
+        emit_scalar_string(out, field, delim);
+    }
+    out.push_str("}:\n");
+    for item in arr {
+        let Value::Object(map) = item else {
+            continue;
+        };
+        push_indent(out, level + 1, indent);
+        for (i, field) in fields.iter().enumerate() {
+            if i > 0 {
+                out.push(delim.as_char());
+            }
+            if let Some(value) = map.get(field) {
+                let _ = emit_json_scalar(out, value, delim);
+            }
+        }
+        out.push('\n');
+    }
 }
 
 fn encode_expanded_items(
@@ -180,27 +255,7 @@ fn encode_array_field_inline_key(
     delim: Delimiter,
 ) -> EncodeResult<()> {
     emit_key(out, key, delim);
-    if arr.iter().all(is_scalar) {
-        out.push('[');
-        out.push_str(&arr.len().to_string());
-        out.push_str("]:");
-        if !arr.is_empty() {
-            out.push(' ');
-            for (i, item) in arr.iter().enumerate() {
-                if i > 0 {
-                    out.push(delim.as_char());
-                }
-                let _ = emit_json_scalar(out, item, delim);
-            }
-        }
-        out.push('\n');
-    } else {
-        out.push('[');
-        out.push_str(&arr.len().to_string());
-        out.push_str("]:\n");
-        encode_expanded_items(out, arr, level + 1, indent, delim)?;
-    }
-    Ok(())
+    encode_array_body(out, arr, level, indent, delim)
 }
 
 fn emit_key(out: &mut String, key: &str, delim: Delimiter) {
@@ -232,5 +287,39 @@ mod tests {
     fn scalar_array_inline_with_count() {
         let out = encode(&json!({"tags":["a","b","c"]})).unwrap();
         assert_eq!(out, "tags[3]: a,b,c\n");
+    }
+
+    #[test]
+    fn uniform_object_array_is_tabular() {
+        let out = encode(&json!({
+            "users": [{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}]
+        }))
+        .unwrap();
+        assert_eq!(out, "users[2]{id,name}:\n  1,Alice\n  2,Bob\n");
+    }
+
+    #[test]
+    fn non_uniform_object_array_falls_back_to_expanded() {
+        let out = encode(&json!({"rows":[{"x":1},{"y":2}]})).unwrap();
+        assert!(out.contains("- "), "expected expanded rows, got: {out}");
+        assert!(!out.contains('{'), "must not emit tabular header, got: {out}");
+    }
+
+    #[test]
+    fn nested_values_are_not_tabular() {
+        let out = encode(&json!({"rows":[{"a":{"b":1}},{"a":{"b":2}}]})).unwrap();
+        assert!(!out.contains('{'), "nested values must not be tabular: {out}");
+    }
+
+    #[test]
+    fn tabular_applies_to_array_field_inside_expanded_item() {
+        let out = encode(&json!([
+            {"members":[{"id":1,"n":"x"},{"id":2,"n":"y"}]}
+        ]))
+        .unwrap();
+        assert!(
+            out.contains("members[2]{id,n}:"),
+            "nested array field should be tabular: {out}"
+        );
     }
 }
