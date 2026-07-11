@@ -15,14 +15,16 @@ use crate::toon::error::{DecodeError, DecodeResult};
 /// errors, or unparseable numbers).
 pub fn decode(input: &str) -> DecodeResult<Value> {
     let tokens = Scanner::new(input).scan_all();
-    let mut parser = Parser { tokens, pos: 0 };
+    let mut parser = Parser { tokens, pos: 0, delimiter: ',', input };
     let value = parser.parse_document()?;
     Ok(value)
 }
 
-struct Parser {
+struct Parser<'a> {
     tokens: Vec<Token>,
     pos: usize,
+    delimiter: char,
+    input: &'a str,
 }
 
 impl Parser {
@@ -46,6 +48,10 @@ impl Parser {
         kind
     }
 
+    fn token(&self) -> Option<&Token> {
+        self.tokens.get(self.pos)
+    }
+
     fn expect(&mut self, want: &TokenKind) -> DecodeResult<()> {
         if self.kind() == want {
             self.pos += 1;
@@ -58,127 +64,81 @@ impl Parser {
         }
     }
 
-    fn skip_newlines(&mut self) {
-        while matches!(self.kind(), TokenKind::Newline) {
-            self.pos += 1;
-        }
-    }
-
-    fn parse_document(&mut self) -> DecodeResult<Value> {
-        self.skip_newlines();
-        if matches!(self.kind(), TokenKind::Eof) {
-            return Ok(Value::Object(Map::new()));
-        }
-        let value = self.parse_block()?;
-        self.skip_newlines();
-        if !matches!(self.kind(), TokenKind::Eof) {
-            return Err(DecodeError::new(format!(
-                "trailing tokens after document: {}",
-                self.kind()
-            )));
-        }
-        Ok(value)
-    }
-
-    /// Parses a block of sibling lines at the current indentation: an
-    /// expanded array if it starts with `-`, otherwise an object (or a bare
-    /// scalar line at document root).
-    fn parse_block(&mut self) -> DecodeResult<Value> {
-        self.skip_newlines();
-        match self.kind() {
-            TokenKind::Dash => self.parse_expanded_array(),
-            TokenKind::Identifier(_) | TokenKind::String(_)
-                if self.starts_object_entry() =>
-            {
-                self.parse_object()
-            }
-            _ => {
-                let value = self.parse_scalar()?;
-                self.consume_line_end()?;
-                Ok(value)
+fn detect_delimiter(&mut self) -> char {
+        // Look at raw input after the count token to find delimiter
+        if let Some(tok) = self.tokens.get(self.pos) {
+            let after_count = tok.span.end.offset as usize;
+            if after_count < self.input.len() {
+                let ch = self.input.as_bytes()[after_count];
+                if ch == b'\t' || ch == b'|' {
+                    return ch as char;
+                }
             }
         }
+        ','
     }
 
-    /// True if the current line is `key:` or `key[...`, i.e. an object entry
-    /// rather than a bare scalar.
-    fn starts_object_entry(&self) -> bool {
-        matches!(
-            self.kind_at(1),
-            TokenKind::Colon | TokenKind::LeftBracket
-        )
-    }
-
-    fn parse_object(&mut self) -> DecodeResult<Value> {
-        let mut map = Map::new();
-        loop {
-            self.skip_newlines();
-            if matches!(self.kind(), TokenKind::Dedent | TokenKind::Eof) {
-                break;
-            }
-            if !matches!(self.kind(), TokenKind::Identifier(_) | TokenKind::String(_)) {
-                break;
-            }
-            self.parse_object_entry(&mut map)?;
-        }
-        Ok(Value::Object(map))
-    }
-
-    /// Parses one `key: value` / `key[N]: ...` / `key[N]{cols}:` entry into
-    /// `map`, including any indented continuation block.
-    fn parse_object_entry(&mut self, map: &mut Map<String, Value>) -> DecodeResult<()> {
-        let key = self.parse_key()?;
-        if matches!(self.kind(), TokenKind::LeftBracket) {
-            let value = self.parse_array_value()?;
-            map.insert(key, value);
-            return Ok(());
-        }
-        self.expect(&TokenKind::Colon)?;
-        if matches!(self.kind(), TokenKind::Newline | TokenKind::Eof) {
-            self.skip_newlines();
-            if matches!(self.kind(), TokenKind::Indent) {
+    /// Parse inline items using current delimiter.
+    /// For custom delimiters (tab/pipe), we must parse from raw input
+    /// since Scanner only tokenizes commas.
+    fn parse_inline_items(&mut self) -> DecodeResult<Vec<Value>> {
+        if self.delimiter == ',' {
+            // Fast path: Scanner tokenizes commas
+            let mut items = Vec::new();
+            items.push(self.parse_scalar()?);
+            while matches!(self.kind(), TokenKind::Comma) {
                 self.bump();
-                let child = self.parse_block()?;
-                self.expect(&TokenKind::Dedent)?;
-                map.insert(key, child);
-            } else {
-                map.insert(key, Value::Null);
+                items.push(self.parse_scalar()?);
             }
+            Ok(items)
         } else {
-            let value = self.parse_scalar()?;
-            self.consume_line_end()?;
-            map.insert(key, value);
+            // Custom delimiter: parse from raw input line
+            self.parse_inline_items_raw()
         }
-        Ok(())
     }
 
-    /// Parses `[N]:` (inline scalar array), `[N]{cols}:` (tabular), or
-    /// `[N]:` followed by an indented expanded block.
-    fn parse_array_value(&mut self) -> DecodeResult<Value> {
-        self.expect(&TokenKind::LeftBracket)?;
-        let _count = self.parse_count()?;
-        self.expect(&TokenKind::RightBracket)?;
-
-        if matches!(self.kind(), TokenKind::LeftBrace) {
-            return self.parse_tabular();
-        }
-
-        self.expect(&TokenKind::Colon)?;
-        if matches!(self.kind(), TokenKind::Newline | TokenKind::Eof) {
-            self.skip_newlines();
-            if matches!(self.kind(), TokenKind::Indent) {
-                self.bump();
-                let items = self.parse_expanded_items()?;
-                self.expect(&TokenKind::Dedent)?;
-                Ok(Value::Array(items))
-            } else {
-                Ok(Value::Array(Vec::new()))
-            }
+    /// Parse inline items from raw input using custom delimiter.
+    /// Assumes current token is the first scalar, and we're on the same line.
+    fn parse_inline_items_raw(&mut self) -> DecodeResult<Vec<Value>> {
+        // Get the rest of the line from current position
+        let mut items = Vec::new();
+        
+        // First, parse the current scalar
+        items.push(self.parse_scalar()?);
+        
+        // Find line end in raw input
+        let line_start = if let Some(tok) = self.tokens.get(self.pos - 1) {
+            tok.span.start.offset as usize
         } else {
-            let items = self.parse_inline_items()?;
-            self.consume_line_end()?;
-            Ok(Value::Array(items))
+            return Ok(items);
+        };
+        
+        let line_end = self.input[line_start..].find('\n').map_or(self.input.len(), |i| line_start + i);
+        let line_text = &self.input[line_start..line_end];
+        
+        // Split by delimiter (skip the first item we already parsed)
+        let parts: Vec<&str> = line_text.split(self.delimiter).collect();
+        if parts.len() <= 1 {
+            return Ok(items);
         }
+        
+        // Parse remaining parts as scalars
+        for part in &parts[1..] {
+            let trimmed = part.trim();
+            if trimmed.is_empty() {
+                items.push(Value::String(String::new()));
+            } else {
+                items.push(parse_scalar_raw(trimmed)?);
+            }
+        }
+        
+        // Advance token position past the inline items
+        // We need to consume tokens until we hit Newline or Eof
+        while !matches!(self.kind(), TokenKind::Newline | TokenKind::Eof) {
+            self.bump();
+        }
+        
+        Ok(items)
     }
 
     fn parse_tabular(&mut self) -> DecodeResult<Value> {
@@ -336,6 +296,68 @@ impl Parser {
             ))),
         }
     }
+}
+
+fn parse_scalar_raw(s: &str) -> DecodeResult<Value> {
+    let s = s.trim();
+    if s.is_empty() {
+        return Ok(Value::String(String::new()));
+    }
+    if s == "true" {
+        return Ok(Value::Bool(true));
+    }
+    if s == "false" {
+        return Ok(Value::Bool(false));
+    }
+    if s == "null" {
+        return Ok(Value::Null);
+    }
+    if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
+        // Unquote and unescape
+        let inner = &s[1..s.len()-1];
+        return Ok(Value::String(unescape(inner)));
+    }
+    if s.starts_with("${") && s.ends_with('}') {
+        return Ok(Value::String(s.to_string()));
+    }
+    // Try number
+    parse_number(s)
+}
+
+fn unescape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.next() {
+                Some('n') => out.push('\n'),
+                Some('r') => out.push('\r'),
+                Some('t') => out.push('\t'),
+                Some('"') => out.push('"'),
+                Some('\\') => out.push('\\'),
+                Some('u') => {
+                    let mut hex = String::new();
+                    for _ in 0..4 {
+                        if let Some(&c) = chars.peek() {
+                            if c.is_ascii_hexdigit() {
+                                hex.push(chars.next().unwrap());
+                            }
+                        }
+                    }
+                    if let Ok(val) = u32::from_str_radix(&hex, 16) {
+                        if let Some(c) = char::from_u32(val) {
+                            out.push(c);
+                        }
+                    }
+                }
+                Some(other) => out.push(other),
+                None => {}
+            }
+        } else {
+            out.push(ch);
+        }
+    }
+    out
 }
 
 fn parse_number(s: &str) -> DecodeResult<Value> {
