@@ -423,6 +423,8 @@ impl<'a> Scanner<'a> {
         while let Some(ch) = self.peek() {
             if ch.is_ascii_alphanumeric() || ch == '_' {
                 self.advance();
+            } else if ch.is_alphanumeric() && !ch.is_ascii() {
+                self.advance();
             } else {
                 break;
             }
@@ -849,6 +851,7 @@ impl<'a> Scanner<'a> {
                 }
             }
             'a'..='z' | 'A'..='Z' | '_' => self.scan_identifier_or_keyword(),
+            ch if ch.is_alphabetic() && !ch.is_ascii() => self.scan_identifier_or_keyword(),
             // Control characters (except handled \n, \r, \t) are invalid
             '\x00'..='\x08' | '\x0B' | '\x0C' | '\x0E'..='\x1F' | '\x7F' => {
                 self.advance();

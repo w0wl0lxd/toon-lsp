@@ -127,6 +127,13 @@ pub fn emit_scalar_string(out: &mut String, s: &str, delim: Delimiter) {
 /// integers print without a decimal point, floats in their minimal form.
 pub fn emit_number(out: &mut String, n: &serde_json::Number) {
     use std::fmt::Write as _;
+    if let Some(f) = n.as_f64() {
+        if f == 0.0 {
+            // Normalize both +0.0 and -0.0 to canonical integer zero.
+            let _ = write!(out, "0");
+            return;
+        }
+    }
     let _ = write!(out, "{n}");
 }
 
