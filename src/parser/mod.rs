@@ -669,7 +669,7 @@ impl Parser {
     fn parse_inline_array(
         &mut self,
         start_span: Span,
-        _expected_count: usize,
+        expected_count: usize,
         delimiter: char,
     ) -> Result<AstNode, ParseError> {
         if matches!(self.current().kind, TokenKind::Newline | TokenKind::Eof | TokenKind::Dedent) {
@@ -680,7 +680,11 @@ impl Parser {
             });
         }
 
-        let mut items = Vec::new();
+        // Reserve capacity from the declared array count (`key[N]`) to avoid
+        // reallocations. Clamp to MAX_ARRAY_ITEMS so a large/malicious count
+        // cannot trigger an oversized allocation (defense mirrors the parse loop).
+        let reserve = std::cmp::min(expected_count, MAX_ARRAY_ITEMS);
+        let mut items = Vec::with_capacity(reserve);
 
         loop {
             if items.len() >= MAX_ARRAY_ITEMS {

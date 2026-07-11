@@ -1,14 +1,31 @@
 # `toon-lsp`
 
 [![CI](https://github.com/w0wl0lxd/toon-lsp/actions/workflows/ci.yml/badge.svg)](https://github.com/w0wl0lxd/toon-lsp/actions/workflows/ci.yml)
+[![Build Extensions](https://github.com/w0wl0lxd/toon-lsp/actions/workflows/build-extensions.yml/badge.svg)](https://github.com/w0wl0lxd/toon-lsp/actions/workflows/build-extensions.yml)
 [![Release](https://img.shields.io/github/v/release/w0wl0lxd/toon-lsp?include_prereleases)](https://github.com/w0wl0lxd/toon-lsp/releases)
-[![Rust](https://img.shields.io/badge/rust-1.96%2B-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org/)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
 [![Commercial License](https://img.shields.io/badge/License-Commercial-green.svg)](LICENSING.md)
 
-A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation and command-line toolkit for [TOON](https://github.com/toon-format/toon) (Token-Oriented Object Notation), a compact, indentation-based config format.
+A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) implementation and command-line toolkit for [TOON](https://github.com/toon-format/toon) (Token-Oriented Object Notation), a compact, token-efficient, indentation-based encoding of the JSON data model designed for LLM prompts and other contexts where every token costs.
 
-This project provides both a library (`toon_lsp`) that you can embed in your own tools, and a `toon-lsp` binary that runs as an LSP server or as a standalone CLI for converting, validating, and inspecting TOON documents.
+This project provides both a library (`toon_lsp`) that you can embed in your own tools, and a `toon-lsp` binary that runs as an LSP server or as a standalone CLI for converting, validating, formatting, and inspecting TOON documents.
+
+- **TOON** minimizes tokens versus JSON: indentation replaces braces, strings are quoted only when required, and arrays declare their length once (e.g. `[N]`).
+- **toon-lsp** makes TOON a first-class citizen in your editor: diagnostics, navigation, refactoring, and rich introspection, with error recovery so features keep working on incomplete files.
+
+## Table of contents
+
+- [Installation](#installation)
+- [Editor support](#editor-support)
+- [Language features](#language-features)
+- [Language server features](#language-server-features)
+- [Command-line interface](#command-line-interface)
+- [Using the library](#using-the-library)
+- [Architecture](#architecture)
+- [Development](#development)
+- [Related](#related)
+- [License](#license)
 
 ## Installation
 
@@ -33,18 +50,35 @@ Run the LSP server by launching the binary with no subcommand; most editor integ
 
 TOON is supported in 11 editors through bundled language-server wiring: VS Code, Neovim, Vim, Helix, Zed, Sublime Text, Kate, Emacs, JetBrains IDEs, Eclipse, and Notepad++. Setup instructions for each are in [`docs/ide-support.md`](docs/ide-support.md).
 
+## Language features
+
+TOON is a strict, indentation-based format. `toon-lsp` understands the full surface syntax, including:
+
+- **Comments** — line comments (`#`) and block comments (`/* ... */`, may span lines).
+- **Block strings** — triple-quoted `""" ... """` preserve newlines verbatim with no escape processing.
+- **Hexadecimal integers** — `0xFF`, `0x1f`, `-0x10`.
+- **References** — `${path}` resolves a dotted path against the document, and `${env:VAR}` reads from the process environment. References compose into chains (a reference may point at another reference), and cycles are detected so resolution terminates.
+
+  ```toon
+  db:
+    port: 5432
+  service:
+    db_port: ${db.port}        # resolves to 5432
+    token: ${env:API_TOKEN}    # resolved from the environment
+  ```
+
 ## Language server features
 
-The server advertises the following LSP capabilities. Diagnostics are published on document open and change, and the parser recovers from syntax errors so that other features keep working on incomplete files.
+The server advertises **18 LSP capabilities**. Diagnostics are published on document open and change, and the parser recovers from syntax errors so that other features keep working on incomplete files.
 
 **Navigation and symbols**
 
-- Go to definition (resolves duplicate-key references)
+- Go to definition (resolves duplicate-key references and reference chains)
 - Document symbols (outline)
 - Workspace symbols (fuzzy search across open documents)
 - Find references
-- Selection ranges
 - Document highlight
+- Selection ranges
 
 **Editing**
 
@@ -56,12 +90,12 @@ The server advertises the following LSP capabilities. Diagnostics are published 
 
 **Understanding and introspection**
 
-- Hover (shows type and path)
+- Hover (shows type, path, and resolved reference values)
 - Completion (sibling keys, `true`/`false`, structure)
 - Folding ranges
 - Inlay hints
 - Document links
-- Semantic tokens (property, string, number, keyword, operator)
+- Semantic tokens (`property`, `string`, `number`, `keyword`, `operator`, `variable`)
 
 ## Command-line interface
 
@@ -193,19 +227,33 @@ for err in &errors {
 }
 ```
 
+To resolve `${path}` / `${env:VAR}` references, use the `resolve` module:
+
+```rust
+use toon_lsp::{parse, resolve::resolve};
+
+let ast = parse("foo:\n  bar: 42\nref: ${foo.bar}").unwrap();
+let resolved = resolve(&ast, "foo.bar").unwrap(); // ResolvedRef::Node { .. }
+```
+
 ## Architecture
 
 ```mermaid
-flowchart LR
-    CLI[toon-lsp] --> LSP[LSP Server]
-    CLI --> CMD[Commands]
+flowchart TD
+    SRC[Source text] --> SC[Scanner / Lexer]
+    SC --> P[Parser]
+    P --> AST[AST with source spans]
 
-    LSP --> P[Parser]
-    CMD --> P
-    P --> AST[AST]
+    AST --> RES[resolve module\nreferences & env:VAR]
+    AST --> SRV[LSP Server]
+    AST --> CLI[CLI commands]
+    AST --> TS[(tree-sitter grammar\nhighlighting)]
+
+    SRV --> FEAT[18 LSP capabilities]
+    CLI --> CMDS[encode / decode / check / format / symbols / diagnose]
 ```
 
-The parser tracks source positions on every node and continues past syntax errors. The AST is shared by both the LSP server and the CLI commands.
+The scanner and parser track a source position on every node and continue past syntax errors, so the same `AstNode` tree feeds both the LSP server (diagnostics, navigation, editing, introspection) and the CLI commands. The `resolve` module navigates the tree for `${path}` references and the process environment for `${env:VAR}`, with cycle detection. Editor highlighting is provided by a separate tree-sitter grammar that mirrors the Rust parser's node shapes.
 
 ## Development
 
@@ -219,12 +267,12 @@ cargo fmt --all -- --check
 RUST_LOG=debug cargo run
 ```
 
-The suite includes over 550 tests across the scanner, parser, LSP handlers, and CLI, plus a tree-sitter grammar with a corpus under `editors/shared/tree-sitter-toon/test/corpus`.
+The suite includes over 590 tests across the scanner, parser, reference resolver, LSP handlers, and CLI, plus a tree-sitter grammar with a corpus under `editors/shared/tree-sitter-toon/test/corpus`.
 
 ## Related
 
-- [toon-format/toon](https://github.com/toon-format/toon) — the TOON specification
-- [toon-format/toon-rust](https://github.com/toon-format/toon-rust) — serde-based Rust library
+- [toon-format/toon](https://github.com/toon-format/toon) — the TOON specification and SDKs
+- [toon-format/spec](https://github.com/toon-format/spec) — the authoritative TOON spec
 - [tower-lsp](https://github.com/ebkalderon/tower-lsp) — the LSP framework this server is built on
 
 ## License

@@ -5,7 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-07-10
+
+### Added
+- **Editor polish**: tree-sitter grammar highlights are comprehensive and the
+  grammar corpus passes **14/14** parses.
+
+### Changed
+- **CI hardening** (`.github/workflows/build-extensions.yml`): removed all
+  `continue-on-error` gates so the extension/binary builds and the tree-sitter
+  grammar test are now hard gates that fail the workflow on regressions.
+- **Parser performance**: `scan_all` now pre-sizes the token buffer from the
+  source length; `parse_inline_array` reserves `Vec` capacity from the declared
+  item count (clamped to `MAX_ARRAY_ITEMS`) to avoid repeated reallocations.
+- **README**: rewritten with an accurate architecture diagram, the full set of
+  18 LSP capabilities, complete CLI and library documentation, and CI/build
+  badges.
 
 ## [0.4.2] - 2026-07-10
 
