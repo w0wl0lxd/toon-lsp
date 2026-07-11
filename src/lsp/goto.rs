@@ -20,6 +20,7 @@
 
 use super::ast_utils::calculate_offset;
 use crate::ast::{AstNode, ObjectEntry, Position, Span};
+use crate::resolve::ResolvedRef;
 
 /// A location result for go-to-definition.
 #[derive(Debug, Clone)]
@@ -68,9 +69,11 @@ pub fn get_definition_at_position(
     if let Some(node_at_pos) = super::ast_utils::find_node_at_position(ast, line, column, offset)
         && let AstNode::Reference { path, is_env: false, .. } = node_at_pos.node
     {
-        let segments: Vec<&str> = path.split('.').collect();
-        if let Some(entry) = find_definition_by_path(ast, &segments) {
-            return vec![DefinitionLocation::from_span(&entry.key_span)];
+        if let Ok(ResolvedRef::Node {
+            key_span: Some(span), ..
+        }) = crate::resolve::resolve(ast, path)
+        {
+            return vec![DefinitionLocation::from_span(&span)];
         }
     }
 
@@ -78,47 +81,6 @@ pub fn get_definition_at_position(
 
     // Find the key at this position and its containing object
     find_key_and_definitions(ast, pos)
-}
-
-/// Find a definition entry by dot-separated path segments.
-pub(crate) fn find_definition_by_path<'a>(
-    node: &'a AstNode,
-    path_segments: &[&str],
-) -> Option<&'a ObjectEntry> {
-    if path_segments.is_empty() {
-        return None;
-    }
-    match node {
-        AstNode::Document { children, .. } => {
-            for child in children {
-                if let Some(entry) = find_definition_by_path(child, path_segments) {
-                    return Some(entry);
-                }
-            }
-            None
-        }
-        AstNode::Object { entries, .. } => {
-            let first = path_segments[0];
-            for entry in entries {
-                if entry.key == first {
-                    if path_segments.len() == 1 {
-                        return Some(entry);
-                    }
-                    return find_definition_by_path(&entry.value, &path_segments[1..]);
-                }
-            }
-            None
-        }
-        AstNode::Array { items, .. } => {
-            for item in items {
-                if let Some(entry) = find_definition_by_path(item, path_segments) {
-                    return Some(entry);
-                }
-            }
-            None
-        }
-        _ => None,
-    }
 }
 
 /// Find a key at position and return all definitions in its scope.

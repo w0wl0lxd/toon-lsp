@@ -20,6 +20,7 @@
 
 use super::ast_utils::{NodePathEntry, build_key_path, calculate_offset, find_node_at_position};
 use crate::ast::{AstNode, NumberValue, ObjectEntry, Position};
+use crate::resolve::{ResolveError, ResolvedRef, resolve};
 
 /// Hover information result.
 #[derive(Debug, Clone)]
@@ -64,7 +65,7 @@ pub fn get_hover_at_position(
     let node_at_pos = find_node_at_position(ast, line, column, offset)?;
 
     // Generate hover content based on the node and path
-    let contents = format_hover_content(node_at_pos.node, &node_at_pos.path);
+    let contents = format_hover_content(node_at_pos.node, &node_at_pos.path, ast);
 
     // Get the span for the hovered node
     let span = node_at_pos.node.span();
@@ -209,7 +210,7 @@ fn describe_value(value: &AstNode) -> String {
 }
 
 /// Format hover content for an AST node.
-fn format_hover_content(node: &AstNode, path: &[NodePathEntry<'_>]) -> String {
+fn format_hover_content(node: &AstNode, path: &[NodePathEntry<'_>], root: &AstNode) -> String {
     // Build the key path
     let key_path = build_key_path(path);
 
@@ -277,10 +278,28 @@ fn format_hover_content(node: &AstNode, path: &[NodePathEntry<'_>]) -> String {
         }
         AstNode::Reference { path, is_env, .. } => {
             let ref_type = if *is_env { "Environment Variable" } else { "Document Variable" };
-            if key_path.is_empty() {
-                format!("**Reference** ({}): `{}`", ref_type, path)
+            let resolved = if *is_env {
+                match std::env::var(path.strip_prefix("env:").unwrap_or(path)) {
+                    Ok(v) => format!("\n\nResolves to: `{}`", v),
+                    Err(_) => "\n\n_(not defined in the environment)_".to_string(),
+                }
             } else {
-                format!("**{}** : Reference ({})\n\n`{}`", key_path, ref_type, path)
+                match resolve(root, path) {
+                    Ok(ResolvedRef::Node { node, .. }) => {
+                        format!("\n\nResolves to: {}", describe_value(node))
+                    }
+                    Ok(ResolvedRef::Env(v)) => format!("\n\nResolves to: `{}`", v),
+                    Err(ResolveError::NotFound(p)) => format!("\n\n_(unresolved: `{}`)_", p),
+                    Err(ResolveError::Cycle(_)) => "\n\n_(cyclic reference)_".to_string(),
+                    Err(ResolveError::EnvNotSet(p)) => {
+                        format!("\n\n_(environment variable `{}` not set)_", p)
+                    }
+                }
+            };
+            if key_path.is_empty() {
+                format!("**Reference** ({}): `{}`{}", ref_type, path, resolved)
+            } else {
+                format!("**{}** : Reference ({})\n\n`{}`{}", key_path, ref_type, path, resolved)
             }
         }
     }

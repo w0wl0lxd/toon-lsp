@@ -22,6 +22,7 @@ use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
 
 use super::utf16::span_to_range;
 use crate::parser::ParseError;
+use crate::resolve::{ResolveError, ResolvedRef};
 
 /// Convert a single parse error to an LSP diagnostic.
 ///
@@ -96,38 +97,43 @@ fn validate_node_recursive(
                 validate_node_recursive(item, root, source, diagnostics);
             }
         }
-        crate::ast::AstNode::Reference { path, is_env, span } => {
+        crate::ast::AstNode::Reference { path, span, .. } => {
             let range = span_to_range(span, source);
-            if *is_env {
-                let env_var_name = path.strip_prefix("env:").unwrap_or(path);
-                if std::env::var(env_var_name).is_err() {
-                    diagnostics.push(Diagnostic {
-                        range,
-                        severity: Some(DiagnosticSeverity::WARNING),
-                        code: None,
-                        code_description: None,
-                        source: Some("toon-lsp".to_string()),
-                        message: format!("Environment variable '{}' is not defined", env_var_name),
-                        related_information: None,
-                        tags: None,
-                        data: None,
-                    });
-                }
-            } else {
-                let segments: Vec<&str> = path.split('.').collect();
-                if crate::lsp::goto::find_definition_by_path(root, &segments).is_none() {
-                    diagnostics.push(Diagnostic {
-                        range,
-                        severity: Some(DiagnosticSeverity::WARNING),
-                        code: None,
-                        code_description: None,
-                        source: Some("toon-lsp".to_string()),
-                        message: format!("Unresolved reference: '{}'", path),
-                        related_information: None,
-                        tags: None,
-                        data: None,
-                    });
-                }
+            match crate::resolve::resolve(root, path) {
+                Ok(ResolvedRef::Node { .. }) | Ok(ResolvedRef::Env(_)) => {}
+                Err(ResolveError::EnvNotSet(name)) => diagnostics.push(Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::WARNING),
+                    code: None,
+                    code_description: None,
+                    source: Some("toon-lsp".to_string()),
+                    message: format!("Environment variable '{}' is not defined", name),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                }),
+                Err(ResolveError::NotFound(not_found)) => diagnostics.push(Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::WARNING),
+                    code: None,
+                    code_description: None,
+                    source: Some("toon-lsp".to_string()),
+                    message: format!("Unresolved reference: '{}'", not_found),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                }),
+                Err(ResolveError::Cycle(_)) => diagnostics.push(Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::WARNING),
+                    code: None,
+                    code_description: None,
+                    source: Some("toon-lsp".to_string()),
+                    message: format!("Cyclic reference: '{}'", path),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                }),
             }
         }
         _ => {}
