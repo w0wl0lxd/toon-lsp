@@ -19,8 +19,11 @@ name = "toon-lsp"
 path = "src/main.rs"
 
 [dependencies]
-# TOON Format
-toon-format = "0.4"
+# TOON Format — core encode/decode only. The default `cli` feature pulls in a
+# large TUI/highlighting tree (syntect→bincode, ratatui→paste, arboard, clap,
+# tiktoken-rs, …) that we do not use; disabling it removes those transitive
+# deps and their unmaintained-crate advisories.
+toon-format = { version = "0.4", default-features = false }
 
 # LSP Framework
 tower-lsp = "0.20"
@@ -58,8 +61,9 @@ predicates = "3"
 unsafe_code = "forbid"
 
 [lints.clippy]
+# Pedantic enforced project-wide (CI: `clippy -- -D warnings`).
+# Allow-list below is deliberately minimal: high-noise or API-driven lints only.
 pedantic = { level = "warn", priority = -1 }
-# Allow specific noisy lints
 must_use_candidate = "allow"
 default_trait_access = "allow"
 float_cmp = "allow"
