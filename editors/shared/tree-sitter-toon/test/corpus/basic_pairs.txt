@@ -1,0 +1,56 @@
+=================================
+Inline values (unquoted_string)
+=================================
+
+name: Alice
+age: 30
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (unquoted_string))
+  (newline)
+  (pair
+    key: (key)
+    value: (number))
+  (newline))
+
+=================================
+Empty value
+=================================
+
+empty:
+
+---
+
+(document
+  (pair
+    key: (key))
+  (newline))
+
+=================================
+Block value (nested)
+=================================
+
+name:
+  nested: val
+done: true
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (newline)
+    value: (indent)
+    value: (pair
+      key: (key)
+      value: (unquoted_string))
+    value: (newline)
+    value: (dedent))
+  (pair
+    key: (key)
+    value: (boolean))
+  (newline))

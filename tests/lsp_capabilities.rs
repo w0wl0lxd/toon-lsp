@@ -10,8 +10,7 @@ use tower_lsp::lsp_types::{InitializeParams, OneOf, SemanticTokenModifier, Seman
 /// Helper to get server capabilities from initialization
 async fn get_server_capabilities() -> tower_lsp::lsp_types::ServerCapabilities {
     // Create a test server with LspService
-    let (service, _socket) =
-        tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+    let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
 
     // Call initialize through the service
     let params = InitializeParams::default();
@@ -151,4 +150,25 @@ async fn test_all_existing_capabilities_preserved() {
     assert!(caps.completion_provider.is_some(), "completion_provider must exist");
     assert!(caps.definition_provider.is_some(), "definition_provider must exist");
     assert!(caps.document_symbol_provider.is_some(), "document_symbol_provider must exist");
+}
+
+#[tokio::test]
+async fn test_expanded_capabilities_declared() {
+    let caps = get_server_capabilities().await;
+
+    assert!(caps.code_action_provider.is_some(), "code_action_provider must be declared");
+    assert!(caps.code_lens_provider.is_some(), "code_lens_provider must be declared");
+    assert!(
+        caps.document_highlight_provider.is_some(),
+        "document_highlight_provider must be declared"
+    );
+    assert!(caps.document_link_provider.is_some(), "document_link_provider must be declared");
+    assert!(caps.folding_range_provider.is_some(), "folding_range_provider must be declared");
+    assert!(caps.inlay_hint_provider.is_some(), "inlay_hint_provider must be declared");
+    assert!(
+        caps.linked_editing_range_provider.is_some(),
+        "linked_editing_range_provider must be declared"
+    );
+    assert!(caps.selection_range_provider.is_some(), "selection_range_provider must be declared");
+    assert!(caps.workspace_symbol_provider.is_some(), "workspace_symbol_provider must be declared");
 }

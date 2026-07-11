@@ -2,7 +2,7 @@
   "name": "toon-lsp",
   "displayName": "TOON Language",
   "description": "Language support for TOON (Token-Oriented Object Notation) files",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "publisher": "toon-format",
   "license": "AGPL-3.0-only",
   "repository": {
@@ -11,7 +11,7 @@
   },
   "icon": "images/icon.png",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.91.0"
   },
   "categories": [
     "Programming Languages",
@@ -88,15 +88,15 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.0.0",
-    "@types/vscode": "^1.75.0",
-    "@vscode/test-electron": "^2.3.0",
-    "@vscode/vsce": "^2.22.0",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.125.0",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.9.2",
     "eslint": "^8.57.0",
-    "mocha": "^10.2.0",
-    "typescript": "^5.3.0"
+    "mocha": "^10.8.0",
+    "typescript": "^5.6.0"
   },
   "dependencies": {
-    "vscode-languageclient": "^9.0.0"
+    "vscode-languageclient": "^10.0.1"
   }
 }

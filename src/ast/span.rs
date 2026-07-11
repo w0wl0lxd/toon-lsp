@@ -84,16 +84,8 @@ impl Span {
     #[inline]
     #[must_use]
     pub fn merge(self, other: Span) -> Span {
-        let start = if self.start.offset <= other.start.offset {
-            self.start
-        } else {
-            other.start
-        };
-        let end = if self.end.offset >= other.end.offset {
-            self.end
-        } else {
-            other.end
-        };
+        let start = if self.start.offset <= other.start.offset { self.start } else { other.start };
+        let end = if self.end.offset >= other.end.offset { self.end } else { other.end };
         Span::new(start, end)
     }
 

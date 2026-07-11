@@ -11,16 +11,20 @@ module.exports = grammar({
   ],
 
   extras: $ => [
-    /[ \t]+/,
+    /[ \t\r\n]+/,
     $.comment,
+  ],
+
+  conflicts: $ => [
+    [$.pair],
   ],
 
   rules: {
     document: $ => repeat($._line),
 
-    _line: $ => choice(
-      $.pair,
-      $.array_item,
+    _line: $ => seq(
+      choice($.pair, $.array_item),
+      optional($.newline),
     ),
 
     pair: $ => seq(
@@ -34,7 +38,7 @@ module.exports = grammar({
       seq($.newline, $.indent, repeat($._line), $.dedent),
     ),
 
-    key: $ => /[\w][\w-]*/,
+    key: $ => token(prec(-1, /[\w][\w-]*/)),
 
     _value: $ => choice(
       $.inline_array,
@@ -65,25 +69,9 @@ module.exports = grammar({
       $.single_quoted_string,
     ),
 
-    double_quoted_string: $ => seq(
-      '"',
-      repeat(choice(
-        $.escape_sequence,
-        /[^"\\]+/,
-      )),
-      '"',
-    ),
+    double_quoted_string: $ => token(prec(2, /"([^"\\]|\\(["'\\bfnrt]|u[0-9A-Fa-f]{4}))*"/)),
 
-    single_quoted_string: $ => seq(
-      "'",
-      repeat(choice(
-        $.escape_sequence,
-        /[^'\\]+/,
-      )),
-      "'",
-    ),
-
-    escape_sequence: $ => /\\(?:["'\\bfnrt]|u[0-9A-Fa-f]{4})/,
+    single_quoted_string: $ => token(prec(2, /'([^'\\]|\\(["'\\bfnrt]|u[0-9A-Fa-f]{4}))*'/)),
 
     number: $ => {
       const decimal = /[0-9]+/;
@@ -94,14 +82,14 @@ module.exports = grammar({
         seq(signed_integer, exponent),
         signed_integer,
       );
-      return token(decimal_literal);
+      return token(prec(2, decimal_literal));
     },
 
-    boolean: $ => choice('true', 'false'),
+    boolean: $ => token(prec(2, choice('true', 'false'))),
 
-    null: $ => 'null',
+    null: $ => token(prec(2, 'null')),
 
-    unquoted_string: $ => /[^\s#\[\]|,][^#\[\]|,\n]*/,
+    unquoted_string: $ => token(prec(1, /[^\s#\[\]|,][^#\[\]|,\n]*/)),
 
     comment: $ => /#.*/,
   },
