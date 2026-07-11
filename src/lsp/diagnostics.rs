@@ -100,7 +100,7 @@ fn validate_node_recursive(
         crate::ast::AstNode::Reference { path, span, .. } => {
             let range = span_to_range(span, source);
             match crate::resolve::resolve(root, path) {
-                Ok(ResolvedRef::Node { .. }) | Ok(ResolvedRef::Env(_)) => {}
+                Ok(ResolvedRef::Node { .. } | ResolvedRef::Env(_)) => {}
                 Err(ResolveError::EnvNotSet(name)) => diagnostics.push(Diagnostic {
                     range,
                     severity: Some(DiagnosticSeverity::WARNING),
