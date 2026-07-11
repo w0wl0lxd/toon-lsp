@@ -64,10 +64,61 @@ pub fn get_definition_at_position(
         None => return Vec::new(),
     };
 
+    // First check if we are on a Reference node
+    if let Some(node_at_pos) = super::ast_utils::find_node_at_position(ast, line, column, offset)
+        && let AstNode::Reference { path, is_env: false, .. } = node_at_pos.node
+    {
+        let segments: Vec<&str> = path.split('.').collect();
+        if let Some(entry) = find_definition_by_path(ast, &segments) {
+            return vec![DefinitionLocation::from_span(&entry.key_span)];
+        }
+    }
+
     let pos = Position::new(line, column, offset);
 
     // Find the key at this position and its containing object
     find_key_and_definitions(ast, pos)
+}
+
+/// Find a definition entry by dot-separated path segments.
+pub(crate) fn find_definition_by_path<'a>(
+    node: &'a AstNode,
+    path_segments: &[&str],
+) -> Option<&'a ObjectEntry> {
+    if path_segments.is_empty() {
+        return None;
+    }
+    match node {
+        AstNode::Document { children, .. } => {
+            for child in children {
+                if let Some(entry) = find_definition_by_path(child, path_segments) {
+                    return Some(entry);
+                }
+            }
+            None
+        }
+        AstNode::Object { entries, .. } => {
+            let first = path_segments[0];
+            for entry in entries {
+                if entry.key == first {
+                    if path_segments.len() == 1 {
+                        return Some(entry);
+                    }
+                    return find_definition_by_path(&entry.value, &path_segments[1..]);
+                }
+            }
+            None
+        }
+        AstNode::Array { items, .. } => {
+            for item in items {
+                if let Some(entry) = find_definition_by_path(item, path_segments) {
+                    return Some(entry);
+                }
+            }
+            None
+        }
+        _ => None,
+    }
 }
 
 /// Find a key at position and return all definitions in its scope.
@@ -154,5 +205,19 @@ mod tests {
 
         let locations = get_definition_at_position(&ast, source, 0, 8);
         assert!(locations.is_empty());
+    }
+
+    #[test]
+    fn test_definition_on_reference() {
+        let source = "db:\n  port: 5432\nservice:\n  db_port: ${db.port}";
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        // Cursor on "${db.port}" (line 3, col 13 -> "d" in "db.port")
+        let locations = get_definition_at_position(&ast, source, 3, 13);
+        assert_eq!(locations.len(), 1);
+        // Should point to the "port" key in "db:"
+        assert_eq!(locations[0].line, 1); // line 1: port: 5432
+        assert_eq!(locations[0].start_col, 2);
     }
 }
