@@ -28,7 +28,13 @@ pub fn encode_with_indent(value: &Value, indent: usize) -> EncodeResult<String> 
     let delim = Delimiter::Comma;
     match value {
         Value::Object(map) => encode_object(&mut out, map, 0, indent, delim)?,
-        Value::Array(arr) => encode_expanded_items(&mut out, arr, 0, indent, delim)?,
+        Value::Array(arr) => {
+            if arr.is_empty() {
+                out.push_str("[]\n");
+            } else {
+                encode_array_body(&mut out, arr, 0, indent, delim)?;
+            }
+        }
         scalar => {
             let _ = emit_json_scalar(&mut out, scalar, delim);
             out.push('\n');
@@ -81,7 +87,12 @@ fn encode_array_field(
 ) -> EncodeResult<()> {
     push_indent(out, level, indent);
     emit_key(out, key, delim);
-    encode_array_body(out, arr, level, indent, delim)
+    if arr.is_empty() {
+        out.push_str(": []\n");
+        Ok(())
+    } else {
+        encode_array_body(out, arr, level, indent, delim)
+    }
 }
 
 /// Emits an array value starting from the `[count]...` header, choosing inline,
@@ -193,8 +204,8 @@ fn encode_expanded_items(
             }
             Value::Array(inner) => {
                 push_indent(out, level, indent);
-                out.push_str("-\n");
-                encode_expanded_items(out, inner, level + 1, indent, delim)?;
+                out.push_str("- ");
+                encode_array_body(out, inner, level, indent, delim)?;
             }
             scalar => {
                 push_indent(out, level, indent);
