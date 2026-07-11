@@ -15,6 +15,17 @@ This document provides detailed setup instructions for all supported editors and
 | Formatting | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Semantic Tokens | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Document Symbols | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Code Actions | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Code Lens | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Document Highlight | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Document Link | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Folding Range | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Inlay Hints | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Linked Editing | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Selection Range | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Workspace Symbols | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+
+> The `toon-lsp` server advertises all 18 capabilities above. Individual editors surface them according to their LSP client (all listed clients support the full set).
 
 ## Priority 1 Editors (Full Support)
 

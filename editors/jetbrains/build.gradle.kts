@@ -1,11 +1,11 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.9.21"
-    id("org.jetbrains.intellij") version "1.17.2"
+    id("org.jetbrains.kotlin.jvm") version "1.9.25"
+    id("org.jetbrains.intellij") version "1.17.4"
 }
 
 group = "com.toon.lsp"
-version = "0.1.0"
+version = "0.4.0"
 
 repositories {
     mavenCentral()
@@ -16,17 +16,17 @@ kotlin {
 }
 
 intellij {
-    version.set("2023.3")
+    version.set("2024.2")
     type.set("IC") // IntelliJ IDEA Community Edition
     plugins.set(listOf(
-        "com.redhat.devtools.lsp4ij:0.1.0" // LSP4IJ plugin
+        "com.redhat.devtools.lsp4ij:0.20.1" // LSP4IJ plugin
     ))
 }
 
 tasks {
     patchPluginXml {
-        sinceBuild.set("231")
-        untilBuild.set("243.*")
+        sinceBuild.set("242")
+        untilBuild.set("251.*")
     }
 
     buildSearchableOptions {

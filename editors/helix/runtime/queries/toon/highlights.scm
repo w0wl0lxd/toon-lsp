@@ -11,9 +11,6 @@
 (single_quoted_string) @string
 (unquoted_string) @string
 
-; Escape sequences
-(escape_sequence) @constant.character.escape
-
 ; Numbers
 (number) @constant.numeric
 
@@ -27,9 +24,5 @@
 ":" @punctuation.delimiter
 "," @punctuation.delimiter
 "-" @punctuation.special
-"|" @punctuation.special
 "[" @punctuation.bracket
 "]" @punctuation.bracket
-
-; Table cells
-(table_cell) @string
