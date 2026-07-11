@@ -55,10 +55,8 @@ bitflags = "2.4"
 
 [features]
 default = ["decoder_a"]
-# Prototype A: drives the existing LSP Scanner token stream.
+# Decoder: drives the existing LSP Scanner token stream.
 decoder_a = []
-# Prototype B: purpose-built line/byte scanner (benchmarked against A in Task 9).
-decoder_b = []
 
 [dev-dependencies]
 pretty_assertions = "1.4"

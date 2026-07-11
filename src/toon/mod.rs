@@ -1,11 +1,11 @@
 //! In-house TOON codec: spec-conformant encode/decode and shared emitter core.
 
-pub mod error;
+pub mod decode;
 pub mod emit;
 pub mod encode;
-pub mod decode;
+pub mod error;
 
-pub use decode::{decode, decode_with_config};
+pub use decode::decode;
 pub use encode::{encode, encode_with_indent, encode_with_config};
 pub use emit::Delimiter;
 pub use error::{DecodeError, DecodeResult, EncodeError, EncodeResult};

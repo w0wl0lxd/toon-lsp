@@ -378,7 +378,11 @@ impl<'a> Scanner<'a> {
         Token::new(kind, span)
     }
 
-    /// Scan a single structural character: : , [ ] { } -
+    fn is_structural_char(ch: char) -> bool {
+    matches!(ch, ':' | ',' | '[' | ']' | '{' | '}' | '-' | '#' | '$')
+}
+
+/// Scan a single structural character: : , [ ] { } -
     ///
     /// # Panics
     /// Unreachable panic if called with non-structural character (defensive).
@@ -424,6 +428,10 @@ impl<'a> Scanner<'a> {
             if ch.is_ascii_alphanumeric() || ch == '_' {
                 self.advance();
             } else if ch.is_alphanumeric() && !ch.is_ascii() {
+                self.advance();
+            } else if !ch.is_control() && !ch.is_whitespace() && !Self::is_structural_char(ch) {
+                // Allow any printable non-structural character in identifiers
+                // (for TOON spec compliance with emoji, etc. in unquoted strings)
                 self.advance();
             } else {
                 break;
@@ -850,14 +858,19 @@ impl<'a> Scanner<'a> {
                     self.make_token(TokenKind::Error("Unexpected character: $".into()), start)
                 }
             }
-            'a'..='z' | 'A'..='Z' | '_' => self.scan_identifier_or_keyword(),
+'a'..='z' | 'A'..='Z' | '_' => self.scan_identifier_or_keyword(),
             ch if ch.is_alphabetic() && !ch.is_ascii() => self.scan_identifier_or_keyword(),
+            // Allow any printable non-structural, non-whitespace char as identifier
+            // (for TOON spec compliance with emoji, etc. in unquoted strings)
+            ch if !ch.is_control() && !ch.is_whitespace() && !Self::is_structural_char(ch) => {
+                self.scan_identifier_or_keyword()
+            }
             // Control characters (except handled \n, \r, \t) are invalid
             '\x00'..='\x08' | '\x0B' | '\x0C' | '\x0E'..='\x1F' | '\x7F' => {
                 self.advance();
                 self.make_token(
                     TokenKind::Error(format!("Invalid control character: U+{:04X}", ch as u32)),
-                    start,
+                    start
                 )
             }
             _ => {
