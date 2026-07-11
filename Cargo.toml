@@ -1,6 +1,6 @@
 [package]
 name = "toon-lsp"
-version = "0.4.2"
+version = "0.5.0"
 edition = "2024"
 resolver = "3"
 authors = ["w0wl0lxd"]

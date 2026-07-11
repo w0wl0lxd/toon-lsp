@@ -740,7 +740,12 @@ impl<'a> Scanner<'a> {
     /// assert!(tokens.iter().any(|t| t.kind == TokenKind::RightBracket));
     /// ```
     pub fn scan_all(&mut self) -> Vec<Token> {
-        let mut tokens = Vec::with_capacity(1024);
+        // Pre-size the token buffer from the source length to avoid repeated
+        // doubling-reallocations on large documents. Tokens are typically a
+        // handful of bytes each, so `len/16` is a reasonable upper bound that
+        // keeps reallocations to at most one or two for big inputs.
+        let capacity = self.source.len() / 16 + 1024;
+        let mut tokens = Vec::with_capacity(capacity);
         loop {
             let token = self.next_token();
             let is_eof = matches!(token.kind, TokenKind::Eof);
