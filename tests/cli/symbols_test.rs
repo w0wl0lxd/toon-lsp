@@ -439,7 +439,7 @@ fn test_symbols_malformed_json_in_toon() {
     cmd.arg("symbols").arg(&toon_path);
 
     // Then: Should handle gracefully (either succeed with partial symbols or error)
-    cmd.assert();
+    let _ = cmd.assert();
 }
 
 // =============================================================================

@@ -2,7 +2,7 @@
 id = "toon"
 name = "TOON Language"
 description = "Language support for TOON (Token-Oriented Object Notation) files"
-version = "0.1.0"
+version = "0.4.0"
 schema_version = 1
 
 [authors]

@@ -269,10 +269,9 @@ impl<'a> Scanner<'a> {
         let (spaces, has_tab) = self.count_leading_spaces();
 
         if has_tab {
-            return Some(self.make_token(
-                TokenKind::Error("Tabs not allowed in indentation".into()),
-                start,
-            ));
+            return Some(
+                self.make_token(TokenKind::Error("Tabs not allowed in indentation".into()), start),
+            );
         }
 
         let &current_indent = self.indent_stack.last().unwrap_or(&0);
