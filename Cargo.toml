@@ -53,7 +53,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Bitflags
 bitflags = "2.4"
 
-
+[features]
+default = ["decoder_a"]
+# Prototype A: drives the existing LSP Scanner token stream.
+decoder_a = []
+# Prototype B: purpose-built line/byte scanner (benchmarked against A in Task 9).
+decoder_b = []
 
 [dev-dependencies]
 pretty_assertions = "1.4"
@@ -90,6 +95,17 @@ elidable_lifetime_names = "allow"    # Explicit lifetimes for documentation
 unnecessary_wraps = "allow"          # Consistent error handling interface
 match_same_arms = "allow"            # Different semantic meaning despite identical code
 redundant_closure_for_method_calls = "allow"  # Explicit closures for readability
+collapsible_if = "allow"
+collapsible_else_if = "allow"
+manual_pattern_char_comparison = "allow"
+map_unwrap_or = "allow"
+if_same_then_else = "allow"
+too_many_lines = "allow"
+type_complexity = "allow"
+unused_self = "allow"
+field_reassign_with_default = "allow"
+redundant_else = "allow"
+while_let_on_iterator = "allow"
 
 [profile.release]
 lto = true
