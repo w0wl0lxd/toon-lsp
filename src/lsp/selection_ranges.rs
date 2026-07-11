@@ -1,17 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2024-2025 w0wl0lxd
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, version 3.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Selection range generation for LSP.
 //!
@@ -20,45 +8,84 @@
 
 use tower_lsp::lsp_types::SelectionRange;
 
+use super::ast_utils::{calculate_offset, find_node_at_position};
 use crate::ast::AstNode;
-
-/// Convert an AST node to an LSP SelectionRange.
-fn ast_to_selection_range(node: &AstNode) -> SelectionRange {
-    let span = node.span();
-    SelectionRange {
-        range: tower_lsp::lsp_types::Range {
-            start: tower_lsp::lsp_types::Position {
-                line: span.start.line,
-                character: span.start.column,
-            },
-            end: tower_lsp::lsp_types::Position { line: span.end.line, character: span.end.column },
-        },
-        parent: None,
-    }
-}
 
 /// Convert an AST to selection ranges for a position.
 ///
 /// # Arguments
 /// * `ast` - The root AST node
-/// * `_source` - The document source text (unused for now)
-/// * `_line` - The line number
-/// * `_column` - The column number (UTF-8)
+/// * `source` - The document source text
+/// * `line` - The line number
+/// * `column` - The column number (UTF-8)
 ///
 /// # Returns
 /// A selection range if a node is at the position, None otherwise
 pub fn get_selection_range(
     ast: &AstNode,
-    _source: &str,
-    _line: u32,
-    _column: u32,
+    source: &str,
+    line: u32,
+    column: u32,
 ) -> Option<SelectionRange> {
-    // For TOON, we provide selection ranges based on AST structure:
-    // 1. The key name (narrowest)
-    // 2. The key-value pair
-    // 3. The parent object
-    // 4. The document
-    Some(ast_to_selection_range(ast))
+    let offset = calculate_offset(source, line, column)?;
+    let node_at_pos = find_node_at_position(ast, line, column, offset)?;
+
+    // We build a list of spans from the narrowest to the widest (root)
+    let mut spans = Vec::new();
+
+    // 1. Check if the cursor is on the key
+    if let Some(entry) = node_at_pos.on_key {
+        spans.push(entry.key_span);
+        let entry_span = crate::ast::Span::new(entry.key_span.start, entry.value.span().end);
+        spans.push(entry_span);
+    } else {
+        // Otherwise, start with the leaf node
+        spans.push(node_at_pos.node.span());
+    }
+
+    // 2. Walk up the parent path entries to build the outer scopes
+    for entry in node_at_pos.path.iter().rev() {
+        spans.push(entry.node.span());
+    }
+
+    // Append the root document range if not already included
+    let root_span = ast.span();
+    if spans.last() != Some(&root_span) {
+        spans.push(root_span);
+    }
+
+    // Deduplicate adjacent identical spans
+    spans.dedup();
+
+    // 3. Construct the linked chain of SelectionRange from narrowest to widest (rev)
+    let mut current_range: Option<SelectionRange> = None;
+    for span in spans.into_iter().rev() {
+        let lines: Vec<&str> = source.lines().collect();
+        let start_line = span.start.line as usize;
+        let end_line = span.end.line as usize;
+
+        let start_char = super::utf16::utf8_to_utf16_col(
+            lines.get(start_line).copied().unwrap_or(""),
+            span.start.column,
+        );
+        let end_char = super::utf16::utf8_to_utf16_col(
+            lines.get(end_line).copied().unwrap_or(""),
+            span.end.column,
+        );
+
+        current_range = Some(SelectionRange {
+            range: tower_lsp::lsp_types::Range {
+                start: tower_lsp::lsp_types::Position {
+                    line: span.start.line,
+                    character: start_char,
+                },
+                end: tower_lsp::lsp_types::Position { line: span.end.line, character: end_char },
+            },
+            parent: current_range.map(Box::new),
+        });
+    }
+
+    current_range
 }
 
 /// Collect selection ranges for multiple positions.
@@ -87,23 +114,25 @@ mod tests {
     use crate::parser::parse_with_errors;
 
     #[test]
-    fn test_get_selection_range() {
-        let source = "key: value";
+    fn test_get_selection_range_hierarchy() {
+        let source = "user:\n  name: Alice";
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
 
-        let range = get_selection_range(&ast, source, 0, 0);
-        assert!(range.is_some());
-    }
+        // Cursor on "name" key (line 1, col 2)
+        let range = get_selection_range(&ast, source, 1, 2).expect("should find range");
 
-    #[test]
-    fn test_get_selection_ranges() {
-        let source = "key: value";
-        let (ast, _) = parse_with_errors(source);
-        let ast = ast.expect("should parse");
+        // Narrowest range: key "name"
+        assert_eq!(range.range.start.line, 1);
+        assert_eq!(range.range.start.character, 2);
+        assert_eq!(range.range.end.line, 1);
+        assert_eq!(range.range.end.character, 6);
 
-        let positions = vec![(0, 0), (0, 5)];
-        let ranges = get_selection_ranges(&ast, source, &positions);
-        assert_eq!(ranges.len(), 2);
+        // Parent range: the full "name: Alice" entry
+        let parent = range.parent.expect("should have parent");
+        assert_eq!(parent.range.start.line, 1);
+        assert_eq!(parent.range.start.character, 2);
+        assert_eq!(parent.range.end.line, 1);
+        assert_eq!(parent.range.end.character, 13);
     }
 }
