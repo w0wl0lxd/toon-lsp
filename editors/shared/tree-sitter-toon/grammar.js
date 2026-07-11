@@ -13,6 +13,7 @@ module.exports = grammar({
   extras: $ => [
     /[ \t\r\n]+/,
     $.comment,
+    $.block_comment,
   ],
 
   conflicts: $ => [
@@ -43,6 +44,7 @@ module.exports = grammar({
     _value: $ => choice(
       $.inline_array,
       $.string,
+      $.block_string,
       $.number,
       $.boolean,
       $.null,
@@ -73,6 +75,8 @@ module.exports = grammar({
 
     single_quoted_string: $ => token(prec(2, /'([^'\\]|\\(["'\\bfnrt]|u[0-9A-Fa-f]{4}))*'/)),
 
+    block_string: $ => token(prec(2, /"""(?:[^"]|"[^"]|""[^"])*"""/)),
+
     number: $ => {
       const decimal = /[0-9]+/;
       const signed_integer = seq(optional('-'), decimal);
@@ -82,7 +86,8 @@ module.exports = grammar({
         seq(signed_integer, exponent),
         signed_integer,
       );
-      return token(prec(2, decimal_literal));
+      const hex_literal = seq(optional('-'), /0[xX]/, /[0-9a-fA-F]+/);
+      return token(prec(2, choice(hex_literal, decimal_literal)));
     },
 
     boolean: $ => token(prec(2, choice('true', 'false'))),
@@ -92,5 +97,7 @@ module.exports = grammar({
     unquoted_string: $ => token(prec(1, /[^\s#\[\]|,][^#\[\]|,\n]*/)),
 
     comment: $ => /#.*/,
+
+    block_comment: $ => /\/\*[\s\S]*?\*\//,
   },
 });

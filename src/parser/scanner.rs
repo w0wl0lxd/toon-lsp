@@ -221,18 +221,74 @@ impl<'a> Scanner<'a> {
         iter.peek().map(|(_, ch)| *ch)
     }
 
-    /// Skip spaces, tabs, and carriage returns (NOT newlines - those are tokens).
+    /// Skip whitespace AND comments (trivia) between significant tokens.
+    ///
+    /// Handles three trivia kinds:
+    /// - Spaces, tabs, and carriage returns (NOT newlines - those are tokens).
+    /// - Line comments `# ...` (skipped up to but NOT including the newline, so
+    ///   indentation structure is preserved).
+    /// - Block comments `/* ... */` (may span newlines; consumed until `*/`,
+    ///   or to EOF if unterminated, to avoid infinite loops).
     ///
     /// # Windows Compatibility
     /// Skips `\r` to handle CRLF line endings transparently.
-    fn skip_whitespace(&mut self) {
-        while let Some(ch) = self.peek() {
-            if ch == ' ' || ch == '\t' || ch == '\r' {
-                self.advance();
-            } else {
-                break;
+    fn skip_trivia(&mut self) {
+        loop {
+            match self.peek() {
+                Some(' ' | '\t' | '\r') => {
+                    self.advance();
+                }
+                Some('#') => {
+                    // Line comment: skip to end of line, but leave the newline
+                    // token intact so indentation structure is preserved.
+                    while let Some(ch) = self.peek() {
+                        if ch == '\n' {
+                            break;
+                        }
+                        self.advance();
+                    }
+                }
+                Some('/') if self.peek_next() == Some('*') => {
+                    // Block comment: consume until '*/' (newlines allowed).
+                    self.advance(); // '/'
+                    self.advance(); // '*'
+                    let mut closed = false;
+                    while let Some(ch) = self.peek() {
+                        if ch == '*' && self.peek_next() == Some('/') {
+                            self.advance(); // '*'
+                            self.advance(); // '/'
+                            closed = true;
+                            break;
+                        }
+                        self.advance();
+                    }
+                    if !closed {
+                        // Unterminated block comment: consume to EOF.
+                        while self.peek().is_some() {
+                            self.advance();
+                        }
+                    }
+                }
+                _ => break,
             }
         }
+    }
+
+    /// Look ahead three characters (for triple-quote detection).
+    fn peek_next2(&self) -> Option<char> {
+        let mut iter = self.chars.clone();
+        iter.next();
+        iter.next()?;
+        iter.peek().map(|(_, ch)| *ch)
+    }
+
+    /// Check if the cursor is at a closing triple quote `"""`.
+    fn is_closing_triple(&self) -> bool {
+        let mut iter = self.chars.clone();
+        let c0 = iter.next().map(|(_, c)| c);
+        let c1 = iter.next().map(|(_, c)| c);
+        let c2 = iter.next().map(|(_, c)| c);
+        c0 == Some('"') && c1 == Some('"') && c2 == Some('"')
     }
 
     /// Count leading spaces at line start.
@@ -413,6 +469,21 @@ impl<'a> Scanner<'a> {
             self.advance();
         }
 
+        // Check for hexadecimal literal: `0x` / `0X` followed by hex digits
+        if self.peek() == Some('0') && matches!(self.peek_next(), Some('x' | 'X')) {
+            self.advance(); // '0'
+            self.advance(); // 'x' / 'X'
+            while let Some(ch) = self.peek() {
+                if ch.is_ascii_hexdigit() {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
+            let text = &self.source[start_offset..self.offset as usize];
+            return self.make_token(TokenKind::Number(text.to_string()), start);
+        }
+
         // Check for leading zero (invalid unless just "0" or "-0")
         let first_digit = self.peek();
         if first_digit == Some('0') {
@@ -554,6 +625,47 @@ impl<'a> Scanner<'a> {
         self.make_token(TokenKind::String(value), start)
     }
 
+    /// Scan a triple-quoted block string literal.
+    ///
+    /// # Grammar
+    /// - Starts and ends with `"""`
+    /// - Content is preserved verbatim (including newlines, no escape processing)
+    /// - Terminates at the first `"""`
+    /// - Unterminated block strings produce an Error token
+    fn scan_block_string(&mut self) -> Token {
+        let start = self.current_position();
+        // Consume opening `"""`
+        self.advance();
+        self.advance();
+        self.advance();
+
+        let start_offset = self.offset as usize;
+
+        loop {
+            match self.peek() {
+                None => {
+                    return self.make_token(
+                        TokenKind::Error("Unterminated block string literal".to_string()),
+                        start,
+                    );
+                }
+                Some('"') if self.is_closing_triple() => {
+                    // Consume closing `"""`
+                    self.advance();
+                    self.advance();
+                    self.advance();
+                    break;
+                }
+                Some(_) => {
+                    self.advance();
+                }
+            }
+        }
+
+        let text = &self.source[start_offset..self.offset as usize];
+        self.make_token(TokenKind::String(text.to_string()), start)
+    }
+
     /// Scan unquoted string value (after colon in key: value).
     /// Consumes until newline or end of input.
     #[allow(dead_code)]
@@ -636,7 +748,7 @@ impl<'a> Scanner<'a> {
             }
         }
 
-        self.skip_whitespace();
+        self.skip_trivia();
 
         let start = self.current_position();
 
@@ -652,7 +764,14 @@ impl<'a> Scanner<'a> {
         match ch {
             ':' | ',' | '[' | ']' | '{' | '}' | '-' => self.scan_structural(ch),
             '\n' => self.scan_newline(),
-            '"' => self.scan_quoted_string(),
+            '"' => {
+                // Triple-quoted block strings start with `"""`.
+                if self.peek_next() == Some('"') && self.peek_next2() == Some('"') {
+                    self.scan_block_string()
+                } else {
+                    self.scan_quoted_string()
+                }
+            }
             'a'..='z' | 'A'..='Z' | '_' => self.scan_identifier_or_keyword(),
             // Control characters (except handled \n, \r, \t) are invalid
             '\x00'..='\x08' | '\x0B' | '\x0C' | '\x0E'..='\x1F' | '\x7F' => {

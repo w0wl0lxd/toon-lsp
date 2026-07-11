@@ -1,0 +1,75 @@
+=================================
+Hexadecimal literals
+=================================
+
+code: 0xFF
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (number))
+  (newline))
+
+=================================
+Negative hexadecimal literal
+=================================
+
+neg: -0x10
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (number))
+  (newline))
+
+=================================
+Block strings (triple-quoted)
+=================================
+
+desc: """line one
+line two
+line three"""
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (block_string))
+  (newline))
+
+=================================
+Line comments
+=================================
+
+# note
+name: Alice
+
+---
+
+(document
+  (comment)
+  (pair
+    key: (key)
+    value: (unquoted_string))
+  (newline))
+
+=================================
+Block comments (standalone)
+=================================
+
+/* note */
+name: Alice
+
+---
+
+(document
+  (block_comment)
+  (pair
+    key: (key)
+    value: (unquoted_string))
+  (newline))

@@ -237,6 +237,21 @@ impl Parser {
 
     /// Convert number string to NumberValue variant.
     fn parse_number_value(text: &str, span: Span) -> Result<NumberValue, ParseError> {
+        // Hexadecimal literals: 0x.. / 0X.. (positive) or -0x.. / -0X.. (negative)
+        if let Some(rest) = text.strip_prefix("0x").or_else(|| text.strip_prefix("0X")) {
+            return u64::from_str_radix(rest, 16)
+                .map(NumberValue::PosInt)
+                .map_err(|_| ParseError::new(ParseErrorKind::InvalidNumber, span));
+        }
+        if let Some(rest) = text
+            .strip_prefix("-0x")
+            .or_else(|| text.strip_prefix("-0X"))
+        {
+            return i64::from_str_radix(rest, 16)
+                .map(|n| NumberValue::NegInt(-n))
+                .map_err(|_| ParseError::new(ParseErrorKind::InvalidNumber, span));
+        }
+
         // Float if contains . or e/E
         if text.contains('.') || text.contains('e') || text.contains('E') {
             text.parse::<f64>()
