@@ -11,8 +11,7 @@ A [Language Server Protocol](https://microsoft.github.io/language-server-protoco
 
 This project provides both a library (`toon_lsp`) that you can embed in your own tools, and a `toon-lsp` binary that runs as an LSP server or as a standalone CLI for converting, validating, formatting, and inspecting TOON documents.
 
-- **TOON** minimizes tokens versus JSON: indentation replaces braces, strings are quoted only when required, and arrays declare their length once (e.g. `[N]`).
-- **toon-lsp** makes TOON a first-class citizen in your editor: diagnostics, navigation, refactoring, and rich introspection, with error recovery so features keep working on incomplete files.
+TOON encodes the JSON data model with fewer tokens than JSON: indentation replaces braces, strings are quoted only when required, and arrays declare their length once (`[N]`). `toon-lsp` parses that syntax into an AST with source spans and serves it to editors (diagnostics, navigation, editing) and to the CLI. The parser performs error recovery, so it returns a partial AST for incomplete input rather than failing outright.
 
 ## Table of contents
 
@@ -52,12 +51,12 @@ TOON is supported in 11 editors through bundled language-server wiring: VS Code,
 
 ## Language features
 
-TOON is a strict, indentation-based format. `toon-lsp` understands the full surface syntax, including:
+`toon-lsp` parses the full TOON surface syntax:
 
-- **Comments** — line comments (`#`) and block comments (`/* ... */`, may span lines).
-- **Block strings** — triple-quoted `""" ... """` preserve newlines verbatim with no escape processing.
-- **Hexadecimal integers** — `0xFF`, `0x1f`, `-0x10`.
-- **References** — `${path}` resolves a dotted path against the document, and `${env:VAR}` reads from the process environment. References compose into chains (a reference may point at another reference), and cycles are detected so resolution terminates.
+- Line comments (`#`) and block comments (`/* ... */`, which may span lines).
+- Triple-quoted block strings (`""" ... """`), which preserve newlines verbatim and do no escape processing.
+- Hexadecimal integers (`0xFF`, `0x1f`, `-0x10`).
+- References: `${path}` resolves a dotted path against the document; `${env:VAR}` reads the process environment. A reference may point at another reference; the resolver follows the chain and detects cycles so resolution always terminates.
 
   ```toon
   db:
@@ -69,7 +68,7 @@ TOON is a strict, indentation-based format. `toon-lsp` understands the full surf
 
 ## Language server features
 
-The server advertises **18 LSP capabilities**. Diagnostics are published on document open and change, and the parser recovers from syntax errors so that other features keep working on incomplete files.
+Diagnostics are published on document open and change. Because parsing recovers from errors, the handlers below also operate on documents that do not yet parse cleanly.
 
 **Navigation and symbols**
 
@@ -88,7 +87,7 @@ The server advertises **18 LSP capabilities**. Diagnostics are published on docu
 - Code lens
 - Linked editing ranges (edit matching key/value pairs together)
 
-**Understanding and introspection**
+**Information**
 
 - Hover (shows type, path, and resolved reference values)
 - Completion (sibling keys, `true`/`false`, structure)
@@ -206,7 +205,7 @@ fn print_entry(entry: &ObjectEntry, depth: usize) {
 }
 ```
 
-Parsing recovers from errors so IDE features work on incomplete input:
+`parse_with_errors` returns a best-effort AST together with the diagnostics it collected, so callers can operate on partially valid input:
 
 ```rust
 use toon_lsp::parse_with_errors;
@@ -214,7 +213,7 @@ use toon_lsp::parse_with_errors;
 let (ast, errors) = parse_with_errors(source);
 
 if let Some(ref ast) = ast {
-    // completions, hover, and symbols work even with errors present
+    // the AST is present even when `errors` is non-empty
 }
 
 for err in &errors {
@@ -244,12 +243,12 @@ flowchart TD
     SC --> P[Parser]
     P --> AST[AST with source spans]
 
-    AST --> RES[resolve module\nreferences & env:VAR]
+    AST --> RES["resolve module<br/>references and env vars"]
     AST --> SRV[LSP Server]
     AST --> CLI[CLI commands]
-    AST --> TS[(tree-sitter grammar\nhighlighting)]
+    AST --> TS[("tree-sitter grammar<br/>highlighting")]
 
-    SRV --> FEAT[18 LSP capabilities]
+    SRV --> FEAT[LSP handlers]
     CLI --> CMDS[encode / decode / check / format / symbols / diagnose]
 ```
 
@@ -267,7 +266,7 @@ cargo fmt --all -- --check
 RUST_LOG=debug cargo run
 ```
 
-The suite includes over 590 tests across the scanner, parser, reference resolver, LSP handlers, and CLI, plus a tree-sitter grammar with a corpus under `editors/shared/tree-sitter-toon/test/corpus`.
+Tests cover the scanner, parser, reference resolver, LSP handlers, and CLI. The tree-sitter grammar has its own corpus under `editors/shared/tree-sitter-toon/test/corpus`, exercised by `tree-sitter test`.
 
 ## Related
 
