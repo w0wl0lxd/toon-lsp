@@ -68,13 +68,10 @@ pub fn get_definition_at_position(
     // First check if we are on a Reference node
     if let Some(node_at_pos) = super::ast_utils::find_node_at_position(ast, line, column, offset)
         && let AstNode::Reference { path, is_env: false, .. } = node_at_pos.node
+        && let Ok(ResolvedRef::Node { key_span: Some(span), .. }) =
+            crate::resolve::resolve(ast, path)
     {
-        if let Ok(ResolvedRef::Node {
-            key_span: Some(span), ..
-        }) = crate::resolve::resolve(ast, path)
-        {
-            return vec![DefinitionLocation::from_span(&span)];
-        }
+        return vec![DefinitionLocation::from_span(&span)];
     }
 
     let pos = Position::new(line, column, offset);
