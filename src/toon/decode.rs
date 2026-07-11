@@ -356,10 +356,52 @@ mod scanner_driven {
         }
     }
 
+    /// Parses a TOON number token into a JSON number.
+    ///
+    /// TOON normalizes numeric values: a value whose magnitude is integral
+    /// (including via an exponent, and both `-0` and `-0.0`) decodes as a JSON
+    /// integer, while a genuine fractional value decodes as a minimal float.
+    /// Hexadecimal literals (`0x1F`, `-0x10`) are a toon-lsp extension and
+    /// decode as integers.
     fn parse_number(s: &str) -> DecodeResult<Value> {
-        serde_json::from_str::<Value>(s)
-            .ok()
-            .filter(Value::is_number)
+        // Hexadecimal extension: 0x.. / -0x..
+        let (hex_neg, hex_body) = match s.strip_prefix('-') {
+            Some(rest) => (true, rest),
+            None => (false, s),
+        };
+        if let Some(hex) = hex_body.strip_prefix("0x").or_else(|| hex_body.strip_prefix("0X")) {
+            let magnitude = i64::from_str_radix(hex, 16)
+                .map_err(|e| DecodeError::new(format!("invalid hex number '{s}': {e}")))?;
+            let value = if hex_neg { -magnitude } else { magnitude };
+            return Ok(Value::Number(value.into()));
+        }
+
+        // Plain integers (covers the full i64/u64 range without precision loss).
+        if let Ok(n) = s.parse::<i64>() {
+            return Ok(Value::Number(n.into()));
+        }
+        if let Ok(n) = s.parse::<u64>() {
+            return Ok(Value::Number(n.into()));
+        }
+
+        // Everything else: parse as float and normalize integral values.
+        let f = s
+            .parse::<f64>()
+            .map_err(|_| DecodeError::new(format!("invalid number '{s}'")))?;
+        if !f.is_finite() {
+            return Err(DecodeError::new(format!("non-finite number '{s}'")));
+        }
+        if f == 0.0 {
+            // Collapses -0, -0.0, 0e1, -0e1 to integer zero.
+            return Ok(Value::Number(0i64.into()));
+        }
+        // Integral within the safe-integer range decodes as an integer.
+        if f.fract() == 0.0 && (i64::MIN as f64..=i64::MAX as f64).contains(&f) {
+            #[allow(clippy::cast_possible_truncation)]
+            return Ok(Value::Number((f as i64).into()));
+        }
+        serde_json::Number::from_f64(f)
+            .map(Value::Number)
             .ok_or_else(|| DecodeError::new(format!("invalid number '{s}'")))
     }
 }
