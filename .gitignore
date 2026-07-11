@@ -61,3 +61,17 @@ out/
 
 # Editor binaries (downloaded for bundling)
 editors/*/binaries/
+
+# Tree-sitter generated artifacts (regenerated in CI via `tree-sitter generate`)
+editors/shared/tree-sitter-toon/binding.gyp
+editors/shared/tree-sitter-toon/bindings/
+editors/shared/tree-sitter-toon/examples/
+editors/shared/tree-sitter-toon/src/grammar.json
+editors/shared/tree-sitter-toon/src/node-types.json
+editors/shared/tree-sitter-toon/src/parser.c
+editors/shared/tree-sitter-toon/src/tree_sitter/
+editors/shared/tree-sitter-toon/tree-sitter.json
+
+# VSCode syntaxes are copied in by the build workflow
+editors/vscode/syntaxes/
+.gstack/

@@ -162,8 +162,7 @@ fn check_entry_for_key_hover<'a>(
         }
         AstNode::Array { items, .. } => {
             for item in items {
-                if let Some(hover) = find_key_hover_recursive(item, line, column, offset, path)
-                {
+                if let Some(hover) = find_key_hover_recursive(item, line, column, offset, path) {
                     path.pop();
                     return Some(hover);
                 }

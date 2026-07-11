@@ -97,9 +97,9 @@ impl Parser {
 
     /// Get the current token without consuming it.
     fn current(&self) -> &Token {
-        self.tokens.get(self.position).unwrap_or_else(|| {
-            self.tokens.last().expect("tokens should never be empty")
-        })
+        self.tokens
+            .get(self.position)
+            .unwrap_or_else(|| self.tokens.last().expect("tokens should never be empty"))
     }
 
     /// Peek at the next token without consuming current.
@@ -305,14 +305,10 @@ impl Parser {
                 match &self.current().kind {
                     TokenKind::Indent => self.parse_nested_object(),
                     TokenKind::Dash => self.parse_expanded_array(),
-                    _ => Ok(AstNode::Null {
-                        span: Span::point(self.current().span.start),
-                    }),
+                    _ => Ok(AstNode::Null { span: Span::point(self.current().span.start) }),
                 }
             }
-            TokenKind::Eof => Ok(AstNode::Null {
-                span: Span::point(self.current().span.start),
-            }),
+            TokenKind::Eof => Ok(AstNode::Null { span: Span::point(self.current().span.start) }),
             _ => Err(self.error(ParseErrorKind::ExpectedValue, self.current().span)),
         }
     }
@@ -836,13 +832,12 @@ impl Parser {
                 _ => AstNode::Null { span: self.current().span },
             };
 
-            entries.push(ObjectEntry {
-                key: field_name.clone(),
-                key_span: start_span,
-                value,
-            });
+            entries.push(ObjectEntry { key: field_name.clone(), key_span: start_span, value });
 
-            if i < num_fields - 1 && delimiter == ',' && matches!(self.current().kind, TokenKind::Comma) {
+            if i < num_fields - 1
+                && delimiter == ','
+                && matches!(self.current().kind, TokenKind::Comma)
+            {
                 self.advance();
             }
         }

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-10
+
+### Added
+- **Editor integrations for 11 editors**: VS Code, Neovim, Vim, Helix, Zed, Sublime Text, Kate, Emacs, JetBrains IDEs, Eclipse, and Notepad++. Setup steps are documented in `docs/ide-support.md`.
+- **Nightly toolchain pin** (`rust-toolchain.toml`) so local and CI builds use a consistent nightly channel.
+
+### Changed
+- **Tree-sitter grammar** (`editors/shared/tree-sitter-toon`): newline handling in `extras`, string/keyword/null/number tokens given explicit precedence, and a `conflicts` entry for `pair` to resolve ambiguity.
+- **Test infrastructure** updated for `tower-lsp` compatibility; the suite now covers the scanner, parser, LSP handlers, and CLI (550+ tests).
+- README rewritten with an accurate capability list, editor-support section, and library examples.
+- Editor extension support matrices expanded to document all 18 advertised LSP capabilities.
+
+### Editor extensions
+- **VS Code** (`editors/vscode`): bumped to `0.4.0`; `@types/vscode` and engine `^1.125.0`; `vscode-languageclient` `10.0.1`; `@vscode/vsce` `3.9.2`; `@vscode/test-electron` `2.5.2`.
+- **Neovim** (`editors/neovim`): `toon_lsp.lua` advertises all 18 capabilities.
+- **Zed** (`editors/zed`): extension bumped to `0.4.0`.
+- **JetBrains** (`editors/jetbrains`): LSP4IJ `0.20.1`, Gradle IntelliJ plugin `~1.17.4`, IntelliJ `2024.2`, Kotlin `1.9.25`; plugin version `0.4.0`.
+- **tree-sitter-toon** (`editors/shared/tree-sitter-toon`): `tree-sitter-cli` `0.26.10`; npm package `0.4.0`.
+- **Emacs** (`editors/emacs`): `toon-lsp.el`/`toon-mode.el` version `0.4.0`.
+
+### Dependencies
+- Updated lockfile; dependency tree refreshed.
+
 ## [0.3.2] - 2025-05-25
 
 ### Added

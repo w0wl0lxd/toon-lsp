@@ -5,8 +5,8 @@
 
 ;; Author: TOON Format <support@toon-format.org>
 ;; URL: https://github.com/toon-format/toon-lsp
-;; Version: 0.1.0
-;; Package-Requires: ((emacs "27.1") (lsp-mode "8.0.0") (toon-mode "0.1.0"))
+;; Version: 0.4.0
+;; Package-Requires: ((emacs "27.1") (lsp-mode "8.0.0") (toon-mode "0.4.0"))
 ;; Keywords: languages, toon, lsp
 
 ;;; Commentary:

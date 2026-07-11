@@ -14,7 +14,6 @@ contexts:
     - include: comments
     - include: key-value
     - include: array-item
-    - include: table-row
 
   comments:
     - match: '#.*$'
@@ -39,19 +38,6 @@ contexts:
       captures:
         2: punctuation.definition.array-item.toon
       push: value
-
-  table-row:
-    - match: '^(\s*)(\|)'
-      captures:
-        2: punctuation.definition.table.toon
-      push: table-cells
-
-  table-cells:
-    - match: '\|'
-      scope: punctuation.separator.table.toon
-    - match: '$'
-      pop: true
-    - include: values
 
   inline-array:
     - match: '\]'

@@ -6,8 +6,7 @@
   "patterns": [
     { "include": "#comment" },
     { "include": "#key-value" },
-    { "include": "#array-item" },
-    { "include": "#tabular-row" }
+    { "include": "#array-item" }
   ],
   "repository": {
     "comment": {
@@ -17,7 +16,16 @@
     "key-value": {
       "patterns": [
         {
-          "match": "^(\\s*)(\\w[\\w-]*)(:)\\s*(\\[)(.*)?(\\])?\\s*$",
+          "match": "^(\\s*)([\\w][\\w-]*)(:)\\s*(\\[)\\s*$",
+          "captures": {
+            "2": { "name": "entity.name.tag.toon" },
+            "3": { "name": "punctuation.separator.key-value.toon" },
+            "4": { "name": "punctuation.definition.array.begin.toon" }
+          },
+          "push": "inline-array-multi"
+        },
+        {
+          "match": "^(\\s*)([\\w][\\w-]*)(:)\\s*(\\[)(.*)(\\])\\s*$",
           "captures": {
             "2": { "name": "entity.name.tag.toon" },
             "3": { "name": "punctuation.separator.key-value.toon" },
@@ -27,14 +35,36 @@
           }
         },
         {
-          "match": "^(\\s*)(\\w[\\w-]*)(:)\\s*(.*)$",
+          "match": "^(\\s*)([\\w][\\w-]*)(:)\\s*(.*)$",
           "captures": {
             "2": { "name": "entity.name.tag.toon" },
             "3": { "name": "punctuation.separator.key-value.toon" },
             "4": { "patterns": [{ "include": "#value" }] }
           }
+        },
+        {
+          "match": "^(\\s*)([\\w][\\w-]*)(:)\\s*$",
+          "captures": {
+            "2": { "name": "entity.name.tag.toon" },
+            "3": { "name": "punctuation.separator.key-value.toon" }
+          },
+          "push": "block-value"
         }
       ]
+    },
+    "block-value": {
+      "patterns": [
+        {
+          "include": "#comment"
+        },
+        {
+          "include": "#key-value"
+        },
+        {
+          "include": "#array-item"
+        }
+      ],
+      "while": "^\\s+|^\\s*$|^\\s*#"
     },
     "array-item": {
       "match": "^(\\s*)(-)(\\s+)(.*)$",
@@ -43,21 +73,17 @@
         "4": { "patterns": [{ "include": "#value" }] }
       }
     },
-    "tabular-row": {
-      "match": "^(\\s*)(\\|)(.*)$",
-      "captures": {
-        "2": { "name": "punctuation.definition.table.toon" },
-        "3": { "patterns": [{ "include": "#table-cells" }] }
-      }
-    },
-    "table-cells": {
+    "inline-array-multi": {
       "patterns": [
         {
-          "name": "punctuation.separator.table.toon",
-          "match": "\\|"
+          "name": "punctuation.definition.array.end.toon",
+          "match": "\\]"
         },
-        { "include": "#value" }
-      ]
+        {
+          "include": "#inline-array-values"
+        }
+      ],
+      "while": "(?!\\])"
     },
     "inline-array-values": {
       "patterns": [
@@ -118,23 +144,15 @@
     },
     "constant-null": {
       "name": "constant.language.null.toon",
-      "match": "\\b(null)\\b"
+      "match": "\\bnull\\b"
     },
     "constant-numeric": {
-      "patterns": [
-        {
-          "name": "constant.numeric.float.toon",
-          "match": "-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?"
-        },
-        {
-          "name": "constant.numeric.integer.toon",
-          "match": "-?(?:0|[1-9]\\d*)"
-        }
-      ]
+      "name": "constant.numeric.toon",
+      "match": "-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?"
     },
     "string-unquoted": {
       "name": "string.unquoted.toon",
-      "match": "[^\\s#\\[\\]|,][^#\\[\\]|,]*"
+      "match": "[^\\s#\\[\\]|,][^#\\[\\]|,\n]*"
     }
   }
 }

@@ -11,8 +11,7 @@
 (single_quoted_string) @string
 (unquoted_string) @string
 
-; Escape sequences within strings
-(escape_sequence) @string.escape
+; Escape sequences are inline in string tokens
 
 ; Numbers
 (number) @number
@@ -27,9 +26,5 @@
 ":" @punctuation.delimiter
 "," @punctuation.delimiter
 "-" @punctuation.special
-"|" @punctuation.special
 "[" @punctuation.bracket
 "]" @punctuation.bracket
-
-; Table cells
-(table_cell) @string
