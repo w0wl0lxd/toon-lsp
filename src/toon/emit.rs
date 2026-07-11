@@ -79,7 +79,7 @@ pub fn needs_quotes(s: &str, delim: Delimiter) -> bool {
         if ch == delim_char {
             return true;
         }
-        if ch == ':' {
+        if ch == ':' || ch == ' ' {
             return true;
         }
     }
