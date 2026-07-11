@@ -227,4 +227,16 @@ mod tests {
         assert!(diags[0].message.contains("Environment variable"));
         assert!(diags[0].message.contains("NONEXISTENT_ENV_VAR_XYZ"));
     }
+
+    #[test]
+    fn test_validate_document_cycle() {
+        use crate::parser::parse;
+        let source = "a: ${b}\nb: ${a}";
+        let ast = parse(source).expect("should parse");
+        let diags = validate_document(&ast, source);
+
+        assert_eq!(diags.len(), 2);
+        assert_eq!(diags[0].severity, Some(DiagnosticSeverity::WARNING));
+        assert!(diags[0].message.contains("Cyclic reference"));
+    }
 }
