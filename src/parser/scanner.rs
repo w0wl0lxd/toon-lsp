@@ -777,6 +777,12 @@ impl<'a> Scanner<'a> {
         let start = self.current_position();
 
         let Some(ch) = self.peek() else {
+            // Flush any outstanding indentation as dedents before EOF so that
+            // blocks ending at end-of-input (no trailing newline) are closed.
+            if self.indent_stack.last().copied().unwrap_or(0) > 0 {
+                self.indent_stack.pop();
+                return self.make_token(TokenKind::Dedent, start);
+            }
             return self.make_token(TokenKind::Eof, start);
         };
 
