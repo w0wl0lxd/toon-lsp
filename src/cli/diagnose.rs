@@ -202,7 +202,7 @@ fn generate_diagnostics(
     let (_ast, errors) = parser::parse_with_errors(content);
 
     // Convert parse errors to diagnostic entries
-    let diagnostics: Vec<DiagnosticEntry> = errors
+    let mut diagnostics: Vec<DiagnosticEntry> = errors
         .into_iter()
         .filter_map(|err| {
             // Map ParseError to severity (currently all are errors)
@@ -228,7 +228,43 @@ fn generate_diagnostics(
         })
         .collect();
 
-    // Calculate summary counts
+    if let Some(ref ast_node) = _ast {
+        let semantic_diags = crate::lsp::diagnostics::validate_document(ast_node, content);
+        for diag in semantic_diags {
+            let severity = match diag.severity {
+                Some(tower_lsp::lsp_types::DiagnosticSeverity::ERROR) => Severity::Error,
+                Some(tower_lsp::lsp_types::DiagnosticSeverity::WARNING) => Severity::Warning,
+                Some(tower_lsp::lsp_types::DiagnosticSeverity::INFORMATION) => Severity::Info,
+                Some(tower_lsp::lsp_types::DiagnosticSeverity::HINT) => Severity::Hint,
+                _ => Severity::Warning,
+            };
+
+            if severity < min_severity {
+                continue;
+            }
+
+            let range = Range {
+                start: Position {
+                    line: diag.range.start.line,
+                    character: diag.range.start.character,
+                },
+                end: Position {
+                    line: diag.range.end.line,
+                    character: diag.range.end.character,
+                },
+            };
+
+            diagnostics.push(DiagnosticEntry {
+                range,
+                severity: severity_to_string(severity),
+                code: Some("W001".to_string()),
+                message: diag.message,
+                source: "toon-lsp".to_string(),
+                context: None,
+            });
+        }
+    }
+
     let summary = calculate_summary(&diagnostics);
 
     Ok(DiagnosticReport { file: file_name.to_string(), diagnostics, summary })
