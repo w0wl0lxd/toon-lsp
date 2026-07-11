@@ -73,3 +73,48 @@ name: Alice
     key: (key)
     value: (unquoted_string))
   (newline))
+
+=================================
+Document reference
+=================================
+
+db:
+  port: 5432
+service:
+  db_port: ${db.port}
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (newline)
+    value: (indent)
+    value: (pair
+      key: (key)
+      value: (number))
+    value: (newline)
+    value: (dedent))
+  (pair
+    key: (key)
+    value: (newline)
+    value: (indent)
+    value: (pair
+      key: (key)
+      value: (reference))
+    value: (newline)
+    value: (dedent)))
+
+=================================
+Environment variable reference
+=================================
+
+api_key: ${env:API_KEY}
+
+---
+
+(document
+  (pair
+    key: (key)
+    value: (reference))
+  (newline))

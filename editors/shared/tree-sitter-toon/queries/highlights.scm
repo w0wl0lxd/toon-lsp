@@ -18,6 +18,9 @@
 ; Numbers
 (number) @number
 
+; References (${path} and ${env:VAR})
+(reference) @variable
+
 ; Booleans
 (boolean) @constant.builtin
 

@@ -75,3 +75,6 @@ editors/shared/tree-sitter-toon/tree-sitter.json
 # VSCode syntaxes are copied in by the build workflow
 editors/vscode/syntaxes/
 .gstack/
+
+# tree-sitter local build artifact
+/editors/shared/tree-sitter-toon/toon.so

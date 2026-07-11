@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-07-10
+
+### Added
+- **References** (`${path}` and `${env:VAR}`) are now parsed as a dedicated
+  `AstNode::Reference` node, carrying the raw interior path and an `is_env` flag.
+- **Reference resolution** (`src/resolve.rs`): dotted paths resolve against the
+  document AST; `env:` references read from the process environment. Reference
+  chains (a reference whose target is itself a reference) and **cycle detection**
+  are supported.
+- **Reference hover**: hovering a `${...}` reference now shows the resolved value
+  (or a note when unresolved / cyclic / env-unset).
+- **Go-to-definition** for references: jump to the defining key of a `${path}`
+  reference (now resolves through reference chains and is cycle-safe).
+- **Diagnostics** for references: unresolved paths, unset `env:` variables, and
+  cyclic references are reported as warnings.
+- **Tree-sitter grammar**: a `reference` node highlights `${path}` / `${env:VAR}`
+  as `@variable`.
+
+### Changed
+- **LSP semantic tokens**: references are emitted as the `VARIABLE` token type.
+
+### Known limitations
+- The formatter re-emits references verbatim (`${path}`); it does not inline or
+  reformat resolved values.
+- Environment-variable resolution at hover/diagnostics reads the LSP server's
+  process environment, which may differ from the runtime environment.
+
 ## [0.4.1] - 2026-07-10
 
 ### Added
