@@ -155,7 +155,6 @@ fn entries_of<'a>(node: &'a AstNode) -> Result<&'a [ObjectEntry], ResolveError> 
 }
 
 /// Collect all reference nodes in the document (for diagnostics).
-#[must_use]
 pub fn collect_references<'a>(node: &'a AstNode, out: &mut Vec<&'a AstNode>) {
     match node {
         AstNode::Document { children, .. } => {
@@ -186,13 +185,13 @@ mod tests {
     use super::*;
     use crate::parser::parse;
 
-    fn refs_of(src: &str) -> Vec<&'static str> {
+    fn refs_of(src: &str) -> Vec<String> {
         let ast = parse(src).expect("parse");
         let mut out = Vec::new();
         collect_references(&ast, &mut out);
         out.into_iter()
             .map(|n| match n {
-                AstNode::Reference { path, .. } => path.as_str(),
+                AstNode::Reference { path, .. } => path.clone(),
                 _ => unreachable!(),
             })
             .collect()
@@ -200,12 +199,12 @@ mod tests {
 
     #[test]
     fn collects_top_level_reference() {
-        assert_eq!(refs_of("ref: ${other}"), vec!["other"]);
+        assert_eq!(refs_of("ref: ${other}"), vec!["other".to_string()]);
     }
 
     #[test]
     fn collects_env_reference() {
-        assert_eq!(refs_of("ref: ${env:HOME}"), vec!["env:HOME"]);
+        assert_eq!(refs_of("ref: ${env:HOME}"), vec!["env:HOME".to_string()]);
     }
 
     #[test]
@@ -222,9 +221,16 @@ mod tests {
 
     #[test]
     fn resolves_env_when_set() {
-        std::env::set_var("TOON_TEST_VAR", "hello");
-        let ast = parse("ref: ${env:TOON_TEST_VAR}").unwrap();
-        assert_eq!(resolve(&ast, "env:TOON_TEST_VAR").unwrap(), ResolvedRef::Env("hello".into()));
+        // Avoid mutating the environment (unsafe under the project's lint policy):
+        // resolve against a variable that already exists in the runner.
+        let var = "PATH";
+        if let Ok(expected) = std::env::var(var) {
+            let ast = parse(&format!("ref: ${{env:{var}}}")).unwrap();
+            assert_eq!(
+                resolve(&ast, &format!("env:{var}")).unwrap(),
+                ResolvedRef::Env(expected)
+            );
+        }
     }
 
     #[test]

@@ -7,6 +7,8 @@ on:
       - 'editors/**'
       - 'scripts/**'
       - '.github/workflows/build-extensions.yml'
+    tags:
+      - 'v[0-9]+.*'
   pull_request:
     paths:
       - 'editors/**'
@@ -18,6 +20,13 @@ on:
         description: 'Build release binaries'
         type: boolean
         default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -57,7 +66,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v3
+        uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
 
@@ -69,6 +78,24 @@ jobs:
         with:
           name: toon-lsp-${{ matrix.platform }}
           path: target/${{ matrix.target }}/release/${{ matrix.binary }}
+
+      - name: Rename binary for release upload
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp target/${{ matrix.target }}/release/${{ matrix.binary }} dist/toon-lsp-${{ matrix.platform }}.exe
+          else
+            cp target/${{ matrix.target }}/release/${{ matrix.binary }} dist/toon-lsp-${{ matrix.platform }}
+          fi
+
+      - name: Upload Standalone Binary to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+        continue-on-error: true
 
   # Build VSCode extension
   build-vscode:
@@ -86,6 +113,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'editors/vscode/package-lock.json'
 
       - name: Download binary
         uses: actions/download-artifact@v4
@@ -121,6 +150,13 @@ jobs:
           path: editors/vscode/*.vsix
         continue-on-error: true
 
+      - name: Upload VSCode VSIX to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: editors/vscode/*.vsix
+        continue-on-error: true
+
   # Build JetBrains plugin
   build-jetbrains:
     name: Build JetBrains Plugin
@@ -135,6 +171,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
       - name: Download all binaries
         uses: actions/download-artifact@v4
@@ -155,6 +192,13 @@ jobs:
         with:
           name: jetbrains-plugin
           path: editors/jetbrains/build/distributions/*.zip
+        continue-on-error: true
+
+      - name: Upload JetBrains Plugin to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: editors/jetbrains/build/distributions/*.zip
         continue-on-error: true
 
   # Build tree-sitter grammar

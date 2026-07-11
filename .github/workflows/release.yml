@@ -5,6 +5,13 @@ on:
     tags:
       - 'v[0-9]+.*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -57,8 +64,6 @@ jobs:
     name: GitHub Release
     needs: publish
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
