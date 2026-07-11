@@ -286,7 +286,18 @@ fn format_hover_content(node: &AstNode, path: &[NodePathEntry<'_>], root: &AstNo
             } else {
                 match resolve(root, path) {
                     Ok(ResolvedRef::Node { node, .. }) => {
-                        format!("\n\nResolves to: {}", describe_value(node))
+                        let actual_val = match node {
+                            AstNode::String { value, .. } => format!("`\"{}\"`", value),
+                            AstNode::Number { value, .. } => match value {
+                                NumberValue::PosInt(n) => format!("`{}`", n),
+                                NumberValue::NegInt(n) => format!("`{}`", n),
+                                NumberValue::Float(n) => format!("`{}`", n),
+                            },
+                            AstNode::Bool { value, .. } => format!("`{}`", value),
+                            AstNode::Null { .. } => "`null`".to_string(),
+                            _ => describe_value(node),
+                        };
+                        format!("\n\nResolves to: {}", actual_val)
                     }
                     Ok(ResolvedRef::Env(v)) => format!("\n\nResolves to: `{}`", v),
                     Err(ResolveError::NotFound(p)) => format!("\n\n_(unresolved: `{}`)_", p),
