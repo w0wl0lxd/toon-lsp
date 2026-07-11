@@ -78,7 +78,11 @@ impl ToonLanguageServer {
 
     /// Publish diagnostics for a document.
     async fn publish_diagnostics(&self, uri: Url, doc: &DocumentState) {
-        let diagnostics = errors_to_diagnostics(doc.errors(), doc.text());
+        let mut diagnostics = errors_to_diagnostics(doc.errors(), doc.text());
+        if let Some(ast) = doc.ast() {
+            let mut validation_diags = super::diagnostics::validate_document(ast, doc.text());
+            diagnostics.append(&mut validation_diags);
+        }
         self.client.publish_diagnostics(uri, diagnostics, None).await;
     }
 }
@@ -108,6 +112,7 @@ impl LanguageServer for ToonLanguageServer {
                                     SemanticTokenType::NUMBER,
                                     SemanticTokenType::KEYWORD,
                                     SemanticTokenType::OPERATOR,
+                                    SemanticTokenType::VARIABLE,
                                 ],
                                 token_modifiers: vec![
                                     SemanticTokenModifier::DEFINITION,
@@ -741,8 +746,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_initialize_returns_capabilities() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let result = server.initialize(InitializeParams::default()).await.unwrap();
 
@@ -756,8 +760,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_shutdown_returns_ok() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let result = server.shutdown().await;
         assert!(result.is_ok());
@@ -766,8 +769,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_did_open_parses_document() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -788,8 +790,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_did_change_updates_document() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -825,8 +826,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_did_close_removes_document() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -855,8 +855,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_document_symbol_returns_nested() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -886,8 +885,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_workspace_symbol_finds_matches() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -919,8 +917,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_workspace_symbol_empty_result() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
 
         let result = server
@@ -938,8 +935,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_ast_returns_none_for_missing_doc() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///nonexistent.toon").unwrap();
 
@@ -950,8 +946,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_folding_range_returns_ranges() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -982,8 +977,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_code_action_returns_actions() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1019,8 +1013,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_selection_range_returns_ranges() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1051,8 +1044,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_document_link_returns_links() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1082,8 +1074,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_document_highlight_returns_highlights() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1116,8 +1107,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_inlay_hint_returns_hints() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1150,8 +1140,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_code_lens_returns_lenses() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1181,8 +1170,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_linked_editing_range_returns_ranges() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1214,8 +1202,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_formatting_returns_text_edits() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1249,8 +1236,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_formatting_skips_on_errors() {
-        let (service, _socket) =
-            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
+        let (service, _socket) = tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 

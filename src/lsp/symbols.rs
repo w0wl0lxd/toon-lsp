@@ -87,6 +87,7 @@ fn entry_to_symbol(entry: &crate::ast::ObjectEntry, source: &str) -> DocumentSym
         AstNode::Bool { .. } => (SymbolKind::BOOLEAN, None),
         AstNode::Null { .. } => (SymbolKind::NULL, None),
         AstNode::Document { .. } => (SymbolKind::OBJECT, None),
+        AstNode::Reference { .. } => (SymbolKind::VARIABLE, None),
     };
 
     // For simple values, use KEY kind to indicate it's a key-value pair
@@ -170,6 +171,7 @@ fn value_detail(value: &AstNode) -> String {
         AstNode::Object { entries, .. } => format!("object ({} entries)", entries.len()),
         AstNode::Array { items, .. } => format!("array ({} items)", items.len()),
         AstNode::Document { children, .. } => format!("document ({} children)", children.len()),
+        AstNode::Reference { path, .. } => format!("${{{}}}", path),
     }
 }
 

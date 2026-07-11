@@ -243,10 +243,7 @@ impl Parser {
                 .map(NumberValue::PosInt)
                 .map_err(|_| ParseError::new(ParseErrorKind::InvalidNumber, span));
         }
-        if let Some(rest) = text
-            .strip_prefix("-0x")
-            .or_else(|| text.strip_prefix("-0X"))
-        {
+        if let Some(rest) = text.strip_prefix("-0x").or_else(|| text.strip_prefix("-0X")) {
             return i64::from_str_radix(rest, 16)
                 .map(|n| NumberValue::NegInt(-n))
                 .map_err(|_| ParseError::new(ParseErrorKind::InvalidNumber, span));
@@ -274,6 +271,19 @@ impl Parser {
         let span = token.span;
         match &token.kind {
             TokenKind::String(value) => Ok(AstNode::String { value: value.clone(), span }),
+            _ => Err(ParseError::new(ParseErrorKind::ExpectedValue, span)),
+        }
+    }
+
+    /// Parse a reference / environment-substitution token.
+    fn parse_reference(&mut self) -> Result<AstNode, ParseError> {
+        let token = self.advance();
+        let span = token.span;
+        match &token.kind {
+            TokenKind::Reference(path) => {
+                let is_env = path.starts_with("env:");
+                Ok(AstNode::Reference { path: path.clone(), is_env, span })
+            }
             _ => Err(ParseError::new(ParseErrorKind::ExpectedValue, span)),
         }
     }
@@ -306,6 +316,7 @@ impl Parser {
 
         match &self.current().kind {
             TokenKind::String(_) => self.parse_string(),
+            TokenKind::Reference(_) => self.parse_reference(),
             TokenKind::Number(_) => self.parse_number(),
             TokenKind::True | TokenKind::False | TokenKind::Null => self.parse_primitive(),
             TokenKind::Identifier(_) => match self.peek() {
@@ -685,6 +696,13 @@ impl Parser {
                     let value = s.clone();
                     self.advance();
                     AstNode::String { value, span }
+                }
+                TokenKind::Reference(p) => {
+                    let span = self.current().span;
+                    let path = p.clone();
+                    let is_env = path.starts_with("env:");
+                    self.advance();
+                    AstNode::Reference { path, is_env, span }
                 }
                 TokenKind::Number(n) => {
                     let span = self.current().span;

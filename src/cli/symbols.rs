@@ -161,6 +161,7 @@ fn extract_symbols(node: &AstNode, parent_path: &str) -> Vec<Symbol> {
                             (SymbolKind::Array, extract_symbols(&entry.value, &path))
                         }
                         AstNode::String { .. } => (SymbolKind::String, Vec::new()),
+                        AstNode::Reference { .. } => (SymbolKind::String, Vec::new()),
                         AstNode::Number { .. } => (SymbolKind::Number, Vec::new()),
                         AstNode::Bool { .. } => (SymbolKind::Boolean, Vec::new()),
                         AstNode::Null { .. } => (SymbolKind::Null, Vec::new()),

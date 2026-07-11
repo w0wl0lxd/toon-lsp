@@ -94,6 +94,19 @@ pub enum AstNode {
         /// Source span
         span: Span,
     },
+
+    /// A reference or environment substitution, e.g. `${foo.bar}` or `${env:VAR}`.
+    ///
+    /// Resolved lazily against the document (path) or the process environment
+    /// (`env:` prefix). See `toon_lsp::resolve`.
+    Reference {
+        /// The raw reference target (e.g. `foo.bar` or `env:VAR`).
+        path: String,
+        /// Whether this is an environment substitution (`env:` prefix).
+        is_env: bool,
+        /// Source span (covers the full `${...}` token).
+        span: Span,
+    },
 }
 
 impl AstNode {
@@ -118,7 +131,8 @@ impl AstNode {
             | Self::String { span, .. }
             | Self::Number { span, .. }
             | Self::Bool { span, .. }
-            | Self::Null { span } => *span,
+            | Self::Null { span }
+            | Self::Reference { span, .. } => *span,
         }
     }
 
@@ -146,6 +160,7 @@ impl AstNode {
             Self::Number { .. } => "number",
             Self::Bool { .. } => "bool",
             Self::Null { .. } => "null",
+            Self::Reference { .. } => "reference",
         }
     }
 }

@@ -3,9 +3,9 @@
 //! These verify the parser/scanner handle the enriched TOON literal & comment
 //! syntax. Assertion-based (not snapshot) so failures are explicit.
 
-use toon_lsp::ast::AstNode;
-use toon_lsp::parser::{parse, Scanner, TokenKind};
 use toon_lsp::NumberValue;
+use toon_lsp::ast::AstNode;
+use toon_lsp::parser::{Scanner, TokenKind, parse};
 
 /// Walk a top-level document and return a key's string value, if present.
 fn find_string(ast: &AstNode, key: &str) -> Option<String> {
@@ -65,14 +65,16 @@ mod comments {
 
     #[test]
     fn block_comment_inline_is_ignored() {
-        let ast = parse("name: Alice /* inline note */\nage: 30").expect("block comment should parse");
+        let ast =
+            parse("name: Alice /* inline note */\nage: 30").expect("block comment should parse");
         assert_eq!(find_string(&ast, "name").as_deref(), Some("Alice"));
         assert_eq!(find_number(&ast, "age"), Some(NumberValue::PosInt(30)));
     }
 
     #[test]
     fn block_comment_multiline_is_ignored() {
-        let ast = parse("/*\n multi\n line\n*/\nname: Bob").expect("multi-line block comment should parse");
+        let ast = parse("/*\n multi\n line\n*/\nname: Bob")
+            .expect("multi-line block comment should parse");
         assert_eq!(find_string(&ast, "name").as_deref(), Some("Bob"));
     }
 

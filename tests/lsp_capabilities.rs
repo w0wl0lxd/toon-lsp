@@ -37,13 +37,14 @@ async fn test_semantic_tokens_capability_declared() {
         }
     };
 
-    // Verify token types: property (0), string (1), number (2), keyword (3), operator (4)
-    assert_eq!(legend.token_types.len(), 5, "Must have 5 token types");
+    // Verify token types: property (0), string (1), number (2), keyword (3), operator (4), variable (5)
+    assert_eq!(legend.token_types.len(), 6, "Must have 6 token types");
     assert_eq!(legend.token_types[0], SemanticTokenType::PROPERTY);
     assert_eq!(legend.token_types[1], SemanticTokenType::STRING);
     assert_eq!(legend.token_types[2], SemanticTokenType::NUMBER);
     assert_eq!(legend.token_types[3], SemanticTokenType::KEYWORD);
     assert_eq!(legend.token_types[4], SemanticTokenType::OPERATOR);
+    assert_eq!(legend.token_types[5], SemanticTokenType::VARIABLE);
 
     // Verify token modifiers: definition (bit 0), readonly (bit 1)
     assert_eq!(legend.token_modifiers.len(), 2, "Must have 2 token modifiers");

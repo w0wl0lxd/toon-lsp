@@ -50,6 +50,8 @@ pub enum ToonTokenType {
     Keyword = 3,
     /// Operators (colons, brackets)
     Operator = 4,
+    /// References / environment substitutions (`${path}`, `${env:VAR}`)
+    Reference = 5,
 }
 
 impl ToonTokenType {
@@ -221,6 +223,13 @@ fn visit_node(node: &crate::ast::AstNode, tokens: &mut Vec<SemanticToken>) {
             tokens.push(SemanticToken::from_span(
                 span,
                 ToonTokenType::Keyword,
+                ToonTokenModifier::READONLY,
+            ));
+        }
+        AstNode::Reference { span, .. } => {
+            tokens.push(SemanticToken::from_span(
+                span,
+                ToonTokenType::Reference,
                 ToonTokenModifier::READONLY,
             ));
         }

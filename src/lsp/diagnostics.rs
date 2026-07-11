@@ -65,6 +65,75 @@ pub fn errors_to_diagnostics(errors: &[ParseError], source: &str) -> Vec<Diagnos
     errors.iter().map(|err| error_to_diagnostic(err, source)).collect()
 }
 
+/// Validate a document's AST for semantic correctness.
+///
+/// Checks references and environment variable references.
+pub fn validate_document(ast: &crate::ast::AstNode, source: &str) -> Vec<Diagnostic> {
+    let mut diagnostics = Vec::new();
+    validate_node_recursive(ast, ast, source, &mut diagnostics);
+    diagnostics
+}
+
+fn validate_node_recursive(
+    node: &crate::ast::AstNode,
+    root: &crate::ast::AstNode,
+    source: &str,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    match node {
+        crate::ast::AstNode::Document { children, .. } => {
+            for child in children {
+                validate_node_recursive(child, root, source, diagnostics);
+            }
+        }
+        crate::ast::AstNode::Object { entries, .. } => {
+            for entry in entries {
+                validate_node_recursive(&entry.value, root, source, diagnostics);
+            }
+        }
+        crate::ast::AstNode::Array { items, .. } => {
+            for item in items {
+                validate_node_recursive(item, root, source, diagnostics);
+            }
+        }
+        crate::ast::AstNode::Reference { path, is_env, span } => {
+            let range = span_to_range(span, source);
+            if *is_env {
+                let env_var_name = path.strip_prefix("env:").unwrap_or(path);
+                if std::env::var(env_var_name).is_err() {
+                    diagnostics.push(Diagnostic {
+                        range,
+                        severity: Some(DiagnosticSeverity::WARNING),
+                        code: None,
+                        code_description: None,
+                        source: Some("toon-lsp".to_string()),
+                        message: format!("Environment variable '{}' is not defined", env_var_name),
+                        related_information: None,
+                        tags: None,
+                        data: None,
+                    });
+                }
+            } else {
+                let segments: Vec<&str> = path.split('.').collect();
+                if crate::lsp::goto::find_definition_by_path(root, &segments).is_none() {
+                    diagnostics.push(Diagnostic {
+                        range,
+                        severity: Some(DiagnosticSeverity::WARNING),
+                        code: None,
+                        code_description: None,
+                        source: Some("toon-lsp".to_string()),
+                        message: format!("Unresolved reference: '{}'", path),
+                        related_information: None,
+                        tags: None,
+                        data: None,
+                    });
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -125,5 +194,31 @@ mod tests {
         assert_eq!(diags.len(), 2);
         assert_eq!(diags[0].range.start.line, 0);
         assert_eq!(diags[1].range.start.line, 1);
+    }
+
+    #[test]
+    fn test_validate_document_references() {
+        use crate::parser::parse;
+        let source = "db:\n  port: 5432\nservice:\n  db_port: ${db.invalid_port}";
+        let ast = parse(source).expect("should parse");
+        let diags = validate_document(&ast, source);
+
+        assert_eq!(diags.len(), 1);
+        assert_eq!(diags[0].severity, Some(DiagnosticSeverity::WARNING));
+        assert!(diags[0].message.contains("Unresolved reference"));
+        assert!(diags[0].message.contains("db.invalid_port"));
+    }
+
+    #[test]
+    fn test_validate_document_env_vars() {
+        use crate::parser::parse;
+        let source = "service:\n  api_key: ${env:NONEXISTENT_ENV_VAR_XYZ}";
+        let ast = parse(source).expect("should parse");
+        let diags = validate_document(&ast, source);
+
+        assert_eq!(diags.len(), 1);
+        assert_eq!(diags[0].severity, Some(DiagnosticSeverity::WARNING));
+        assert!(diags[0].message.contains("Environment variable"));
+        assert!(diags[0].message.contains("NONEXISTENT_ENV_VAR_XYZ"));
     }
 }

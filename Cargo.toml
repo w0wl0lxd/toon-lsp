@@ -60,6 +60,9 @@ unsafe_code = "forbid"
 pedantic = { level = "warn", priority = -1 }
 # Allow specific noisy lints
 must_use_candidate = "allow"
+default_trait_access = "allow"
+float_cmp = "allow"
+approx_constant = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 module_name_repetitions = "allow"

@@ -52,6 +52,7 @@ pub enum TokenKind {
 
     // Literals
     String(String),
+    Reference(String),
     Number(String),
     True,
     False,
@@ -79,6 +80,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::RightBrace => write!(f, "}}"),
             TokenKind::Dash => write!(f, "-"),
             TokenKind::String(s) => write!(f, "string {:?}", s),
+            TokenKind::Reference(s) => write!(f, "reference {:?}", s),
             TokenKind::Number(n) => write!(f, "number {}", n),
             TokenKind::True => write!(f, "true"),
             TokenKind::False => write!(f, "false"),
@@ -666,6 +668,42 @@ impl<'a> Scanner<'a> {
         self.make_token(TokenKind::String(text.to_string()), start)
     }
 
+    /// Scan a reference / environment substitution token: `${ ... }`.
+    ///
+    /// # Grammar
+    /// - Starts with `${` and ends with `}`
+    /// - Interior is preserved verbatim (e.g. `foo.bar` or `env:VAR`)
+    /// - Unterminated references produce an Error token
+    fn scan_reference(&mut self) -> Token {
+        let start = self.current_position();
+        // Consume `$` and `{`
+        self.advance();
+        self.advance();
+
+        let start_offset = self.offset as usize;
+
+        loop {
+            match self.peek() {
+                None => {
+                    return self.make_token(
+                        TokenKind::Error("Unterminated reference literal".to_string()),
+                        start,
+                    );
+                }
+                Some('}') => {
+                    self.advance(); // consume closing `}`
+                    break;
+                }
+                Some(_) => {
+                    self.advance();
+                }
+            }
+        }
+
+        let raw = &self.source[start_offset..self.offset as usize - 1];
+        self.make_token(TokenKind::Reference(raw.to_string()), start)
+    }
+
     /// Scan unquoted string value (after colon in key: value).
     /// Consumes until newline or end of input.
     #[allow(dead_code)]
@@ -770,6 +808,15 @@ impl<'a> Scanner<'a> {
                     self.scan_block_string()
                 } else {
                     self.scan_quoted_string()
+                }
+            }
+            '$' => {
+                // References / env substitution start with `${`.
+                if self.peek_next() == Some('{') {
+                    self.scan_reference()
+                } else {
+                    self.advance();
+                    self.make_token(TokenKind::Error("Unexpected character: $".into()), start)
                 }
             }
             'a'..='z' | 'A'..='Z' | '_' => self.scan_identifier_or_keyword(),

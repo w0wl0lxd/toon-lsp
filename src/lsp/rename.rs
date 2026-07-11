@@ -141,23 +141,63 @@ pub fn rename_key(
     col: u32,
     new_name: &str,
 ) -> Vec<RenameEdit> {
-    // Call prepare_rename to validate and get key name
-    let prepare_result = match prepare_rename(ast, text, line, col) {
-        Some(result) => result,
-        None => return Vec::new(), // Not on a key
+    // Calculate offset
+    let offset = match calculate_offset(text, line, col) {
+        Some(o) => o,
+        None => return Vec::new(),
     };
 
-    let key_name = &prepare_result.placeholder;
+    // Find the node at cursor position
+    let node_at_pos = match find_node_at_position(ast, line, col, offset) {
+        Some(node) => node,
+        None => return Vec::new(),
+    };
+
+    // Make sure we are actually on a key to start the rename
+    let entry = match node_at_pos.on_key {
+        Some(e) => e,
+        None => return Vec::new(),
+    };
+
+    let key_name = &entry.key;
+
+    // Compute parent path and fully qualified key path
+    let parent_path = crate::lsp::ast_utils::build_key_path(&node_at_pos.path);
+    let key_path = if parent_path.is_empty() {
+        key_name.clone()
+    } else {
+        format!("{}.{}", parent_path, key_name)
+    };
+
+    let new_key_path = if parent_path.is_empty() {
+        new_name.to_string()
+    } else {
+        format!("{}.{}", parent_path, new_name)
+    };
 
     // Use collect_all_keys to get all keys with spans
     let all_keys = collect_all_keys(ast);
 
-    // Filter for exact key name matches and create RenameEdit for each
+    // Filter for exact key name matches and create RenameEdit for each key
     let mut edits: Vec<RenameEdit> = all_keys
         .into_iter()
         .filter(|(k, _)| k == key_name) // Exact match only
         .map(|(_, span)| RenameEdit { span, new_text: new_name.to_string() })
         .collect();
+
+    // Now find and rename all references pointing to this key
+    let mut references = Vec::new();
+    collect_references_recursive(ast, &mut references);
+
+    for (path, span) in references {
+        if path == key_path {
+            edits.push(RenameEdit { span, new_text: format!("${{{}}}", new_key_path) });
+        } else if path.starts_with(&format!("{}.", key_path)) {
+            let suffix = &path[key_path.len()..];
+            let resolved_new_path = format!("{}{}", new_key_path, suffix);
+            edits.push(RenameEdit { span, new_text: format!("${{{}}}", resolved_new_path) });
+        }
+    }
 
     // Sort by position for consistent ordering
     edits.sort_by(|a, b| {
@@ -169,6 +209,31 @@ pub fn rename_key(
     });
 
     edits
+}
+
+/// Helper function to recursively collect all Reference nodes from the AST.
+fn collect_references_recursive(node: &AstNode, references: &mut Vec<(String, Span)>) {
+    match node {
+        AstNode::Document { children, .. } => {
+            for child in children {
+                collect_references_recursive(child, references);
+            }
+        }
+        AstNode::Object { entries, .. } => {
+            for entry in entries {
+                collect_references_recursive(&entry.value, references);
+            }
+        }
+        AstNode::Array { items, .. } => {
+            for item in items {
+                collect_references_recursive(item, references);
+            }
+        }
+        AstNode::Reference { path, span, is_env, .. } if !is_env => {
+            references.push((path.clone(), *span));
+        }
+        _ => {}
+    }
 }
 
 #[cfg(test)]
@@ -298,6 +363,30 @@ mod tests {
         let new_doc = apply_edits(source, &edits);
         assert!(new_doc.contains("name: Alice"));
         assert!(new_doc.contains("name: 30"));
+    }
+
+    #[test]
+    fn test_rename_updates_references() {
+        let source = "db:\n  port: 5432\nservice:\n  db_port: ${db.port}";
+        let (ast, errors) = parse_with_errors(source);
+        assert!(errors.is_empty(), "Parse should succeed");
+        let ast = ast.expect("AST should be present");
+
+        // Rename "port" (line 1, col 2) to "number"
+        let edits = rename_key(&ast, source, 1, 2, "number");
+        assert_eq!(edits.len(), 2, "Should have two edits (key + reference)");
+
+        // Check key rename edit
+        assert_eq!(edits[0].new_text, "number");
+        assert_eq!(edits[0].span.start.line, 1);
+
+        // Check reference rename edit
+        assert_eq!(edits[1].new_text, "${db.number}");
+        assert_eq!(edits[1].span.start.line, 3);
+
+        // Apply edits and verify the references are updated
+        let new_doc = apply_edits(source, &edits);
+        assert_eq!(new_doc, "db:\n  number: 5432\nservice:\n  db_port: ${db.number}");
     }
 
     /// Helper function to apply edits to source text.

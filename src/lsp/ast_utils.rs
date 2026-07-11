@@ -126,7 +126,8 @@ pub fn find_node_at_position(
             AstNode::String { .. }
             | AstNode::Number { .. }
             | AstNode::Bool { .. }
-            | AstNode::Null { .. } => break,
+            | AstNode::Null { .. }
+            | AstNode::Reference { .. } => break,
         }
     }
 
@@ -199,6 +200,12 @@ pub fn collect_parent_keys<'a>(path: &'a [NodePathEntry<'a>]) -> Vec<&'a str> {
     keys
 }
 
+/// Build a dot-separated key path from the node path.
+pub fn build_key_path(path: &[NodePathEntry<'_>]) -> String {
+    let keys: Vec<&str> = path.iter().filter_map(|entry| entry.key).collect();
+    keys.join(".")
+}
+
 /// Find all definitions of a key within an object.
 ///
 /// Used for go-to-definition when duplicate keys exist.
@@ -252,7 +259,8 @@ fn collect_keys_recursive(node: &AstNode, keys: &mut Vec<(String, Span)>) {
         AstNode::String { .. }
         | AstNode::Number { .. }
         | AstNode::Bool { .. }
-        | AstNode::Null { .. } => {}
+        | AstNode::Null { .. }
+        | AstNode::Reference { .. } => {}
     }
 }
 
