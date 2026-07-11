@@ -199,7 +199,7 @@ fn generate_diagnostics(
     min_severity: Severity,
 ) -> CliResult<DiagnosticReport> {
     // Parse with error recovery
-    let (_ast, errors) = parser::parse_with_errors(content);
+    let (ast, errors) = parser::parse_with_errors(content);
 
     // Convert parse errors to diagnostic entries
     let mut diagnostics: Vec<DiagnosticEntry> = errors
@@ -228,7 +228,7 @@ fn generate_diagnostics(
         })
         .collect();
 
-    if let Some(ref ast_node) = _ast {
+    if let Some(ref ast_node) = ast {
         let semantic_diags = crate::lsp::diagnostics::validate_document(ast_node, content);
         for diag in semantic_diags {
             let severity = match diag.severity {
