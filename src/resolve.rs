@@ -60,7 +60,6 @@ pub enum ResolvedRef<'a> {
 /// let resolved = resolve(&ast, "foo.bar").unwrap();
 /// assert!(matches!(resolved, toon_lsp::resolve::ResolvedRef::Node { .. }));
 /// ```
-#[must_use]
 pub fn resolve<'a>(root: &'a AstNode, raw: &str) -> Result<ResolvedRef<'a>, ResolveError> {
     let mut seen = Vec::new();
     resolve_inner(root, raw, &mut seen)
@@ -113,10 +112,7 @@ fn resolve_segments<'a>(
         // Resolve the value if it is itself a reference (supports chains).
         let resolved = match &entry.value {
             AstNode::Reference { path, .. } => resolve_inner(root, path, seen)?,
-            other => ResolvedRef::Node {
-                node: other,
-                key_span: Some(entry.key_span),
-            },
+            other => ResolvedRef::Node { node: other, key_span: Some(entry.key_span) },
         };
 
         match resolved {
@@ -130,10 +126,7 @@ fn resolve_segments<'a>(
         }
     }
 
-    Ok(ResolvedRef::Node {
-        node: current,
-        key_span: None,
-    })
+    Ok(ResolvedRef::Node { node: current, key_span: None })
 }
 
 /// Return the object entries reachable for path navigation from `node`.
@@ -215,7 +208,7 @@ mod tests {
             ResolvedRef::Node { node, .. } => {
                 assert!(matches!(node, AstNode::Number { .. }));
             }
-            _ => panic!("expected node"),
+            ResolvedRef::Env(_) => panic!("expected node"),
         }
     }
 
@@ -226,10 +219,7 @@ mod tests {
         let var = "PATH";
         if let Ok(expected) = std::env::var(var) {
             let ast = parse(&format!("ref: ${{env:{var}}}")).unwrap();
-            assert_eq!(
-                resolve(&ast, &format!("env:{var}")).unwrap(),
-                ResolvedRef::Env(expected)
-            );
+            assert_eq!(resolve(&ast, &format!("env:{var}")).unwrap(), ResolvedRef::Env(expected));
         }
     }
 
