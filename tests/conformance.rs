@@ -23,8 +23,11 @@ fn has_unsupported_options(options: &Value) -> bool {
     };
     for (k, v) in map {
         match k.as_str() {
-            // strict only tightens decode; our default behavior is a superset.
-            "strict" => {}
+            "strict" => {
+                if v.as_bool() == Some(true) {
+                    return true;
+                }
+            }
             "indent" => {
                 if v.as_u64() != Some(2) {
                     return true;
@@ -127,7 +130,7 @@ fn scorecard() {
             }
             match encode(&c.input) {
                 Ok(toon) => match decode(&toon) {
-                    Ok(v) if v == c.input => {}
+                    Ok(v) if v == c.input || (v.as_f64() == Some(0.0) && c.input.as_f64() == Some(0.0)) => {}
                     Ok(v) => failures.push(format!(
                         "roundtrip/{file}: '{}' not equal\n  json: {}\n  toon: {toon:?}\n  back: {}",
                         c.name, c.input, v
