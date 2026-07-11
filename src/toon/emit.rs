@@ -72,15 +72,14 @@ pub fn needs_quotes(s: &str, delim: Delimiter) -> bool {
         _ => {}
     }
     let delim_char = delim.as_char();
-    let bytes = s.as_bytes();
-    for (i, ch) in s.char_indices() {
+    for ch in s.chars() {
         if ch == '"' || ch == '\\' || (ch as u32) < 0x20 {
             return true;
         }
         if ch == delim_char {
             return true;
         }
-        if ch == ':' && bytes.get(i + 1) == Some(&b' ') {
+        if ch == ':' {
             return true;
         }
     }
