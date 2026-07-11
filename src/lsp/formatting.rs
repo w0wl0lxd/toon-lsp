@@ -176,8 +176,10 @@ fn format_node(node: &AstNode, ctx: &mut FormattingContext, is_value: bool) {
         }
 
         AstNode::String { value, .. } => {
-            // Quote strings if they contain special characters or are values
-            if needs_quotes(value) {
+            // Multiline content is serialized as a block string to preserve newlines
+            if value.contains('\n') {
+                ctx.push(&format!("\"\"\"{}\"\"\"", value));
+            } else if needs_quotes(value) {
                 ctx.push(&format!("\"{}\"", escape_string(value)));
             } else {
                 ctx.push(value);

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-10
+
+### Added
+- **Line comments** (`#` to end of line) are now parsed and ignored by the TOON
+  parser. Previously `#` was treated as an unexpected character, so any document
+  containing a comment failed to parse in the LSP server.
+- **Block comments** (`/* ... */`, may span lines) are now parsed and ignored.
+- **Block strings** (triple-quoted `""" ... """`) preserve newlines verbatim and
+  require no escape processing. The formatter re-emits multiline string content
+  as a block string to round-trip newlines.
+- **Hexadecimal integer literals** (`0xFF`, `0x1f`, `-0x10`) are now accepted as
+  numbers and parsed into `NumberValue::PosInt`/`NegInt`.
+
+### Changed
+- **Scanner** (`src/parser/scanner.rs`): introduced trivia skipping (whitespace +
+  line/block comments) and a dedicated block-string lexer path.
+- **Tree-sitter grammar** (`editors/shared/tree-sitter-toon`): added `block_string`
+  and `block_comment` nodes and a hexadecimal alternative to the `number` rule;
+  `queries/highlights.scm` now highlights both.
+
+### Known limitations
+- The formatter does not yet preserve comments (they are dropped on format), and
+  hexadecimal literals are serialized back as decimal.
+- In the tree-sitter grammar, a block comment embedded directly inside an unquoted
+  string value is lexed as part of that string; standalone/inline-between-token
+  block comments are highlighted correctly. The Rust LSP parser handles block
+  comments everywhere.
+
 ## [0.4.0] - 2026-07-10
 
 ### Added
