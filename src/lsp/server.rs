@@ -249,37 +249,43 @@ impl LanguageServer for ToonLanguageServer {
         let uri = &params.text_document_position_params.text_document.uri;
         let pos = params.text_document_position_params.position;
 
-        Ok(self.with_ast(uri, |ast, text| {
-            let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
-                text.lines().nth(pos.line as usize).unwrap_or(""),
-                pos.character,
-            );
-            get_hover_at_position(ast, text, pos.line, utf8_col).map(|hover_info| Hover {
-                contents: HoverContents::Markup(MarkupContent {
-                    kind: MarkupKind::Markdown,
-                    value: hover_info.contents,
-                }),
-                range: None,
+        Ok(self
+            .with_ast(uri, |ast, text| {
+                let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
+                    text.lines().nth(pos.line as usize).unwrap_or(""),
+                    pos.character,
+                );
+                get_hover_at_position(ast, text, pos.line, utf8_col).map(|hover_info| Hover {
+                    contents: HoverContents::Markup(MarkupContent {
+                        kind: MarkupKind::Markdown,
+                        value: hover_info.contents,
+                    }),
+                    range: None,
+                })
             })
-        }).await)
+            .await)
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let uri = &params.text_document_position.text_document.uri;
         let pos = params.text_document_position.position;
 
-        Ok(self.with_ast(uri, |ast, text| {
-            let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
-                text.lines().nth(pos.line as usize).unwrap_or(""),
-                pos.character,
-            );
-            let completions = get_completions_at_position(ast, text, pos.line, utf8_col);
-            if completions.is_empty() {
-                None
-            } else {
-                Some(CompletionResponse::Array(completions.into_iter().map(Into::into).collect()))
-            }
-        }).await)
+        Ok(self
+            .with_ast(uri, |ast, text| {
+                let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
+                    text.lines().nth(pos.line as usize).unwrap_or(""),
+                    pos.character,
+                );
+                let completions = get_completions_at_position(ast, text, pos.line, utf8_col);
+                if completions.is_empty() {
+                    None
+                } else {
+                    Some(CompletionResponse::Array(
+                        completions.into_iter().map(Into::into).collect(),
+                    ))
+                }
+            })
+            .await)
     }
 
     async fn goto_definition(
@@ -552,7 +558,9 @@ impl LanguageServer for ToonLanguageServer {
                     .map(|ws| {
                         let location = match ws.location {
                             OneOf::Left(loc) => loc,
-                            OneOf::Right(_) => Location { uri: uri.clone(), range: Range::default() },
+                            OneOf::Right(_) => {
+                                Location { uri: uri.clone(), range: Range::default() }
+                            }
                         };
                         SymbolInformation {
                             name: ws.name,
@@ -572,57 +580,67 @@ impl LanguageServer for ToonLanguageServer {
         if all_symbols.is_empty() { Ok(None) } else { Ok(Some(all_symbols)) }
     }
 
-    async fn folding_range(
-        &self,
-        params: FoldingRangeParams,
-    ) -> Result<Option<Vec<FoldingRange>>> {
-        Ok(self.with_ast(&params.text_document.uri, |ast, _text| {
-            let ranges = collect_folding_ranges(ast);
-            if ranges.is_empty() { None } else { Some(ranges) }
-        }).await)
+    async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
+        Ok(self
+            .with_ast(&params.text_document.uri, |ast, _text| {
+                let ranges = collect_folding_ranges(ast);
+                if ranges.is_empty() { None } else { Some(ranges) }
+            })
+            .await)
     }
 
-    async fn code_action(
-        &self,
-        params: CodeActionParams,
-    ) -> Result<Option<CodeActionResponse>> {
-        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
-            let actions = collect_code_actions(ast, text, &params.text_document.uri, params.range, &params.context.diagnostics);
-            if actions.is_empty() {
-                None
-            } else {
-                Some(actions.into_iter().map(CodeActionOrCommand::CodeAction).collect())
-            }
-        }).await)
+    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+        Ok(self
+            .with_ast(&params.text_document.uri, |ast, text| {
+                let actions = collect_code_actions(
+                    ast,
+                    text,
+                    &params.text_document.uri,
+                    params.range,
+                    &params.context.diagnostics,
+                );
+                if actions.is_empty() {
+                    None
+                } else {
+                    Some(actions.into_iter().map(CodeActionOrCommand::CodeAction).collect())
+                }
+            })
+            .await)
     }
 
     async fn selection_range(
         &self,
         params: SelectionRangeParams,
     ) -> Result<Option<Vec<SelectionRange>>> {
-        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
-            let positions: Vec<(u32, u32)> = params
-                .positions
-                .iter()
-                .map(|p| (p.line, crate::lsp::utf16::utf16_to_utf8_col(
-                    text.lines().nth(p.line as usize).unwrap_or(""),
-                    p.character,
-                )))
-                .collect();
-            let ranges = get_selection_ranges(ast, text, &positions);
-            let result: Vec<SelectionRange> = ranges.into_iter().flatten().collect();
-            if result.is_empty() { None } else { Some(result) }
-        }).await)
+        Ok(self
+            .with_ast(&params.text_document.uri, |ast, text| {
+                let positions: Vec<(u32, u32)> = params
+                    .positions
+                    .iter()
+                    .map(|p| {
+                        (
+                            p.line,
+                            crate::lsp::utf16::utf16_to_utf8_col(
+                                text.lines().nth(p.line as usize).unwrap_or(""),
+                                p.character,
+                            ),
+                        )
+                    })
+                    .collect();
+                let ranges = get_selection_ranges(ast, text, &positions);
+                let result: Vec<SelectionRange> = ranges.into_iter().flatten().collect();
+                if result.is_empty() { None } else { Some(result) }
+            })
+            .await)
     }
 
-    async fn document_link(
-        &self,
-        params: DocumentLinkParams,
-    ) -> Result<Option<Vec<DocumentLink>>> {
-        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
-            let links = collect_document_links(ast, text);
-            if links.is_empty() { None } else { Some(links) }
-        }).await)
+    async fn document_link(&self, params: DocumentLinkParams) -> Result<Option<Vec<DocumentLink>>> {
+        Ok(self
+            .with_ast(&params.text_document.uri, |ast, text| {
+                let links = collect_document_links(ast, text);
+                if links.is_empty() { None } else { Some(links) }
+            })
+            .await)
     }
 
     async fn document_highlight(
@@ -632,34 +650,34 @@ impl LanguageServer for ToonLanguageServer {
         let uri = &params.text_document_position_params.text_document.uri;
         let pos = params.text_document_position_params.position;
 
-        Ok(self.with_ast(uri, |ast, text| {
-            let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
-                text.lines().nth(pos.line as usize).unwrap_or(""),
-                pos.character,
-            );
-            let highlights = collect_document_highlights(ast, text, pos.line, utf8_col);
-            if highlights.is_empty() { None } else { Some(highlights) }
-        }).await)
+        Ok(self
+            .with_ast(uri, |ast, text| {
+                let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
+                    text.lines().nth(pos.line as usize).unwrap_or(""),
+                    pos.character,
+                );
+                let highlights = collect_document_highlights(ast, text, pos.line, utf8_col);
+                if highlights.is_empty() { None } else { Some(highlights) }
+            })
+            .await)
     }
 
-    async fn inlay_hint(
-        &self,
-        params: InlayHintParams,
-    ) -> Result<Option<Vec<InlayHint>>> {
-        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
-            let hints = collect_inlay_hints(ast, text, Some(params.range));
-            if hints.is_empty() { None } else { Some(hints) }
-        }).await)
+    async fn inlay_hint(&self, params: InlayHintParams) -> Result<Option<Vec<InlayHint>>> {
+        Ok(self
+            .with_ast(&params.text_document.uri, |ast, text| {
+                let hints = collect_inlay_hints(ast, text, Some(params.range));
+                if hints.is_empty() { None } else { Some(hints) }
+            })
+            .await)
     }
 
-    async fn code_lens(
-        &self,
-        params: CodeLensParams,
-    ) -> Result<Option<Vec<CodeLens>>> {
-        Ok(self.with_ast(&params.text_document.uri, |ast, text| {
-            let lenses = collect_code_lenses(ast, text, &params.text_document.uri);
-            if lenses.is_empty() { None } else { Some(lenses) }
-        }).await)
+    async fn code_lens(&self, params: CodeLensParams) -> Result<Option<Vec<CodeLens>>> {
+        Ok(self
+            .with_ast(&params.text_document.uri, |ast, text| {
+                let lenses = collect_code_lenses(ast, text, &params.text_document.uri);
+                if lenses.is_empty() { None } else { Some(lenses) }
+            })
+            .await)
     }
 
     async fn linked_editing_range(
@@ -669,13 +687,15 @@ impl LanguageServer for ToonLanguageServer {
         let uri = &params.text_document_position_params.text_document.uri;
         let pos = params.text_document_position_params.position;
 
-        Ok(self.with_ast(uri, |ast, text| {
-            let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
-                text.lines().nth(pos.line as usize).unwrap_or(""),
-                pos.character,
-            );
-            collect_linked_editing_ranges(ast, text, pos.line, utf8_col)
-        }).await)
+        Ok(self
+            .with_ast(uri, |ast, text| {
+                let utf8_col = crate::lsp::utf16::utf16_to_utf8_col(
+                    text.lines().nth(pos.line as usize).unwrap_or(""),
+                    pos.character,
+                );
+                collect_linked_editing_ranges(ast, text, pos.line, utf8_col)
+            })
+            .await)
     }
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
@@ -721,7 +741,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_initialize_returns_capabilities() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let result = server.initialize(InitializeParams::default()).await.unwrap();
 
@@ -735,7 +756,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_shutdown_returns_ok() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let result = server.shutdown().await;
         assert!(result.is_ok());
@@ -744,7 +766,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_did_open_parses_document() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -765,7 +788,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_did_change_updates_document() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -784,10 +808,7 @@ mod tests {
         // Change document
         server
             .did_change(DidChangeTextDocumentParams {
-                text_document: VersionedTextDocumentIdentifier {
-                    uri: uri.clone(),
-                    version: 2,
-                },
+                text_document: VersionedTextDocumentIdentifier { uri: uri.clone(), version: 2 },
                 content_changes: vec![TextDocumentContentChangeEvent {
                     range: None,
                     range_length: None,
@@ -804,7 +825,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_did_close_removes_document() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -833,7 +855,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_document_symbol_returns_nested() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -863,7 +886,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_workspace_symbol_finds_matches() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -895,7 +919,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_workspace_symbol_empty_result() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
 
         let result = server
@@ -913,7 +938,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_ast_returns_none_for_missing_doc() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///nonexistent.toon").unwrap();
 
@@ -924,7 +950,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_folding_range_returns_ranges() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -955,7 +982,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_code_action_returns_actions() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -977,10 +1005,7 @@ mod tests {
                     start: Position { line: 0, character: 0 },
                     end: Position { line: 0, character: 9 },
                 },
-                context: CodeActionContext {
-                    diagnostics: vec![],
-                    ..Default::default()
-                },
+                context: CodeActionContext { diagnostics: vec![], ..Default::default() },
                 partial_result_params: Default::default(),
                 work_done_progress_params: Default::default(),
             })
@@ -994,7 +1019,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_selection_range_returns_ranges() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1025,7 +1051,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_document_link_returns_links() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1055,7 +1082,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_document_highlight_returns_highlights() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1088,7 +1116,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_inlay_hint_returns_hints() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1121,7 +1150,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_code_lens_returns_lenses() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1151,7 +1181,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_linked_editing_range_returns_ranges() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1183,7 +1214,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_formatting_returns_text_edits() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 
@@ -1217,7 +1249,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_formatting_skips_on_errors() {
-        let (service, _socket) = tower_lsp::LspService::build(|client| ToonLanguageServer::new(client)).finish();
+        let (service, _socket) =
+            tower_lsp::LspService::build(ToonLanguageServer::new).finish();
         let server = service.inner();
         let uri = Url::parse("file:///test.toon").unwrap();
 

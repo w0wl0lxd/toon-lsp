@@ -18,13 +18,23 @@ https://github.com/toon-format/toon-lsp
 Language server for TOON (Token-Oriented Object Notation) files.
 
 Provides:
-- Real-time diagnostics
+- Real-time diagnostics with error recovery
 - Hover information
+- Completion (keys, literals)
 - Go to definition
 - Find references
-- Rename symbol
+- Rename symbol (with prepare)
 - Document formatting
-- Document symbols
+- Document symbols (outline)
+- Workspace symbols
+- Code actions
+- Code lens
+- Document highlight
+- Document links
+- Folding ranges
+- Inlay hints
+- Linked editing ranges
+- Selection ranges
 - Semantic tokens
 
 Install via cargo:
