@@ -97,7 +97,11 @@ impl LanguageServer for ToonLanguageServer {
                 )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 completion_provider: Some(CompletionOptions {
-                    trigger_characters: Some(vec![":".to_string()]),
+                    trigger_characters: Some(vec![
+                        ":".to_string(),
+                        "{".to_string(),
+                        "$".to_string(),
+                    ]),
                     ..Default::default()
                 }),
                 definition_provider: Some(OneOf::Left(true)),

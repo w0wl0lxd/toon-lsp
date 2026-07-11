@@ -35,7 +35,7 @@ pub fn collect_inlay_hints(
     let lines: Vec<&str> = source.lines().collect();
     let source_len = source.len() as u32;
 
-    collect_hints_recursive(ast, &lines, source_len, &mut hints);
+    collect_hints_recursive(ast, ast, &lines, source_len, &mut hints);
 
     // Filter hints to the requested range if provided
     if let Some(range) = range {
@@ -60,6 +60,7 @@ pub fn collect_inlay_hints(
 #[allow(clippy::only_used_in_recursion)]
 fn collect_hints_recursive(
     node: &AstNode,
+    root: &AstNode,
     lines: &[&str],
     source_len: u32,
     hints: &mut Vec<InlayHint>,
@@ -67,7 +68,7 @@ fn collect_hints_recursive(
     match node {
         AstNode::Document { children, .. } => {
             for child in children {
-                collect_hints_recursive(child, lines, source_len, hints);
+                collect_hints_recursive(child, root, lines, source_len, hints);
             }
         }
         AstNode::Object { entries, span } => {
@@ -103,12 +104,60 @@ fn collect_hints_recursive(
                 }
 
                 // Recurse into nested structures
-                collect_hints_recursive(&entry.value, lines, source_len, hints);
+                collect_hints_recursive(&entry.value, root, lines, source_len, hints);
             }
         }
         AstNode::Array { items, .. } => {
             for item in items {
-                collect_hints_recursive(item, lines, source_len, hints);
+                collect_hints_recursive(item, root, lines, source_len, hints);
+            }
+        }
+        AstNode::Reference { path, is_env, span } => {
+            // Check resolved value
+            let resolved_val = if *is_env {
+                let var_name = path.strip_prefix("env:").unwrap_or(path);
+                std::env::var(var_name).ok()
+            } else {
+                match crate::resolve::resolve(root, path) {
+                    Ok(crate::resolve::ResolvedRef::Node { node, .. }) => match node {
+                        AstNode::String { value, .. } => Some(value.clone()),
+                        AstNode::Number { value, .. } => match value {
+                            NumberValue::PosInt(n) => Some(n.to_string()),
+                            NumberValue::NegInt(n) => Some(n.to_string()),
+                            NumberValue::Float(n) => Some(n.to_string()),
+                        },
+                        AstNode::Bool { value, .. } => Some(value.to_string()),
+                        AstNode::Null { .. } => Some("null".to_string()),
+                        _ => None,
+                    },
+                    Ok(crate::resolve::ResolvedRef::Env(v)) => Some(v),
+                    Err(_) => None,
+                }
+            };
+
+            if let Some(val) = resolved_val {
+                let end_line = span.end.line;
+                let line = lines.get(end_line as usize).copied().unwrap_or("");
+                let end_char = utf8_to_utf16_col(line, span.end.column);
+
+                hints.push(InlayHint {
+                    position: Position { line: end_line, character: end_char },
+                    label: InlayHintLabel::LabelParts(vec![InlayHintLabelPart {
+                        value: format!(" = {}", val),
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    }]),
+                    kind: Some(InlayHintKind::TYPE),
+                    text_edits: None,
+                    tooltip: Some(tower_lsp::lsp_types::InlayHintTooltip::String(format!(
+                        "Resolved: {}",
+                        val
+                    ))),
+                    padding_left: Some(true),
+                    padding_right: Some(false),
+                    data: None,
+                });
             }
         }
         _ => {}
@@ -195,5 +244,22 @@ mod tests {
         let hints = collect_inlay_hints(&ast, source, None);
         // Simple string value should not produce hints
         assert!(hints.is_empty());
+    }
+
+    #[test]
+    fn test_inlay_hints_for_reference() {
+        let source = "db:\n  port: 5432\nconnection: ${db.port}";
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        let hints = collect_inlay_hints(&ast, source, None);
+        let has_hint = hints.iter().any(|h| {
+            if let InlayHintLabel::LabelParts(parts) = &h.label {
+                parts.iter().any(|p| p.value.contains("5432"))
+            } else {
+                false
+            }
+        });
+        assert!(has_hint, "Should find inlay hint with evaluated reference value");
     }
 }

@@ -99,6 +99,17 @@ pub fn get_completions_at_position(
             completions.push(ToonCompletion::literal("false"));
             completions.push(ToonCompletion::literal("null"));
         }
+        CompletionContext::ReferencePosition => {
+            // Suggest all dot-separated key paths in the document
+            let key_paths = collect_all_key_paths(ast);
+            for path in key_paths {
+                completions.push(ToonCompletion {
+                    label: path,
+                    kind: CompletionItemKind::VARIABLE,
+                    detail: Some("variable".to_string()),
+                });
+            }
+        }
         CompletionContext::KeyPosition => {
             // Suggest sibling keys from the containing object
             if let Some(node_at_pos) = find_node_at_position(ast, line, column, offset) {
@@ -142,6 +153,8 @@ enum CompletionContext {
     AfterColon,
     /// At a key position (start of line or after newline)
     KeyPosition,
+    /// Inside a reference substitution, e.g. `${...`
+    ReferencePosition,
     /// Unknown context
     Unknown,
 }
@@ -159,6 +172,14 @@ fn determine_completion_context(source: &str, line: u32, column: u32) -> Complet
     let line_text = lines[line_idx];
     let col = column as usize;
     let prefix = if col <= line_text.len() { &line_text[..col] } else { line_text };
+
+    // Check if we are inside a reference substitution ${...
+    if let Some(ref_start_idx) = prefix.rfind("${") {
+        let suffix = &prefix[ref_start_idx + 2..];
+        if !suffix.contains('}') {
+            return CompletionContext::ReferencePosition;
+        }
+    }
 
     // Check if we're after a colon
     if prefix.contains(':') {
@@ -202,6 +223,42 @@ fn collect_root_keys(ast: &AstNode) -> Vec<String> {
     keys
 }
 
+/// Collect all valid key paths (e.g. `db` and `db.port`) in the document.
+fn collect_all_key_paths(ast: &AstNode) -> Vec<String> {
+    let mut paths = Vec::new();
+    let mut current_path = Vec::new();
+    collect_key_paths_recursive(ast, &mut current_path, &mut paths);
+    paths
+}
+
+fn collect_key_paths_recursive(
+    node: &AstNode,
+    current_path: &mut Vec<String>,
+    paths: &mut Vec<String>,
+) {
+    match node {
+        AstNode::Document { children, .. } => {
+            for child in children {
+                collect_key_paths_recursive(child, current_path, paths);
+            }
+        }
+        AstNode::Object { entries, .. } => {
+            for entry in entries {
+                current_path.push(entry.key.clone());
+                paths.push(current_path.join("."));
+                collect_key_paths_recursive(&entry.value, current_path, paths);
+                current_path.pop();
+            }
+        }
+        AstNode::Array { items, .. } => {
+            for item in items {
+                collect_key_paths_recursive(item, current_path, paths);
+            }
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -230,5 +287,17 @@ mod tests {
         // Should suggest existing keys
         let labels: Vec<&str> = completions.iter().map(|c| c.label.as_str()).collect();
         assert!(labels.contains(&"name") || completions.is_empty());
+    }
+
+    #[test]
+    fn test_completion_inside_reference() {
+        let source = "db:\n  port: 5432\nconnection: ${d";
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        let completions = get_completions_at_position(&ast, source, 2, 15);
+        let labels: Vec<&str> = completions.iter().map(|c| c.label.as_str()).collect();
+        assert!(labels.contains(&"db"));
+        assert!(labels.contains(&"db.port"));
     }
 }
