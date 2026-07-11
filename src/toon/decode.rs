@@ -114,6 +114,12 @@ mod scanner_driven {
                     self.consume_line_end()?;
                     Ok(Value::Array(Vec::new()))
                 }
+                TokenKind::LeftBracket
+                    if matches!(self.kind_at(1), TokenKind::Number(_)) =>
+                {
+                    // Root-level array count form `[N]: ...` / `[N]{cols}: ...`.
+                    self.parse_array_value()
+                }
                 TokenKind::Identifier(_) | TokenKind::String(_)
                     if self.starts_object_entry() =>
                 {
@@ -194,7 +200,7 @@ mod scanner_driven {
         /// `[N]:` followed by an indented expanded block.
         fn parse_array_value(&mut self) -> DecodeResult<Value> {
             self.expect(&TokenKind::LeftBracket)?;
-            let _count = self.parse_count()?;
+            let count = self.parse_count()?;
             self.expect(&TokenKind::RightBracket)?;
 
             if matches!(self.kind(), TokenKind::LeftBrace) {
@@ -209,6 +215,9 @@ mod scanner_driven {
                     let items = self.parse_expanded_items()?;
                     self.expect(&TokenKind::Dedent)?;
                     Ok(Value::Array(items))
+                } else if count == 0 {
+                    // `key[0]:` with no indented block is an empty array.
+                    Ok(Value::Array(Vec::new()))
                 } else {
                     Ok(Value::Array(Vec::new()))
                 }
@@ -282,7 +291,8 @@ mod scanner_driven {
         }
 
         fn parse_expanded_item(&mut self) -> DecodeResult<Value> {
-            if matches!(self.kind(), TokenKind::Newline | TokenKind::Eof) {
+            // A dash with no content or child is an empty object.
+            if matches!(self.kind(), TokenKind::Newline | TokenKind::Dedent | TokenKind::Eof) {
                 self.skip_newlines();
                 if matches!(self.kind(), TokenKind::Indent) {
                     self.bump();
@@ -290,8 +300,14 @@ mod scanner_driven {
                     self.expect(&TokenKind::Dedent)?;
                     return Ok(child);
                 }
-                // A dash with no value or child is an empty object.
                 return Ok(Value::Object(Map::new()));
+            }
+
+            // A dash followed by an inline array count form `- [N]: ...`.
+            if matches!(self.kind(), TokenKind::LeftBracket)
+                && matches!(self.kind_at(1), TokenKind::Number(_))
+            {
+                return self.parse_array_value();
             }
 
             let is_object_item = matches!(
