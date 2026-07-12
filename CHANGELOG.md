@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-07-12
+
+### Fixed
+- **Decoder regression**: multi-line block strings (`"""…"""` spanning several
+  lines) now decode correctly. The unified decoder only read a single line, so
+  any block string whose closing `"""` was on a later line failed with
+  `Unterminated block string`. The opener is now followed across lines until the
+  closing delimiter, and a newline immediately after the opening `"""` is
+  stripped (standard block-string convention).
+- Added regression tests for single-line, multi-line, and unterminated block
+  strings in `tests/toon_codec_decode.rs`.
+
 ## [0.6.0] - 2026-07-12
 
 ### Added
