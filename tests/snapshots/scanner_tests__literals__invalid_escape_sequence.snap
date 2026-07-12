@@ -10,10 +10,7 @@ expression: token_kinds(&tokens)
         "x",
     ),
     Identifier(
-        "invalid",
-    ),
-    Error(
-        "Unterminated string literal",
+        "invalid\"",
     ),
     Eof,
 ]

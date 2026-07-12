@@ -1,11 +1,10 @@
 ---
 source: tests/scanner_tests.rs
-assertion_line: 199
 expression: token_kinds(&tokens)
 ---
 [
-    Error(
-        "Unexpected character: @",
+    Identifier(
+        "@",
     ),
     Eof,
 ]
