@@ -1,25 +1,12 @@
 //! TOON-to-JSON decoder.
 //!
-//! Two feature-gated prototypes share the [`decode`] signature and the
-//! `tests/toon_codec_decode.rs` suite:
-//!
-//! - `decoder_a` (default): drives the existing LSP [`crate::parser::Scanner`]
-//!   token stream.
-//! - `decoder_b`: a purpose-built line/byte scanner (benchmarked against A in Task 9).
+//! Drives the existing LSP [`crate::parser::Scanner`] token stream.
 //!
 //! References (`${path}`) have no JSON counterpart, so they are decoded back to
 //! their literal `${path}` string form.
 
-#[cfg(all(feature = "decoder_a", feature = "decoder_b"))]
-compile_error!(
-    "features `decoder_a` and `decoder_b` are mutually exclusive; \
-     build with exactly one (e.g. --no-default-features --features decoder_b)"
-);
-
-#[cfg(feature = "decoder_a")]
 pub use scanner_driven::decode;
 
-#[cfg(feature = "decoder_a")]
 mod scanner_driven {
     use serde_json::{Map, Value};
 

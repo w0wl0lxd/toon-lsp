@@ -1,5 +1,4 @@
-//! Decoder conformance tests, shared by prototype A (default) and prototype B
-//! (`--no-default-features --features decoder_b`).
+//! Decoder conformance tests.
 
 use serde_json::json;
 use toon_lsp::toon::decode;
