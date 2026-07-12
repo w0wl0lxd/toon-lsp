@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! TOON Language Server and CLI binary entry point.
+//! `cargo-toon` binary — thin wrapper around the shared CLI entry point.
 
 #[tokio::main]
 async fn main() {

@@ -14,14 +14,6 @@ categories = ["development-tools", "parser-implementations"]
 name = "toon_lsp"
 path = "src/lib.rs"
 
-[[bin]]
-name = "toon-lsp"
-path = "src/main.rs"
-
-[[bin]]
-name = "cargo-toon"
-path = "src/main.rs"
-
 [dependencies]
 # TOON Format — core encode/decode only. The default `cli` feature pulls in a
 # large TUI/highlighting tree (syntect→bincode, ratatui→paste, arboard, clap,
@@ -68,7 +60,6 @@ criterion = "0.5"
 [[bench]]
 name = "decoder_bench"
 harness = false
-criterion = "0.5"
 
 [lints.rust]
 unsafe_code = "forbid"
