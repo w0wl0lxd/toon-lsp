@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-07-12
+
+### Added
+- **Unified TOON decoder**: the scanner-driven `decoder_a` is replaced by a
+  single self-contained line/byte decoder (formerly Decoder B). The decoder no
+  longer depends on the LSP token stream and handles block comments natively.
+  The `decoder_a`/`decoder_b` cargo feature split is removed — the decoder is
+  always built.
+- **TOON spec feature expansions**:
+  - Tabular arrays via `[N delim]{cols}` headers (e.g. `items[3\t]:` with a
+    `{name\tage}` column row).
+  - Inline-array delimiter support (`[N\t]` / `[N|]`), nested arrays always
+    comma-delimited.
+  - Multi-word unquoted string values.
+  - Block comments (`/* … */`).
+  - References `${path}` and environment references `${env:VAR}` with
+    cycle-safe resolution.
+
+### Fixed
+- **Conformance**: 304/304 TOON-spec vectors now pass.
+- **Validation**: unterminated inline arrays (e.g. `key: [unclosed array`) now
+  error instead of being silently parsed as a string.
+- **Build**: resolved Cargo.toml manifest warnings — `cargo-toon` gets its own
+  source file (`src/bin/cargo-toon.rs`) and `toon-lsp`/`cargo-toon` are
+  auto-discovered, and the unused `bench.criterion` key was removed.
+
 ## [0.5.1] - 2026-07-11
 
 ### Changed
