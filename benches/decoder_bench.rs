@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use serde_json::json;
 use toon_lsp::toon::{decode, encode};
 
@@ -14,12 +14,11 @@ fn bench_decode(c: &mut Criterion) {
             "database": {"url": "postgres://localhost/db", "pool": 10}
         },
         "metadata": {"version": "1.0", "features": ["auth", "logging"]}
-    })).unwrap();
+    }))
+    .unwrap();
 
     let mut group = c.benchmark_group("decode");
-    group.bench_function("decode_complex", |b| {
-        b.iter(|| decode(black_box(&toon)).unwrap())
-    });
+    group.bench_function("decode_complex", |b| b.iter(|| decode(black_box(&toon)).unwrap()));
     group.finish();
 }
 
@@ -38,9 +37,7 @@ fn bench_encode(c: &mut Criterion) {
     });
 
     let mut group = c.benchmark_group("encode");
-    group.bench_function("encode_complex", |b| {
-        b.iter(|| encode(black_box(&value)).unwrap())
-    });
+    group.bench_function("encode_complex", |b| b.iter(|| encode(black_box(&value)).unwrap()));
     group.finish();
 }
 
