@@ -55,7 +55,10 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
 
       - name: Publish
-        run: cargo publish
+        # --allow-dirty: `cargo publish` regenerates Cargo.lock during its
+        # verification build, which would otherwise dirty the tree checked out
+        # from the tag and abort the publish.
+        run: cargo publish --allow-dirty
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
