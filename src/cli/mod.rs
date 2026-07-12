@@ -17,6 +17,9 @@
 
 use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
+use tower_lsp::{LspService, Server};
+use tracing::Level;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod check;
 pub mod convert;
@@ -28,6 +31,82 @@ pub mod format;
 pub mod graph;
 pub mod io_utils;
 pub mod symbols;
+
+use error::{CliError, ExitCode};
+
+/// Shared entry point for the `toon-lsp` and `cargo-toon` binaries.
+pub async fn run() {
+    // Parse CLI arguments
+    let cli = Cli::parse();
+
+    // Initialize tracing with verbosity level
+    let log_level = match cli.verbose {
+        0 => Level::WARN,
+        1 => Level::INFO,
+        2 => Level::DEBUG,
+        _ => Level::TRACE,
+    };
+
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(false)
+                .with_thread_ids(false)
+                .with_thread_names(false)
+                .compact(),
+        )
+        .with(
+            tracing_subscriber::EnvFilter::builder()
+                .with_default_directive(log_level.into())
+                .from_env_lossy(),
+        )
+        .init();
+
+    // Execute command or start LSP server
+    match cli.command {
+        Some(Command::Lsp) | None => {
+            tracing::info!("Starting TOON Language Server");
+
+            let stdin = tokio::io::stdin();
+            let stdout = tokio::io::stdout();
+
+            let (service, socket) = LspService::new(crate::lsp::ToonLanguageServer::new);
+            Server::new(stdin, stdout, socket).serve(service).await;
+        }
+        Some(Command::Encode(args)) => {
+            handle_result(encode::execute(&args), encode::error_exit_code);
+        }
+        Some(Command::Decode(args)) => {
+            handle_result(decode::execute(&args), decode::error_exit_code);
+        }
+        Some(Command::Check(args)) => {
+            handle_result(check::execute(&args), CliError::exit_code);
+        }
+        Some(Command::Format(args)) => {
+            handle_result(format::execute(&args), format::error_exit_code);
+        }
+        Some(Command::Symbols(args)) => {
+            handle_result(symbols::execute(&args), symbols::error_exit_code);
+        }
+        Some(Command::Diagnose(args)) => {
+            handle_result(diagnose::execute(&args), diagnose::error_exit_code);
+        }
+        Some(Command::Graph(args)) => {
+            handle_result(graph::execute(&args), CliError::exit_code);
+        }
+    }
+}
+
+/// Handle CLI command result with error reporting and exit code.
+fn handle_result<F>(result: Result<(), CliError>, exit_code_fn: F)
+where
+    F: FnOnce(&CliError) -> ExitCode,
+{
+    if let Err(e) = result {
+        eprintln!("Error: {e}");
+        std::process::exit(i32::from(exit_code_fn(&e)));
+    }
+}
 
 /// TOON Language Server and CLI tools
 #[derive(Debug, Parser)]

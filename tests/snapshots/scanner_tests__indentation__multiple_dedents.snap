@@ -25,5 +25,6 @@ expression: token_kinds(&tokens)
         "d",
     ),
     Colon,
+    Dedent,
     Eof,
 ]

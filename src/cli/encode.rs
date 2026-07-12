@@ -52,6 +52,12 @@ use super::{EncodeArgs, InputFormat};
 /// - Encoding fails (toon-format error)
 /// - Output file cannot be written
 pub fn execute(args: &EncodeArgs) -> CliResult<()> {
+    if let Some(ref path) = args.input {
+        if path.is_dir() {
+            return batch_encode(path, args);
+        }
+    }
+
     // Determine input format from file extension or explicit flag
     let format = detect_input_format(args)?;
 
@@ -64,6 +70,53 @@ pub fn execute(args: &EncodeArgs) -> CliResult<()> {
     // Write output
     write_output(args, &toon)?;
 
+    Ok(())
+}
+
+fn batch_encode(dir: &Path, args: &EncodeArgs) -> CliResult<()> {
+    let mut files = Vec::new();
+    walk_dir(dir, &mut files)?;
+    for path in files {
+        if path.is_file() {
+            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                let format = match ext.to_lowercase().as_str() {
+                    "json" => Some(InputFormat::Json),
+                    "yaml" | "yml" => Some(InputFormat::Yaml),
+                    _ => None,
+                };
+                if let Some(fmt) = format {
+                    let val = read_from_file(&path, fmt)?;
+                    let toon = encode_json_with_indent(&val, args.indent)?;
+
+                    let mut out_path = path.clone();
+                    out_path.set_extension("toon");
+
+                    let mut file = File::create(&out_path).map_err(|e| {
+                        CliError::Io(io::Error::new(
+                            e.kind(),
+                            format!("Failed to create '{}': {}", out_path.display(), e),
+                        ))
+                    })?;
+                    file.write_all(toon.as_bytes())?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn walk_dir(dir: &Path, files: &mut Vec<std::path::PathBuf>) -> io::Result<()> {
+    if dir.is_dir() {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                walk_dir(&path, files)?;
+            } else {
+                files.push(path);
+            }
+        }
+    }
     Ok(())
 }
 

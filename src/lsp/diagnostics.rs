@@ -88,11 +88,85 @@ fn validate_node_recursive(
             }
         }
         crate::ast::AstNode::Object { entries, .. } => {
+            let mut seen_keys = std::collections::HashSet::new();
             for entry in entries {
+                if !seen_keys.insert(entry.key.clone()) {
+                    diagnostics.push(Diagnostic {
+                        range: span_to_range(&entry.key_span, source),
+                        severity: Some(DiagnosticSeverity::WARNING),
+                        code: None,
+                        code_description: None,
+                        source: Some("toon-lsp".to_string()),
+                        message: format!("Duplicate key: '{}'", entry.key),
+                        related_information: None,
+                        tags: None,
+                        data: None,
+                    });
+                }
                 validate_node_recursive(&entry.value, root, source, diagnostics);
             }
         }
-        crate::ast::AstNode::Array { items, .. } => {
+        crate::ast::AstNode::Array { items, form, .. } => {
+            if *form == crate::ast::ArrayForm::Tabular {
+                let mut col_types: std::collections::HashMap<String, &'static str> =
+                    std::collections::HashMap::new();
+                for item in items {
+                    if let crate::ast::AstNode::Object { entries, .. } = item {
+                        for entry in entries {
+                            let cell_type = entry.value.kind();
+                            if cell_type != "null" && cell_type != "reference" {
+                                if let Some(&expected_type) = col_types.get(&entry.key) {
+                                    if expected_type != cell_type {
+                                        diagnostics.push(Diagnostic {
+                                            range: span_to_range(&entry.value.span(), source),
+                                            severity: Some(DiagnosticSeverity::WARNING),
+                                            code: None,
+                                            code_description: None,
+                                            source: Some("toon-lsp".to_string()),
+                                            message: format!(
+                                                "Inconsistent type for column '{}': expected '{}', found '{}'",
+                                                entry.key, expected_type, cell_type
+                                            ),
+                                            related_information: None,
+                                            tags: None,
+                                            data: None,
+                                        });
+                                    }
+                                } else {
+                                    col_types.insert(entry.key.clone(), cell_type);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                let mut expected_type: Option<&'static str> = None;
+                for item in items {
+                    let item_type = item.kind();
+                    if item_type != "null" && item_type != "reference" {
+                        if let Some(exp_type) = expected_type {
+                            if exp_type != item_type {
+                                diagnostics.push(Diagnostic {
+                                    range: span_to_range(&item.span(), source),
+                                    severity: Some(DiagnosticSeverity::WARNING),
+                                    code: None,
+                                    code_description: None,
+                                    source: Some("toon-lsp".to_string()),
+                                    message: format!(
+                                        "Inconsistent type in array: expected '{}', found '{}'",
+                                        exp_type, item_type
+                                    ),
+                                    related_information: None,
+                                    tags: None,
+                                    data: None,
+                                });
+                            }
+                        } else {
+                            expected_type = Some(item_type);
+                        }
+                    }
+                }
+            }
             for item in items {
                 validate_node_recursive(item, root, source, diagnostics);
             }
@@ -134,6 +208,29 @@ fn validate_node_recursive(
                     tags: None,
                     data: None,
                 }),
+            }
+        }
+        crate::ast::AstNode::Number { value, span, .. } => {
+            let (is_unsafe, num_val) = match value {
+                crate::ast::NumberValue::PosInt(n) => (*n > 9_007_199_254_740_991, *n as f64),
+                crate::ast::NumberValue::NegInt(n) => (*n < -9_007_199_254_740_991, *n as f64),
+                crate::ast::NumberValue::Float(n) => (n.abs() > 9_007_199_254_740_991.0, *n),
+            };
+            if is_unsafe {
+                diagnostics.push(Diagnostic {
+                    range: span_to_range(span, source),
+                    severity: Some(DiagnosticSeverity::WARNING),
+                    code: None,
+                    code_description: None,
+                    source: Some("toon-lsp".to_string()),
+                    message: format!(
+                        "Number {} exceeds safe JavaScript/JSON integer limits (2^53 - 1) and may lose precision",
+                        num_val
+                    ),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                });
             }
         }
         _ => {}
@@ -238,5 +335,42 @@ mod tests {
         assert_eq!(diags.len(), 2);
         assert_eq!(diags[0].severity, Some(DiagnosticSeverity::WARNING));
         assert!(diags[0].message.contains("Cyclic reference"));
+    }
+
+    #[test]
+    fn test_validate_document_duplicate_keys() {
+        use crate::parser::parse;
+        let source = "key: 1\nkey: 2\n";
+        let ast = parse(source).expect("should parse");
+        let diags = validate_document(&ast, source);
+
+        assert_eq!(diags.len(), 1);
+        assert_eq!(diags[0].severity, Some(DiagnosticSeverity::WARNING));
+        assert!(diags[0].message.contains("Duplicate key"));
+        assert!(diags[0].message.contains("key"));
+    }
+
+    #[test]
+    fn test_validate_document_array_types() {
+        use crate::parser::parse;
+        let source = "arr[2]: 1, \"two\"\n";
+        let ast = parse(source).expect("should parse");
+        let diags = validate_document(&ast, source);
+
+        assert_eq!(diags.len(), 1);
+        assert_eq!(diags[0].severity, Some(DiagnosticSeverity::WARNING));
+        assert!(diags[0].message.contains("Inconsistent type in array"));
+    }
+
+    #[test]
+    fn test_validate_document_numeric_bounds() {
+        use crate::parser::parse;
+        let source = "num: 9007199254740992\n";
+        let ast = parse(source).expect("should parse");
+        let diags = validate_document(&ast, source);
+
+        assert_eq!(diags.len(), 1);
+        assert_eq!(diags[0].severity, Some(DiagnosticSeverity::WARNING));
+        assert!(diags[0].message.contains("exceeds safe JavaScript/JSON integer limits"));
     }
 }
