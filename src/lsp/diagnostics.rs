@@ -108,7 +108,8 @@ fn validate_node_recursive(
         }
         crate::ast::AstNode::Array { items, form, .. } => {
             if *form == crate::ast::ArrayForm::Tabular {
-                let mut col_types: std::collections::HashMap<String, &'static str> = std::collections::HashMap::new();
+                let mut col_types: std::collections::HashMap<String, &'static str> =
+                    std::collections::HashMap::new();
                 for item in items {
                     if let crate::ast::AstNode::Object { entries, .. } = item {
                         for entry in entries {

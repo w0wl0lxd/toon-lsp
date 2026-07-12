@@ -6,18 +6,12 @@ use toon_lsp::toon::decode;
 
 #[test]
 fn decode_flat_object() {
-    assert_eq!(
-        decode("name: Alice\nage: 30\n").unwrap(),
-        json!({"name":"Alice","age":30})
-    );
+    assert_eq!(decode("name: Alice\nage: 30\n").unwrap(), json!({"name":"Alice","age":30}));
 }
 
 #[test]
 fn decode_nested_and_inline_array() {
-    assert_eq!(
-        decode("user:\n  tags[2]: a,b\n").unwrap(),
-        json!({"user":{"tags":["a","b"]}})
-    );
+    assert_eq!(decode("user:\n  tags[2]: a,b\n").unwrap(), json!({"user":{"tags":["a","b"]}}));
 }
 
 #[test]
