@@ -871,9 +871,37 @@ impl<'a> Parser<'a> {
             if s.ends_with("\"\"\"") && s.len() >= 6 {
                 let mut chars = s.chars().peekable();
                 return self.parse_scalar_from_chars(&mut chars, '\n');
-            } else {
-                return Err(DecodeError::new("Unterminated block string"));
             }
+            // Multi-line block string: the opener is on this line but the
+            // closing `"""` is on a later line, so gather lines until it
+            // appears, then parse the whole thing as one block string.
+            let mut block = s.to_string();
+            loop {
+                if self.peek().is_none() {
+                    return Err(DecodeError::new("Unterminated block string"));
+                }
+                let mut next = String::new();
+                while let Some(ch) = self.peek() {
+                    if ch == '\n' {
+                        self.advance();
+                        break;
+                    }
+                    next.push(ch);
+                    self.advance();
+                }
+                block.push('\n');
+                block.push_str(&next);
+                if next.contains("\"\"\"") {
+                    break;
+                }
+            }
+            // A newline immediately following the opening `"""` is not part
+            // of the content (standard block-string convention).
+            if block.starts_with("\"\"\"\n") {
+                block.replace_range(3..4, "");
+            }
+            let mut chars = block.chars().peekable();
+            return self.parse_scalar_from_chars(&mut chars, '\n');
         }
 
         if s.starts_with('"') {

@@ -20,3 +20,27 @@ fn decode_tabular() {
         json!({"rows":[{"x":1,"y":2},{"x":3,"y":4}]})
     );
 }
+
+#[test]
+fn decode_line_block_string() {
+    assert_eq!(decode("doc: \"\"\"abc\"\"\"\n").unwrap(), json!({"doc":"abc"}));
+}
+
+#[test]
+fn decode_multiline_block_string() {
+    assert_eq!(
+        decode("doc: \"\"\"\nline1\nline2\n\"\"\"\n").unwrap(),
+        json!({"doc":"line1\nline2\n"})
+    );
+}
+
+#[test]
+fn decode_block_string_opener_with_content() {
+    assert_eq!(decode("doc: \"\"\"abc\nxyz\"\"\"\n").unwrap(), json!({"doc":"abc\nxyz"}));
+    assert_eq!(decode("doc: \"\"\"\nabc\"\"\"\n").unwrap(), json!({"doc":"abc"}));
+}
+
+#[test]
+fn decode_unterminated_block_string_errors() {
+    assert!(decode("doc: \"\"\"\nunterminated\n").is_err());
+}
