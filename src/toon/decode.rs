@@ -2,8 +2,8 @@
 //!
 //! A purpose-built line/byte scanner that decodes TOON text into a [`serde_json::Value`].
 
-use serde_json::{Map, Value};
 use crate::toon::error::{DecodeError, DecodeResult};
+use serde_json::{Map, Value};
 
 /// Decodes TOON `input` into a [`serde_json::Value`].
 ///
@@ -26,7 +26,8 @@ fn remove_block_comments(input: &str) -> DecodeResult<String> {
             // Check for triple quotes
             let is_triple = {
                 let mut temp = chars.clone();
-                temp.next().map(|(_, c)| c) == Some('"') && temp.peek().map(|(_, c)| *c) == Some('"')
+                temp.next().map(|(_, c)| c) == Some('"')
+                    && temp.peek().map(|(_, c)| *c) == Some('"')
             };
             if is_triple {
                 out.push_str("\"\"\"");
@@ -37,7 +38,8 @@ fn remove_block_comments(input: &str) -> DecodeResult<String> {
                     if c == '"' {
                         let is_close_triple = {
                             let mut temp = chars.clone();
-                            temp.next().map(|(_, ch)| ch) == Some('"') && temp.peek().map(|(_, ch)| *ch) == Some('"')
+                            temp.next().map(|(_, ch)| ch) == Some('"')
+                                && temp.peek().map(|(_, ch)| *ch) == Some('"')
                         };
                         if is_close_triple {
                             out.push_str("\"\"");
@@ -108,13 +110,7 @@ struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     fn new(input: &'a str) -> Self {
-        Self {
-            input,
-            offset: 0,
-            delimiter_stack: vec![','],
-            line: 1,
-            col: 1,
-        }
+        Self { input, offset: 0, delimiter_stack: vec![','], line: 1, col: 1 }
     }
 
     fn peek(&self) -> Option<char> {
@@ -222,7 +218,11 @@ impl<'a> Parser<'a> {
 
             let rest = &self.input[temp_offset..];
             let next_ch = rest.chars().next();
-            if next_ch.is_none() || next_ch == Some('\n') || next_ch == Some('\r') || next_ch == Some('#') {
+            if next_ch.is_none()
+                || next_ch == Some('\n')
+                || next_ch == Some('\r')
+                || next_ch == Some('#')
+            {
                 // Blank/comment line, skip to end of line
                 while temp_offset < self.input.len() {
                     let ch = self.input[temp_offset..].chars().next().unwrap();
@@ -261,7 +261,11 @@ impl<'a> Parser<'a> {
         self.skip_trivia();
 
         // Check for expanded array item
-        if self.peek() == Some('-') && (self.peek_next() == Some(' ') || self.peek_next() == Some('\n') || self.peek_next().is_none()) {
+        if self.peek() == Some('-')
+            && (self.peek_next() == Some(' ')
+                || self.peek_next() == Some('\n')
+                || self.peek_next().is_none())
+        {
             return self.parse_expanded_array(indent);
         }
 
@@ -272,7 +276,9 @@ impl<'a> Parser<'a> {
             if let Some((_, count, delim, cols, is_root)) = self.try_parse_array_header(key_part) {
                 if is_root {
                     self.offset = colon_idx + 1;
-                    self.col = 1 + (self.offset - self.input[..self.offset].rfind('\n').map_or(0, |i| i + 1)) as u32;
+                    self.col = 1
+                        + (self.offset - self.input[..self.offset].rfind('\n').map_or(0, |i| i + 1))
+                            as u32;
                     return self.parse_array_or_table(count, delim, cols, indent, true);
                 }
             }
@@ -313,7 +319,11 @@ impl<'a> Parser<'a> {
             if let Some((next_i, next_offset)) = self.peek_next_non_blank_line_indent()? {
                 if next_i == indent {
                     let rest = &self.input[next_offset..];
-                    if rest.starts_with('-') && (rest[1..].starts_with(' ') || rest[1..].starts_with('\n') || rest[1..].is_empty()) {
+                    if rest.starts_with('-')
+                        && (rest[1..].starts_with(' ')
+                            || rest[1..].starts_with('\n')
+                            || rest[1..].is_empty())
+                    {
                         self.consume_indentation(next_offset);
                         continue;
                     }
@@ -399,14 +409,19 @@ impl<'a> Parser<'a> {
         Ok(Value::Object(map))
     }
 
-    fn parse_object_entry(&mut self, map: &mut Map<String, Value>, parent_indent: usize) -> DecodeResult<()> {
-        let colon_idx = self.find_unquoted_colon_on_line().ok_or_else(|| {
-            DecodeError::new("missing colon in object entry")
-        })?;
+    fn parse_object_entry(
+        &mut self,
+        map: &mut Map<String, Value>,
+        parent_indent: usize,
+    ) -> DecodeResult<()> {
+        let colon_idx = self
+            .find_unquoted_colon_on_line()
+            .ok_or_else(|| DecodeError::new("missing colon in object entry"))?;
 
         let key_part = &self.input[self.offset..colon_idx];
         self.offset = colon_idx + 1;
-        self.col = 1 + (self.offset - self.input[..self.offset].rfind('\n').map_or(0, |i| i + 1)) as u32;
+        self.col =
+            1 + (self.offset - self.input[..self.offset].rfind('\n').map_or(0, |i| i + 1)) as u32;
 
         if let Some((name, count, delim, cols, _)) = self.try_parse_array_header(key_part) {
             let value = self.parse_array_or_table(count, delim, cols, parent_indent, true)?;
@@ -423,9 +438,8 @@ impl<'a> Parser<'a> {
         self.skip_trivia();
 
         if self.peek() == Some('[') {
-            let line_end = self.input[self.offset..]
-                .find('\n')
-                .map_or(self.input.len(), |i| self.offset + i);
+            let line_end =
+                self.input[self.offset..].find('\n').map_or(self.input.len(), |i| self.offset + i);
             if !self.input[self.offset..line_end].contains(']') {
                 return Err(DecodeError::new("Unterminated inline array"));
             }
@@ -527,7 +541,13 @@ impl<'a> Parser<'a> {
     ) -> DecodeResult<Value> {
         let active_delim = delim.unwrap_or(',');
         self.delimiter_stack.push(active_delim);
-        let res = self.parse_array_or_table_inner(count, active_delim, cols, parent_indent, colon_consumed);
+        let res = self.parse_array_or_table_inner(
+            count,
+            active_delim,
+            cols,
+            parent_indent,
+            colon_consumed,
+        );
         self.delimiter_stack.pop();
         res
     }
@@ -575,7 +595,9 @@ impl<'a> Parser<'a> {
                         }
                         rows.push(Value::Object(obj));
 
-                        if let Some((next_i, next_offset)) = self.peek_next_non_blank_line_indent()? {
+                        if let Some((next_i, next_offset)) =
+                            self.peek_next_non_blank_line_indent()?
+                        {
                             if next_i == row_indent {
                                 self.consume_indentation(next_offset);
                                 continue;
@@ -607,7 +629,11 @@ impl<'a> Parser<'a> {
             if let Some((next_i, next_offset)) = self.peek_next_non_blank_line_indent()? {
                 if next_i > parent_indent {
                     let rest = &self.input[next_offset..];
-                    if rest.starts_with('-') && (rest[1..].starts_with(' ') || rest[1..].starts_with('\n') || rest[1..].is_empty()) {
+                    if rest.starts_with('-')
+                        && (rest[1..].starts_with(' ')
+                            || rest[1..].starts_with('\n')
+                            || rest[1..].is_empty())
+                    {
                         self.consume_indentation(next_offset);
                         let val = self.parse_expanded_array(next_i)?;
                         if let Value::Array(ref arr) = val {
@@ -902,7 +928,7 @@ impl<'a> Parser<'a> {
         let s = s.trim();
         if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
             let mut out = String::new();
-            let mut chars = s[1..s.len()-1].chars().peekable();
+            let mut chars = s[1..s.len() - 1].chars().peekable();
             while let Some(ch) = chars.next() {
                 if ch == '\\' {
                     out.push(Self::parse_escaped_char(&mut chars)?);
@@ -940,7 +966,12 @@ impl<'a> Parser<'a> {
             let name_raw = array_part[..bracket_start].trim().to_string();
             let is_root = name_raw.is_empty();
             let name = self.parse_key_string(&name_raw).ok()?;
-            if !name_raw.starts_with('"') && (name.contains('[') || name.contains(']') || name.contains('{') || name.contains('}')) {
+            if !name_raw.starts_with('"')
+                && (name.contains('[')
+                    || name.contains(']')
+                    || name.contains('{')
+                    || name.contains('}'))
+            {
                 return None;
             }
             return Some((name, count, delim, Some(cols), is_root));
@@ -954,7 +985,12 @@ impl<'a> Parser<'a> {
             let name_raw = key_part[..bracket_start].trim().to_string();
             let is_root = name_raw.is_empty();
             let name = self.parse_key_string(&name_raw).ok()?;
-            if !name_raw.starts_with('"') && (name.contains('[') || name.contains(']') || name.contains('{') || name.contains('}')) {
+            if !name_raw.starts_with('"')
+                && (name.contains('[')
+                    || name.contains(']')
+                    || name.contains('{')
+                    || name.contains('}'))
+            {
                 return None;
             }
             return Some((name, count, delim, None, is_root));
@@ -1060,11 +1096,7 @@ fn parse_bracket_content(s: &str) -> Option<(usize, Option<char>)> {
     let count = count_str.parse::<usize>().ok()?;
 
     let rest: String = chars.collect();
-    let delim = if rest.is_empty() {
-        None
-    } else {
-        Some(rest.chars().next().unwrap())
-    };
+    let delim = if rest.is_empty() { None } else { Some(rest.chars().next().unwrap()) };
 
     Some((count, delim))
 }
@@ -1103,7 +1135,9 @@ fn parse_delimited_strings(s: &str, delim: char) -> DecodeResult<Vec<String>> {
                 if ch == delim {
                     chars.next();
                 } else {
-                    return Err(DecodeError::new(format!("expected delimiter {delim} after quoted column")));
+                    return Err(DecodeError::new(format!(
+                        "expected delimiter {delim} after quoted column"
+                    )));
                 }
             }
         } else {
@@ -1148,9 +1182,7 @@ fn parse_number(s: &str) -> DecodeResult<Value> {
         return Ok(Value::Number(n.into()));
     }
 
-    let f = s
-        .parse::<f64>()
-        .map_err(|_| DecodeError::new(format!("invalid number '{s}'")))?;
+    let f = s.parse::<f64>().map_err(|_| DecodeError::new(format!("invalid number '{s}'")))?;
     if !f.is_finite() {
         return Err(DecodeError::new(format!("non-finite number '{s}'")));
     }
