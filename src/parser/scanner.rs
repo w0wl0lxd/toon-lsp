@@ -129,6 +129,10 @@ pub struct Scanner<'a> {
     indent_stack: Vec<u32>,
     /// Number of dedent tokens pending to be emitted.
     pending_dedents: u32,
+    /// Number of indent tokens pending to be emitted (used when a new indent
+    /// level appears between two existing levels, e.g. a dash-item's
+    /// subsequent fields which are indented deeper than the dash itself).
+    pending_indents: u32,
     /// Whether the scanner is at the start of a line.
     at_line_start: bool,
     /// Whether EOF has been yielded (for Iterator impl).
@@ -156,6 +160,7 @@ impl<'a> Scanner<'a> {
             offset: 0,
             indent_stack: vec![0],
             pending_dedents: 0,
+            pending_indents: 0,
             at_line_start: true,
             done: false,
         }
@@ -237,7 +242,7 @@ impl<'a> Scanner<'a> {
     fn skip_trivia(&mut self) {
         loop {
             match self.peek() {
-                Some(' ' | '\t' | '\r') => {
+                Some(' ' | '\t' | '\r' | '|') => {
                     self.advance();
                 }
                 Some('#') => {
@@ -352,20 +357,32 @@ impl<'a> Scanner<'a> {
                     self.pending_dedents += 1;
                 }
 
-                // Verify we matched a valid indent level
-                if self.indent_stack.last().copied() != Some(spaces) && spaces != 0 {
-                    return Some(self.make_token(
+                let current = *self.indent_stack.last().unwrap_or(&0);
+                if spaces == current {
+                    // Dedent back to a previously-established level.
+                    self.pending_dedents.checked_sub(1).map(|remaining| {
+                        self.pending_dedents = remaining;
+                        self.make_token(TokenKind::Dedent, start)
+                    })
+                } else if spaces > current {
+                    // A new indent level appeared between the current level and
+                    // a deeper level we just closed (e.g. a dash-item's second
+                    // field, which is indented deeper than the dash itself but
+                    // shallower than the first field's children). In non-strict
+                    // mode this is valid: emit the pending dedent(s) and then a
+                    // fresh indent for `spaces`.
+                    self.indent_stack.push(spaces);
+                    self.pending_indents = self.pending_indents.saturating_add(1);
+                    None
+                } else {
+                    // spaces < current and matches no established level: error.
+                    Some(self.make_token(
                         TokenKind::Error(format!(
                             "Indentation mismatch: {spaces} spaces does not match any previous level"
                         )),
                         start,
-                    ));
+                    ))
                 }
-
-                self.pending_dedents.checked_sub(1).map(|remaining| {
-                    self.pending_dedents = remaining;
-                    self.make_token(TokenKind::Dedent, start)
-                })
             }
             std::cmp::Ordering::Equal => None,
         }
@@ -379,10 +396,10 @@ impl<'a> Scanner<'a> {
     }
 
     fn is_structural_char(ch: char) -> bool {
-    matches!(ch, ':' | ',' | '[' | ']' | '{' | '}' | '-' | '#' | '$')
-}
+        matches!(ch, ':' | ',' | '[' | ']' | '{' | '}' | '-' | '#' | '$')
+    }
 
-/// Scan a single structural character: : , [ ] { } -
+    /// Scan a single structural character: : , [ ] { } -
     ///
     /// # Panics
     /// Unreachable panic if called with non-structural character (defensive).
@@ -623,9 +640,7 @@ impl<'a> Scanner<'a> {
                             self.advance(); // consume 'u'
                             let hex_start = self.offset as usize;
                             let mut digits = 0;
-                            while digits < 4
-                                && self.peek().is_some_and(|c| c.is_ascii_hexdigit())
-                            {
+                            while digits < 4 && self.peek().is_some_and(|c| c.is_ascii_hexdigit()) {
                                 self.advance();
                                 digits += 1;
                             }
@@ -811,11 +826,24 @@ impl<'a> Scanner<'a> {
             return self.make_token(TokenKind::Dedent, pos);
         }
 
+        // Emit pending indents (set when a new indent level appears between two
+        // existing levels after a dedent).
+        if self.pending_indents > 0 {
+            self.pending_indents -= 1;
+            let pos = self.current_position();
+            return self.make_token(TokenKind::Indent, pos);
+        }
+
         // Handle indentation at line start
         if self.at_line_start {
             self.at_line_start = false;
             if let Some(token) = self.handle_indentation() {
                 return token;
+            }
+            // If handle_indentation opened pending dedent/indent tokens, emit
+            // the next one instead of falling through to scan content.
+            if self.pending_dedents > 0 || self.pending_indents > 0 {
+                return self.next_token();
             }
         }
 
@@ -858,7 +886,7 @@ impl<'a> Scanner<'a> {
                     self.make_token(TokenKind::Error("Unexpected character: $".into()), start)
                 }
             }
-'a'..='z' | 'A'..='Z' | '_' => self.scan_identifier_or_keyword(),
+            'a'..='z' | 'A'..='Z' | '_' => self.scan_identifier_or_keyword(),
             ch if ch.is_alphabetic() && !ch.is_ascii() => self.scan_identifier_or_keyword(),
             // Allow any printable non-structural, non-whitespace char as identifier
             // (for TOON spec compliance with emoji, etc. in unquoted strings)
@@ -870,7 +898,7 @@ impl<'a> Scanner<'a> {
                 self.advance();
                 self.make_token(
                     TokenKind::Error(format!("Invalid control character: U+{:04X}", ch as u32)),
-                    start
+                    start,
                 )
             }
             _ => {
