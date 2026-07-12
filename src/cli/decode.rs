@@ -40,6 +40,12 @@ use super::{DecodeArgs, OutputFormat};
 /// - TOON parsing fails (syntax error) - returns exit code 2
 /// - Output file cannot be written
 pub fn execute(args: &DecodeArgs) -> CliResult<()> {
+    if let Some(ref path) = args.input {
+        if path.is_dir() {
+            return batch_decode(path, args);
+        }
+    }
+
     // Read TOON input
     let toon_content = read_input(args)?;
 
@@ -52,6 +58,62 @@ pub fn execute(args: &DecodeArgs) -> CliResult<()> {
     // Write output in requested format
     write_output(args, &value)?;
 
+    Ok(())
+}
+
+fn batch_decode(dir: &std::path::Path, args: &DecodeArgs) -> CliResult<()> {
+    let mut files = Vec::new();
+    walk_dir(dir, &mut files)?;
+    for path in files {
+        if path.is_file() {
+            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                if ext.to_lowercase() == "toon" {
+                    let toon_content = std::fs::read_to_string(&path)?;
+                    let value = decode_toon(&toon_content)
+                        .map_err(|e| CliError::Validation(e.to_string()))?;
+
+                    let mut out_path = path.clone();
+                    match args.output_format {
+                        OutputFormat::Json => {
+                            out_path.set_extension("json");
+                            let file = File::create(&out_path).map_err(|e| {
+                                CliError::Io(io::Error::new(
+                                    e.kind(),
+                                    format!("Failed to create '{}': {}", out_path.display(), e),
+                                ))
+                            })?;
+                            write_json(file, &value, args.pretty)?;
+                        }
+                        OutputFormat::Yaml => {
+                            out_path.set_extension("yaml");
+                            let file = File::create(&out_path).map_err(|e| {
+                                CliError::Io(io::Error::new(
+                                    e.kind(),
+                                    format!("Failed to create '{}': {}", out_path.display(), e),
+                                ))
+                            })?;
+                            write_yaml(file, &value)?;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn walk_dir(dir: &std::path::Path, files: &mut Vec<std::path::PathBuf>) -> std::io::Result<()> {
+    if dir.is_dir() {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                walk_dir(&path, files)?;
+            } else {
+                files.push(path);
+            }
+        }
+    }
     Ok(())
 }
 

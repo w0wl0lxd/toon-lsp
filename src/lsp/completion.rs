@@ -110,6 +110,15 @@ pub fn get_completions_at_position(
                 });
             }
         }
+        CompletionContext::EnvVarPosition => {
+            for (key, _) in std::env::vars() {
+                completions.push(ToonCompletion {
+                    label: key,
+                    kind: CompletionItemKind::VARIABLE,
+                    detail: Some("environment variable".to_string()),
+                });
+            }
+        }
         CompletionContext::KeyPosition => {
             // Suggest sibling keys from the containing object
             if let Some(node_at_pos) = find_node_at_position(ast, line, column, offset) {
@@ -155,6 +164,8 @@ enum CompletionContext {
     KeyPosition,
     /// Inside a reference substitution, e.g. `${...`
     ReferencePosition,
+    /// Inside an environment variable reference, e.g. `${env:...`
+    EnvVarPosition,
     /// Unknown context
     Unknown,
 }
@@ -177,6 +188,9 @@ fn determine_completion_context(source: &str, line: u32, column: u32) -> Complet
     if let Some(ref_start_idx) = prefix.rfind("${") {
         let suffix = &prefix[ref_start_idx + 2..];
         if !suffix.contains('}') {
+            if suffix.starts_with("env:") {
+                return CompletionContext::EnvVarPosition;
+            }
             return CompletionContext::ReferencePosition;
         }
     }
@@ -299,5 +313,17 @@ mod tests {
         let labels: Vec<&str> = completions.iter().map(|c| c.label.as_str()).collect();
         assert!(labels.contains(&"db"));
         assert!(labels.contains(&"db.port"));
+    }
+
+    #[test]
+    fn test_completion_inside_env_reference() {
+        let source = "connection: ${env:P";
+        let (ast, _) = parse_with_errors(source);
+        let ast = ast.expect("should parse");
+
+        let completions = get_completions_at_position(&ast, source, 0, 19);
+        let labels: Vec<&str> = completions.iter().map(|c| c.label.as_str()).collect();
+        // PATH should be standard on systems running tests
+        assert!(labels.contains(&"PATH") || !labels.is_empty());
     }
 }

@@ -81,6 +81,7 @@ pub mod cli;
 pub mod lsp;
 pub mod parser;
 pub mod resolve;
+pub mod toon;
 
 pub use ast::{AstNode, NumberValue, ObjectEntry, Position, Span};
 pub use parser::{ParseError, ParseErrorKind, parse, parse_with_errors};
