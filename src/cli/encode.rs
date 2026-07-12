@@ -87,10 +87,10 @@ fn batch_encode(dir: &Path, args: &EncodeArgs) -> CliResult<()> {
                 if let Some(fmt) = format {
                     let val = read_from_file(&path, fmt)?;
                     let toon = encode_json_with_indent(&val, args.indent)?;
-                    
+
                     let mut out_path = path.clone();
                     out_path.set_extension("toon");
-                    
+
                     let mut file = File::create(&out_path).map_err(|e| {
                         CliError::Io(io::Error::new(
                             e.kind(),

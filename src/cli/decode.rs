@@ -69,10 +69,9 @@ fn batch_decode(dir: &std::path::Path, args: &DecodeArgs) -> CliResult<()> {
             if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                 if ext.to_lowercase() == "toon" {
                     let toon_content = std::fs::read_to_string(&path)?;
-                    let value = decode_toon(&toon_content).map_err(|e| {
-                        CliError::Validation(e.to_string())
-                    })?;
-                    
+                    let value = decode_toon(&toon_content)
+                        .map_err(|e| CliError::Validation(e.to_string()))?;
+
                     let mut out_path = path.clone();
                     match args.output_format {
                         OutputFormat::Json => {

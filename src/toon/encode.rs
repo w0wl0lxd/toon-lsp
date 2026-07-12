@@ -335,9 +335,6 @@ mod tests {
             {"members":[{"id":1,"n":"x"},{"id":2,"n":"y"}]}
         ]))
         .unwrap();
-        assert!(
-            out.contains("members[2]{id,n}:"),
-            "nested array field should be tabular: {out}"
-        );
+        assert!(out.contains("members[2]{id,n}:"), "nested array field should be tabular: {out}");
     }
 }

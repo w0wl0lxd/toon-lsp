@@ -248,10 +248,7 @@ fn generate_diagnostics(
                     line: diag.range.start.line,
                     character: diag.range.start.character,
                 },
-                end: Position {
-                    line: diag.range.end.line,
-                    character: diag.range.end.character,
-                },
+                end: Position { line: diag.range.end.line, character: diag.range.end.character },
             };
 
             diagnostics.push(DiagnosticEntry {

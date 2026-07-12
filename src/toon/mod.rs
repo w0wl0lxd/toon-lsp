@@ -6,8 +6,8 @@ pub mod encode;
 pub mod error;
 
 pub use decode::decode;
-pub use encode::{encode, encode_with_indent, encode_with_config};
 pub use emit::Delimiter;
+pub use encode::{encode, encode_with_config, encode_with_indent};
 pub use error::{DecodeError, DecodeResult, EncodeError, EncodeResult};
 
 /// Configuration options for the TOON encoder/decoder.
@@ -21,9 +21,6 @@ pub struct ToonConfig {
 
 impl Default for ToonConfig {
     fn default() -> Self {
-        Self {
-            indent: 2,
-            delimiter: Delimiter::Comma,
-        }
+        Self { indent: 2, delimiter: Delimiter::Comma }
     }
 }
