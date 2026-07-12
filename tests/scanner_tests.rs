@@ -226,8 +226,8 @@ mod error_recovery {
     #[test]
     fn test_error_preserves_position() {
         // Verify error token has correct position
-        let tokens = scan_tokens("@test");
-        // Should be: Error(@), Identifier(test), EOF
+        let tokens = scan_tokens("\x00test");
+        // Should be: Error(NUL), Identifier(test), EOF
         assert!(tokens.len() >= 2);
         assert!(matches!(tokens[0].kind, TokenKind::Error(_)));
         // Position should be column 0 (start of line)
