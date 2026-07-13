@@ -583,6 +583,25 @@ impl<'a> Scanner<'a> {
             }
         }
 
+        // A dotted run of digits (e.g. `0.0.0.0`, `192.168.1.1`) is not a valid
+        // single number. Treat the whole run as a string so unquoted IP-like
+        // values round-trip with `decode`/`encode` (issue #10).
+        if let Some('.') = self.peek() {
+            if let Some(next) = self.peek_next()
+                && next.is_ascii_digit()
+            {
+                while let Some(ch) = self.peek() {
+                    if ch.is_ascii_digit() || ch == '.' {
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+                let text = &self.source[start_offset..self.offset as usize];
+                return self.make_token(TokenKind::String(text.to_string()), start);
+            }
+        }
+
         let text = &self.source[start_offset..self.offset as usize];
         self.make_token(TokenKind::Number(text.to_string()), start)
     }
