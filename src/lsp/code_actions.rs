@@ -287,4 +287,16 @@ mod tests {
         // `age` (originally last) moves first but keeps its 2-space indent.
         assert_eq!(new, "age: 30\n  name: Bob");
     }
+
+    #[test]
+    fn last_entry_gains_separator_when_moved() {
+        let source = "zebra: 3\napple: 1";
+        let actions = actions_for(source, 0, 0);
+        assert_eq!(actions.len(), 1);
+        let we = actions[0].edit.as_ref().unwrap();
+        let changes = we.changes.as_ref().expect("workspace edit must have changes");
+        let new = &changes.values().next().unwrap()[0].new_text;
+        // apple was originally last (no trailing separator) and gains one when moved up.
+        assert_eq!(new, "apple: 1\nzebra: 3");
+    }
 }
