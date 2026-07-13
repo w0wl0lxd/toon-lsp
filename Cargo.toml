@@ -15,7 +15,7 @@ name = "toon_lsp"
 path = "src/lib.rs"
 
 [dependencies]
-# TOON Format — core encode/decode only. The default `cli` feature pulls in a
+# TOON Format: core encode/decode only. The default `cli` feature pulls in a
 # large TUI/highlighting tree (syntect→bincode, ratatui→paste, arboard, clap,
 # tiktoken-rs, …) that we do not use; disabling it removes those transitive
 # deps and their unmaintained-crate advisories.

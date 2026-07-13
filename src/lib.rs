@@ -59,7 +59,7 @@
 //! }
 //! ```
 //!
-//! **Error recovery for IDEs** — parse succeeds even with syntax errors:
+//! **Error recovery for IDEs**: parse succeeds even with syntax errors:
 //!
 //! ```rust
 //! use toon_lsp::parse_with_errors;

@@ -2,7 +2,7 @@
 /target
 
 # Local machine-specific Cargo build acceleration (sccache/mold/cranelift,
-# absolute target dirs). Must not be committed — breaks CI runners.
+# absolute target dirs). Must not be committed; breaks CI runners.
 /.cargo/config.toml
 
 # IDE and editor
