@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+
 - **Code action placeholder**: the always-on "Sort Object Keys Alphabetically"
   source action was a no-op stub (it advertised the action but produced no
   edit). It now emits a real `WorkspaceEdit` that reorders the entries of

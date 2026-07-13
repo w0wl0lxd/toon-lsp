@@ -20,7 +20,10 @@
 
 use std::collections::HashMap;
 
-use tower_lsp::lsp_types::{CodeAction, CodeActionKind, Position as LspPosition, Range as LspRange, TextEdit, Url, WorkspaceEdit};
+use tower_lsp::lsp_types::{
+    CodeAction, CodeActionKind, Position as LspPosition, Range as LspRange, TextEdit, Url,
+    WorkspaceEdit,
+};
 
 use crate::ast::{AstNode, ObjectEntry};
 
@@ -71,14 +74,10 @@ fn generate_sort_keys_action(
     let offset = lsp_pos_to_offset(source, range.start.line, range.start.character);
     let found = find_node_at_position(ast, range.start.line, range.start.character, offset)?;
 
-    let entries: &[ObjectEntry] = found
-        .path
-        .iter()
-        .rev()
-        .find_map(|entry| match entry.node {
-            AstNode::Object { entries, .. } => Some(entries.as_slice()),
-            _ => None,
-        })?;
+    let entries: &[ObjectEntry] = found.path.iter().rev().find_map(|entry| match entry.node {
+        AstNode::Object { entries, .. } => Some(entries.as_slice()),
+        _ => None,
+    })?;
 
     // Need at least two keys to be worth sorting.
     if entries.len() < 2 {
@@ -92,27 +91,52 @@ fn generate_sort_keys_action(
     }
 
     let n = entries.len();
-
-    // Each entry's source block runs from its key start up to the next
-    // entry's key start; the final entry runs to the end of its value.
-    let mut blocks: Vec<&str> = Vec::with_capacity(n);
-    for i in 0..n - 1 {
-        let start = entries[i].key_span.start.offset as usize;
-        let end = entries[i + 1].key_span.start.offset as usize;
-        blocks.push(&source[start..end]);
-    }
-    let last_start = entries[n - 1].key_span.start.offset as usize;
-    let last_end = entries[n - 1].value.span().end.offset as usize;
-    blocks.push(&source[last_start..last_end]);
-
-    // Order entry indices by key, then concatenate their source blocks.
-    let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by(|&a, &b| entries[a].key.cmp(&entries[b].key));
-    let new_text: String = order.iter().map(|&i| blocks[i]).collect();
-
-    // The region being replaced spans the first key start to the last value end.
     let region_start = entries[0].key_span.start.offset;
     let region_end = entries[n - 1].value.span().end.offset;
+
+    // Leading context (newline + indentation) that precedes each entry in
+    // document order. `pre[0]` is empty because the region starts at
+    // the first key; every other entry's `pre` is the separator and
+    // indentation that belong before it.
+    let mut pres: Vec<String> = Vec::with_capacity(n);
+    for i in 0..n {
+        let start = if i == 0 { region_start } else { entries[i - 1].value.span().end.offset };
+        let end = entries[i].key_span.start.offset;
+        pres.push(source[start as usize..end as usize].to_string());
+    }
+
+    // Indentation shared by sibling entries, used as a fallback for an entry
+    // that was originally first (and so has no leading context) but is
+    // reordered below another entry.
+    let common_indent: String = pres
+        .iter()
+        .skip(1)
+        .find(|p| !p.is_empty())
+        .map(|p| trailing_ws(p).to_string())
+        .unwrap_or_default();
+
+    // Order entry indices by key, then rebuild the object text.
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by(|&a, &b| entries[a].key.cmp(&entries[b].key));
+
+    let mut new_text = String::new();
+    for (pos, &idx) in order.iter().enumerate() {
+        if pos != 0 {
+            // Preserve the leading separator + indentation of the entry;
+            // fall back to a newline + common indent when it was the
+            // originally-first entry and so carries no leading context.
+            let pre = &pres[idx];
+            if pre.is_empty() {
+                new_text.push('\n');
+                new_text.push_str(&common_indent);
+            } else {
+                new_text.push_str(pre);
+            }
+        }
+        let start = entries[idx].key_span.start.offset as usize;
+        let end = entries[idx].value.span().end.offset as usize;
+        new_text.push_str(&source[start..end]);
+    }
 
     let edit_range = LspRange {
         start: offset_to_lsp_pos(source, region_start),
@@ -122,14 +146,14 @@ fn generate_sort_keys_action(
 
     let mut changes = HashMap::new();
     changes.insert(uri.clone(), vec![text_edit]);
-    let workspace_edit = WorkspaceEdit {
-        changes: Some(changes),
-        ..Default::default()
-    };
+    let workspace_edit = WorkspaceEdit { changes: Some(changes), ..Default::default() };
 
     Some(CodeAction {
         title: "Sort Object Keys Alphabetically".to_string(),
-        kind: Some(CodeActionKind::SOURCE_ORGANIZE_IMPORTS),
+        // A distinct source action kind: reusing `SOURCE_ORGANIZE_IMPORTS`
+        // would let editors with `codeActionsOnSave: { "source.organizeImports": true }`
+        // accidentally reorder keys on every save.
+        kind: Some(CodeActionKind::new("source.sortObjectKeys")),
         edit: Some(workspace_edit),
         ..Default::default()
     })
@@ -148,9 +172,18 @@ fn lsp_pos_to_offset(source: &str, line: u32, utf16_char: u32) -> u32 {
             line_start = i + 1;
         }
     }
-    let line_text = &source[line_start..];
+    // Bound `line_text` to the current line so an out-of-range cursor
+    // column from the client cannot walk into the next line.
+    let line_end = source[line_start..].find('\n').map(|i| line_start + i).unwrap_or(source.len());
+    let line_text = &source[line_start..line_end];
     let utf8_col = utf16_to_utf8_col(line_text, utf16_char);
     (line_start as u32) + utf8_col
+}
+
+/// Return the trailing whitespace of `s` (the text after its last newline),
+/// i.e. the indentation of the line that `s` ends on.
+fn trailing_ws(s: &str) -> &str {
+    s.rsplit('\n').next().unwrap_or("")
 }
 
 /// Convert a byte offset to an LSP position (line, UTF-16 character).
@@ -182,10 +215,8 @@ mod tests {
         let (ast, _) = parse_with_errors(source);
         let ast = ast.expect("should parse");
         let uri: Url = "file:///test.toon".parse().unwrap();
-        let range = LspRange {
-            start: Position { line, character },
-            end: Position { line, character },
-        };
+        let range =
+            LspRange { start: Position { line, character }, end: Position { line, character } };
         collect_code_actions(&ast, source, &uri, range, &[])
     }
 
@@ -227,21 +258,33 @@ mod tests {
 
     #[test]
     fn multiline_values_preserved() {
+        // `alpha` is the originally-last entry; reordering it to the
+        // front must not merge it with `zeta` (the originally-first entry)
+        // or drop the separator between them.
         let source = "zeta:\n  a: 1\nalpha:\n  b: 2";
         let actions = actions_for(source, 0, 0);
         assert_eq!(actions.len(), 1);
         let we = actions[0].edit.as_ref().unwrap();
         let changes = we.changes.as_ref().expect("workspace edit must have changes");
         let new = &changes.values().next().unwrap()[0].new_text;
-        // Both keys present, alpha first, and the nested values intact.
-        assert!(new.contains("alpha:"));
-        assert!(new.contains("zeta:"));
+        // Exact reordered text: alpha first, zeta second, with a newline
+        // separator between them and both nested values intact.
+        assert_eq!(new, "alpha:\n  b: 2\nzeta:\n  a: 1");
         assert!(new.contains("a: 1"));
         assert!(new.contains("b: 2"));
-        let first_key = new
-            .lines()
-            .find_map(|l| l.split(':').next().map(|k| k.trim().to_string()))
-            .unwrap();
-        assert_eq!(first_key, "alpha");
+    }
+
+    #[test]
+    fn nested_object_indentation_preserved() {
+        // Sorting an object whose entries are indented under a parent
+        // must keep the indentation so entries stay in scope.
+        let source = "user:\n  name: Bob\n  age: 30";
+        let actions = actions_for(source, 1, 2);
+        assert_eq!(actions.len(), 1);
+        let we = actions[0].edit.as_ref().unwrap();
+        let changes = we.changes.as_ref().expect("workspace edit must have changes");
+        let new = &changes.values().next().unwrap()[0].new_text;
+        // `age` (originally last) moves first but keeps its 2-space indent.
+        assert_eq!(new, "age: 30\n  name: Bob");
     }
 }
