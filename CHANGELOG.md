@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Code action placeholder**: the always-on "Sort Object Keys Alphabetically"
+  source action was a no-op stub (it advertised the action but produced no
+  edit). It now emits a real `WorkspaceEdit` that reorders the entries of
+  the object under the cursor into key order, preserving each entry's
+  verbatim source text (key, value, and trailing separator) so formatting
+  and comments inside entries are kept. The action is only offered when the
+  object's keys are actually unsorted.
+- **Misleading quick fixes**: `collect_code_actions` previously returned
+  "Add missing quotes" quick-fix stubs whose `edit` was always `None`,
+  i.e. actions that did nothing. These no-op stubs are removed.
+
 ## [0.6.1] - 2026-07-12
 
 ### Fixed
