@@ -435,7 +435,7 @@ impl<'a> Scanner<'a> {
     ///
     /// # Grammar
     /// Identifiers match: `^[A-Za-z_][A-Za-z0-9_]*$`
-    /// Keywords are contextual — parsed as identifiers first, then
+    /// Keywords are contextual: parsed as identifiers first, then
     /// converted to keyword tokens for cleaner separation of concerns.
     fn scan_identifier_or_keyword(&mut self) -> Token {
         let start = self.current_position();

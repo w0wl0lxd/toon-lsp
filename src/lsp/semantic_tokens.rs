@@ -778,7 +778,7 @@ mod tests {
         assert_eq!(encoded[0].delta_line, 0);
         assert_eq!(encoded[1].delta_line, 1);
         assert_eq!(encoded[2].delta_line, 1);
-        // Decoded absolute lines must be strictly ascending — no underflow wrap.
+        // Decoded absolute lines must be strictly ascending; no underflow wrap.
         let mut abs = 0u32;
         for t in &encoded {
             abs += t.delta_line;
