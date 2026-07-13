@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unified TOON decoder**: the scanner-driven `decoder_a` is replaced by a
   single self-contained line/byte decoder (formerly Decoder B). The decoder no
   longer depends on the LSP token stream and handles block comments natively.
-  The `decoder_a`/`decoder_b` cargo feature split is removed — the decoder is
+  The `decoder_a`/`decoder_b` cargo feature split is removed: the decoder is
   always built.
 - **TOON spec feature expansions**:
   - Tabular arrays via `[N delim]{cols}` headers (e.g. `items[3\t]:` with a
@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Conformance**: 304/304 TOON-spec vectors now pass.
 - **Validation**: unterminated inline arrays (e.g. `key: [unclosed array`) now
   error instead of being silently parsed as a string.
-- **Build**: resolved Cargo.toml manifest warnings — `cargo-toon` gets its own
+- **Build**: resolved Cargo.toml manifest warnings: `cargo-toon` gets its own
   source file (`src/bin/cargo-toon.rs`) and `toon-lsp`/`cargo-toon` are
   auto-discovered, and the unused `bench.criterion` key was removed.
 
@@ -67,9 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Dependencies**: build `toon-format` with `default-features = false`. Only its
-  core encode/decode API is used, so the default `cli` feature — which pulled in
+  core encode/decode API is used, so the default `cli` feature, which pulled in
   a large TUI/highlighting tree (`syntect`→`bincode`, `ratatui`→`paste`,
-  `arboard`, `clap`, `tiktoken-rs`, …) — is now disabled. This removes those
+  `arboard`, `clap`, `tiktoken-rs`, …) is now disabled. This removes those
   transitive crates entirely, eliminating the unmaintained-crate advisories
   RUSTSEC-2025-0141 (bincode), RUSTSEC-2024-0320 (yaml-rust) and
   RUSTSEC-2024-0436 (paste), and significantly shrinks the dependency graph.
@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **CI**: stopped tracking a machine-specific `.cargo/config.toml` (sccache
   wrapper, mold linker, absolute `/mnt/build` cache/target dirs) that broke
-  every CI job — including the release pipeline — with
+  every CI job, including the release pipeline, with
   `could not execute process sccache`.
 - **CI**: corrected the Security Audit job to use `rustsec/audit-check@v2.0.0`
   (the previously referenced `rustsec/audit-action` does not exist).
@@ -199,7 +199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Replaced manual loops with iterator combinators across LSP modules
 
 ### Fixed
-- `Span::merge` producing inconsistent `Position` values by independently computing min/max of line, column, and offset fields — now uses offset-based position selection
+- `Span::merge` producing inconsistent `Position` values by independently computing min/max of line, column, and offset fields; now uses offset-based position selection
 - `parse_unquoted_string` inserting unwanted spaces before colons and commas in unquoted values
 - Test comment syntax corrections in `lsp_capabilities` and other test modules
 
