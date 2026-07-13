@@ -986,6 +986,52 @@ pub fn parse_with_errors(source: &str) -> (Option<AstNode>, Vec<ParseError>) {
 }
 
 #[cfg(test)]
+mod value_tests {
+    use super::*;
+
+    /// Extract the root object's entries from a parsed `Document`.
+    fn root_entries(ast: &AstNode) -> &[ObjectEntry] {
+        match ast {
+            AstNode::Document { children, .. } => match &children[0] {
+                AstNode::Object { entries, .. } => entries,
+                _ => panic!("root is not an object"),
+            },
+            _ => panic!("expected a document"),
+        }
+    }
+
+    /// Issue #10: unquoted IP-like values must parse as strings, not error.
+    #[test]
+    fn test_unquoted_ip_parses_as_string() {
+        let src = "service:\n  host: 0.0.0.0\n";
+        let ast = parse(src).expect("unquoted IP should parse");
+        let entries = root_entries(&ast);
+        let service = entries.iter().find(|e| e.key == "service").unwrap();
+        let AstNode::Object { entries: inner, .. } = &service.value else {
+            panic!("service should be an object");
+        };
+        let host = inner.iter().find(|e| e.key == "host").unwrap();
+        match &host.value {
+            AstNode::String { value, .. } => assert_eq!(value, "0.0.0.0"),
+            other => panic!("expected String, got {:?}", other),
+        }
+    }
+
+    /// Round-trip: dotted IPv4 and similar dotted-digit runs are strings.
+    #[test]
+    fn test_dotted_digit_runs_are_strings() {
+        for src in ["a: 192.168.1.1", "a: 10.0.0.255", "a: 0.0.0.0"] {
+            let ast = parse(src).expect("dotted value should parse");
+            let entries = root_entries(&ast);
+            match &entries[0].value {
+                AstNode::String { value, .. } => assert_eq!(value, &src[3..].trim()),
+                other => panic!("expected String for {}, got {:?}", src, other),
+            }
+        }
+    }
+}
+
+#[cfg(test)]
 mod security_tests {
     use super::*;
     use std::fmt::Write;

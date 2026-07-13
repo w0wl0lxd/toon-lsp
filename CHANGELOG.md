@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Misleading quick fixes**: `collect_code_actions` previously returned
   "Add missing quotes" quick-fix stubs whose `edit` was always `None`,
   i.e. actions that did nothing. These no-op stubs are removed.
+- **Unquoted IP-like values**: `parse` rejected unquoted dotted-digit values
+  such as `0.0.0.0` (raised `expected colon`), breaking the `encode` → `parse`
+  round-trip for IP-valued fields. The scanner now treats a dotted run of
+  digits as a string, matching `decode` and `encode` output. Added regression
+  tests in `src/parser/mod.rs`.
 
 ## [0.6.1] - 2026-07-12
 
