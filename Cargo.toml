@@ -19,7 +19,7 @@ path = "src/lib.rs"
 # large TUI/highlighting tree (syntect→bincode, ratatui→paste, arboard, clap,
 # tiktoken-rs, …) that we do not use; disabling it removes those transitive
 # deps and their unmaintained-crate advisories.
-toon-format = { version = "0.4", default-features = false }
+toon-format = { version = "0.5", default-features = false }
 
 # LSP Framework
 tower-lsp = "0.20"
@@ -27,7 +27,7 @@ tokio = { version = "1", features = ["full"] }
 
 # CLI
 clap = { version = "4", features = ["derive"] }
-colored = "2"
+colored = "3"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -55,7 +55,7 @@ tempfile = "3.10"
 proptest = "1.4"
 assert_cmd = "2"
 predicates = "3"
-criterion = "0.5"
+criterion = "0.8"
 toml = "1.1.2"
 json5 = "1.3.1"
 tiktoken-rs = "0.12.0"
