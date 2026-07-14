@@ -13,6 +13,10 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
+# Nix (.envrc left out deliberately -- this repo's .envrc is a personal,
+# gitignored file, not a shared one)
+*.nix text eol=lf
+
 # Documentation
 *.md text eol=lf
 *.txt text eol=lf
