@@ -74,7 +74,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: toon-lsp-${{ matrix.platform }}
           path: target/${{ matrix.target }}/release/${{ matrix.binary }}
@@ -143,7 +143,7 @@ jobs:
         run: npx @vscode/vsce package --target ${{ matrix.platform }} -o toon-lsp-${{ matrix.platform }}.vsix
 
       - name: Upload VSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vscode-${{ matrix.platform }}
           path: editors/vscode/*.vsix
@@ -185,7 +185,7 @@ jobs:
         run: ./gradlew buildPlugin
 
       - name: Upload plugin artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jetbrains-plugin
           path: editors/jetbrains/build/distributions/*.zip
@@ -221,7 +221,7 @@ jobs:
         run: tree-sitter test
 
       - name: Upload grammar artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tree-sitter-toon
           path: |
