@@ -46,10 +46,10 @@ fn sample() -> Value {
 fn long_sample() -> Value {
     serde_json::json!({
         "system_prompt": "You are a helpful assistant that answers questions about the \
-deployment configuration. Always respond with the exact key names shown in the config and \
-never invent new fields. When a value is a reference, resolve it before answering.",
+    deployment configuration. Always respond with the exact key names shown in the config and \
+    never invent new fields. When a value is a reference, resolve it before answering.",
         "description": "Primary ingress configuration for the production gateway. This block \
-controls TLS termination, upstream routing, and rate limiting for all external traffic.",
+    controls TLS termination, upstream routing, and rate limiting for all external traffic.",
         "notes": [
             "Enable HTTP/2 on the edge.",
             "Rotate certificates every 90 days via the cert-manager integration.",
