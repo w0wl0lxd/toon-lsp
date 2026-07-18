@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `toon_lsp::toon::encode_into(value, config, out)` writes TOON text into a
+  caller-provided `&mut String` without clearing it. This is the zero-allocation
+  encode surface: no heap allocations occur when the output buffer has enough
+  capacity and `fold_keys`/`flatten_keys` are disabled.
+- `toon_lsp::toon::verify_round_trip(text, expected, config)` and
+  `verify_round_trip_with_scratch(text, expected, config, scratch)` check that a
+  TOON text is the canonical encoding of an expected `serde_json::Value` by
+  re-encoding the expected value and comparing. The `with_scratch` variant is
+  allocation-free when the scratch buffer is pre-sized.
+
+### Changed
+
+- `encode_with_config` no longer clones the input `Value` when no key folding
+  or flattening is requested, avoiding an unnecessary heap allocation on the
+  default path.
+- `is_toon_number` no longer allocates a lowercased `String` when checking for
+  non-finite numeric literals.
+
 ## [0.7.0] - 2026-07-17
 
 ### Added
@@ -17,6 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   default to stay spec-conformant (TOON keys are order-sensitive by spec).
   Added `encode_with_config`/`decode_with_config`, the `fold_keys`/`expand_paths`
   helpers in `src/toon/fold.rs`, and `tests/toon_folding.rs`.
+
+### Fixed
+
+- **Hexadecimal literals quoted correctly**: `is_toon_number` now recognizes
+  `0x`/`0X`-prefixed integer literals as numbers, so `emit_scalar_string`
+  quotes them and the encoder round-trips values like `"0x0"` losslessly.
 
 ### Fixed
 
