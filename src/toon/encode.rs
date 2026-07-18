@@ -30,6 +30,14 @@ pub fn encode_with_indent(value: &Value, indent: usize) -> EncodeResult<String> 
 /// Returns [`crate::toon::EncodeError`] if `value` contains something with no
 /// TOON representation.
 pub fn encode_with_config(value: &Value, config: &crate::toon::ToonConfig) -> EncodeResult<String> {
+    let transformed = if config.flatten_keys {
+        crate::toon::fold::flatten_keys(value)
+    } else if config.fold_keys {
+        crate::toon::fold::fold_keys(value)
+    } else {
+        value.clone()
+    };
+    let value = &transformed;
     let mut out = String::new();
     let delim = config.delimiter;
     let indent = config.indent;

@@ -11,9 +11,21 @@ use serde_json::{Map, Value};
 /// Returns [`DecodeError`] on malformed TOON (unexpected tokens, scanner
 /// errors, or unparseable numbers).
 pub fn decode(input: &str) -> DecodeResult<Value> {
+    decode_with_config(input, &crate::toon::ToonConfig::default())
+}
+
+/// Decodes TOON `input` into a [`serde_json::Value`], optionally expanding
+/// dotted keys back into nested objects when `config.expand_paths` is set (the
+/// inverse of key folding).
+///
+/// # Errors
+/// Returns [`DecodeError`] on malformed TOON (unexpected tokens, scanner
+/// errors, or unparseable numbers).
+pub fn decode_with_config(input: &str, config: &crate::toon::ToonConfig) -> DecodeResult<Value> {
     let normalized = remove_block_comments(input)?;
-    let mut parser = Parser::new(&normalized);
-    parser.parse_document()
+    let mut parser = Parser::new(&normalized, *config);
+    let value = parser.parse_document()?;
+    if config.expand_paths { Ok(crate::toon::fold::expand_paths(&value)) } else { Ok(value) }
 }
 
 /// Pre-processes the input to replace block comments `/* ... */` with spaces.
@@ -106,11 +118,12 @@ struct Parser<'a> {
     delimiter_stack: Vec<char>,
     line: u32,
     col: u32,
+    config: crate::toon::ToonConfig,
 }
 
 impl<'a> Parser<'a> {
-    fn new(input: &'a str) -> Self {
-        Self { input, offset: 0, delimiter_stack: vec![','], line: 1, col: 1 }
+    fn new(input: &'a str, config: crate::toon::ToonConfig) -> Self {
+        Self { input, offset: 0, delimiter_stack: vec![','], line: 1, col: 1, config }
     }
 
     fn peek(&self) -> Option<char> {
@@ -846,7 +859,7 @@ impl<'a> Parser<'a> {
         if s == "null" {
             return Ok(Value::Null);
         }
-        if let Ok(val) = parse_number(&s) {
+        if let Ok(val) = parse_number(&s, self.config.preserve_number_types) {
             return Ok(val);
         }
 
@@ -927,7 +940,7 @@ impl<'a> Parser<'a> {
         if s == "null" {
             return Ok(Value::Null);
         }
-        if let Ok(val) = parse_number(s) {
+        if let Ok(val) = parse_number(s, self.config.preserve_number_types) {
             return Ok(val);
         }
 
@@ -1187,7 +1200,8 @@ fn parse_delimited_strings(s: &str, delim: char) -> DecodeResult<Vec<String>> {
     Ok(parts)
 }
 
-fn parse_number(s: &str) -> DecodeResult<Value> {
+#[allow(clippy::cast_sign_loss)]
+fn parse_number(s: &str, preserve_float: bool) -> DecodeResult<Value> {
     if has_leading_zero(s) {
         return Err(DecodeError::new("leading zero not allowed in number"));
     }
@@ -1203,27 +1217,41 @@ fn parse_number(s: &str) -> DecodeResult<Value> {
         return Ok(Value::Number(value.into()));
     }
 
-    if let Ok(n) = s.parse::<i64>() {
-        return Ok(Value::Number(n.into()));
-    }
-    if let Ok(n) = s.parse::<u64>() {
-        return Ok(Value::Number(n.into()));
+    let is_float_literal = s.contains('.') || s.contains('e') || s.contains('E');
+
+    if preserve_float && !is_float_literal {
+        if let Ok(n) = s.parse::<i64>() {
+            return Ok(Value::Number(n.into()));
+        }
+        if let Ok(n) = s.parse::<u64>() {
+            return Ok(Value::Number(n.into()));
+        }
     }
 
     let f = s.parse::<f64>().map_err(|_| DecodeError::new(format!("invalid number '{s}'")))?;
     if !f.is_finite() {
         return Err(DecodeError::new(format!("non-finite number '{s}'")));
     }
-    if f == 0.0 {
-        return Ok(Value::Number(0i64.into()));
+    if preserve_float {
+        let n = serde_json::Number::from_f64(f)
+            .ok_or_else(|| DecodeError::new(format!("invalid number '{s}'")))?;
+        return Ok(Value::Number(n));
     }
-    if f.fract() == 0.0 && (i64::MIN as f64..=i64::MAX as f64).contains(&f) {
-        #[allow(clippy::cast_possible_truncation)]
-        return Ok(Value::Number((f as i64).into()));
+
+    // Default TOON spec behavior: normalize whole-number floats and exponent
+    // forms to integers when the value is integral and fits in a 64-bit int.
+    if f.is_finite() && f.fract() == 0.0 {
+        if f >= 0.0 && f <= u64::MAX as f64 {
+            return Ok(Value::Number((f as u64).into()));
+        }
+        if f >= i64::MIN as f64 && f <= i64::MAX as f64 {
+            return Ok(Value::Number((f as i64).into()));
+        }
     }
-    serde_json::Number::from_f64(f)
-        .map(Value::Number)
-        .ok_or_else(|| DecodeError::new(format!("invalid number '{s}'")))
+
+    let n = serde_json::Number::from_f64(f)
+        .ok_or_else(|| DecodeError::new(format!("invalid number '{s}'")))?;
+    Ok(Value::Number(n))
 }
 
 fn has_leading_zero(s: &str) -> bool {
