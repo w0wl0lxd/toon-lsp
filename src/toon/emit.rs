@@ -203,6 +203,79 @@ mod tests {
     }
 
     #[test]
+    fn hex_literal_detection() {
+        assert!(is_hex_literal("0x0"));
+        assert!(is_hex_literal("0X0"));
+        assert!(is_hex_literal("0xBEEF"));
+        assert!(is_hex_literal("-0x1A"));
+        assert!(is_hex_literal("-0X1a"));
+        assert!(!is_hex_literal("0x")); // no digits after prefix
+        assert!(!is_hex_literal("-0x")); // no digits after prefix, negative
+        assert!(!is_hex_literal("0xG")); // non-hex digit
+        assert!(!is_hex_literal("x0")); // missing leading 0
+        assert!(!is_hex_literal("00x1")); // prefix must be exactly "0x"
+        assert!(!is_hex_literal("+0x1")); // '+' is not a recognized sign here
+        assert!(!is_hex_literal("")); // empty string
+        assert!(!is_hex_literal("42")); // plain decimal
+    }
+
+    #[test]
+    fn non_finite_literal_detection() {
+        assert!(is_non_finite_literal("inf"));
+        assert!(is_non_finite_literal("INF"));
+        assert!(is_non_finite_literal("+inf"));
+        assert!(is_non_finite_literal("-inf"));
+        assert!(is_non_finite_literal("infinity"));
+        assert!(is_non_finite_literal("Infinity"));
+        assert!(is_non_finite_literal("+Infinity"));
+        assert!(is_non_finite_literal("-INFINITY"));
+        assert!(is_non_finite_literal("nan"));
+        assert!(is_non_finite_literal("NaN"));
+        assert!(is_non_finite_literal("+nan"));
+        assert!(is_non_finite_literal("-nan"));
+        assert!(!is_non_finite_literal("infinityx"));
+        assert!(!is_non_finite_literal("banana"));
+        assert!(!is_non_finite_literal(""));
+        assert!(!is_non_finite_literal("42"));
+    }
+
+    #[test]
+    fn toon_number_hex_and_non_finite() {
+        // Hex literals are numbers.
+        assert!(is_toon_number("0x0"));
+        assert!(is_toon_number("0xFF"));
+        assert!(is_toon_number("-0xBEEF"));
+        assert!(!is_toon_number("0xG")); // invalid hex digit, not f64-parseable either
+        // Non-finite words are treated as strings, never numbers, even though
+        // `f64::parse` would otherwise accept "inf"/"nan".
+        assert!(!is_toon_number("inf"));
+        assert!(!is_toon_number("-inf"));
+        assert!(!is_toon_number("infinity"));
+        assert!(!is_toon_number("nan"));
+        assert!(!is_toon_number("NaN"));
+        // Ordinary floats/ints still parse as numbers.
+        assert!(is_toon_number("42"));
+        assert!(is_toon_number("-1.5"));
+        assert!(is_toon_number("1e10"));
+        // Degenerate sign/dot-only tokens and empty strings are not numbers.
+        assert!(!is_toon_number(""));
+        assert!(!is_toon_number("-"));
+        assert!(!is_toon_number("+"));
+        assert!(!is_toon_number("."));
+        assert!(!is_toon_number("hello"));
+    }
+
+    #[test]
+    fn non_finite_words_not_quoted_as_reserved_but_stay_unquoted_strings() {
+        // `needs_quotes` treats "inf"/"nan" as plain strings: they don't match
+        // any of the reserved words, structural markers, or the number
+        // grammar, so they are emitted bare.
+        assert!(!needs_quotes("inf", Delimiter::Comma));
+        assert!(!needs_quotes("nan", Delimiter::Comma));
+        assert!(!needs_quotes("infinity", Delimiter::Comma));
+    }
+
+    #[test]
     fn delimiter_and_structure_quoted() {
         assert!(needs_quotes("a,b", Delimiter::Comma));
         assert!(!needs_quotes("a,b", Delimiter::Pipe)); // comma safe under pipe

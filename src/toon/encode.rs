@@ -389,4 +389,104 @@ mod tests {
         encode_into(&value, &config, &mut into).unwrap();
         assert_eq!(owned, into);
     }
+
+    #[test]
+    fn encode_into_preserves_existing_prefix_across_scalar_arrays() {
+        let mut out = String::from("header: 1\n");
+        encode_into(&json!({"tags":["a","b"]}), &crate::toon::ToonConfig::default(), &mut out)
+            .unwrap();
+        assert_eq!(out, "header: 1\ntags[2]: a,b\n");
+    }
+
+    #[test]
+    fn encode_into_with_sufficient_capacity_does_not_reallocate() {
+        // Regression check for the zero-allocation claim: when `out` already
+        // has enough spare capacity and no key folding/flattening is
+        // requested, encoding must not grow (and therefore not reallocate)
+        // the buffer.
+        let value = json!({"k": "v"});
+        let config = crate::toon::ToonConfig::default();
+        let needed = encode_with_config(&value, &config).unwrap().len();
+        let mut out = String::with_capacity(needed + 64);
+        let ptr_before = out.as_ptr();
+        let cap_before = out.capacity();
+        encode_into(&value, &config, &mut out).unwrap();
+        assert_eq!(out.as_ptr(), ptr_before, "buffer should not have reallocated");
+        assert_eq!(out.capacity(), cap_before, "capacity should be unchanged");
+    }
+
+    #[test]
+    fn encode_into_respects_fold_keys_config() {
+        let mut config = crate::toon::ToonConfig::default();
+        config.fold_keys = true;
+        let mut out = String::new();
+        encode_into(&json!({"a":{"b":{"c":1}}}), &config, &mut out).unwrap();
+        assert_eq!(out, "a.b.c: 1\n");
+    }
+
+    #[test]
+    fn encode_into_respects_flatten_keys_config() {
+        let mut config = crate::toon::ToonConfig::default();
+        config.flatten_keys = true;
+        let mut out = String::new();
+        encode_into(&json!({"a":{"b":1,"c":2}}), &config, &mut out).unwrap();
+        assert_eq!(out, "a.b: 1\na.c: 2\n");
+    }
+
+    #[test]
+    fn encode_into_top_level_scalar() {
+        let mut out = String::new();
+        encode_into(&json!(1.5), &crate::toon::ToonConfig::default(), &mut out).unwrap();
+        assert_eq!(out, "1.5\n");
+    }
+
+    #[test]
+    fn encode_into_top_level_empty_array() {
+        let mut out = String::new();
+        encode_into(&json!([]), &crate::toon::ToonConfig::default(), &mut out).unwrap();
+        assert_eq!(out, "[]\n");
+    }
+
+    #[test]
+    fn tabular_uses_first_row_field_order_even_when_later_rows_differ() {
+        // is_uniform_object() only checks the field *set*, not the underlying
+        // map's iteration order, so the header (and every row's field order)
+        // must follow the first object's key order regardless of how later
+        // rows declare their keys.
+        let out = encode(&json!({
+            "users": [
+                {"id": 1, "name": "Alice"},
+                {"name": "Bob", "id": 2}
+            ]
+        }))
+        .unwrap();
+        assert_eq!(out, "users[2]{id,name}:\n  1,Alice\n  2,Bob\n");
+    }
+
+    #[test]
+    fn same_length_but_different_field_names_falls_back_to_expanded() {
+        // Same key *count* as the first object, but a different field name,
+        // so `is_uniform_object` must reject it via the `map.get(field)`
+        // lookup even though `map.len() == first.len()`.
+        let out = encode(&json!({"rows": [{"a": 1}, {"b": 2}]})).unwrap();
+        assert!(!out.contains('{'), "must not emit tabular header, got: {out}");
+        assert!(out.contains("- a: 1"), "expected expanded rows, got: {out}");
+    }
+
+    #[test]
+    fn tabular_rejects_when_later_row_has_nested_value() {
+        // The first row is fully scalar and matches the field set, but a
+        // later row's value for a shared field is non-scalar, so
+        // `is_uniform_object` must reject it.
+        let out = encode(&json!({"rows": [{"a": 1}, {"a": {"b": 2}}]})).unwrap();
+        assert!(!out.contains('{'), "non-scalar in later row must block tabular: {out}");
+    }
+
+    #[test]
+    fn empty_object_first_row_falls_back_to_expanded() {
+        // `first.filter(|m| !m.is_empty())` excludes an empty first object
+        // from tabular consideration.
+        let out = encode(&json!({"rows": [{}, {}]})).unwrap();
+        assert!(!out.contains('{'), "empty-object rows must not be tabular: {out}");
+    }
 }
