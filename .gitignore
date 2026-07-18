@@ -12,6 +12,10 @@
 *.swo
 *~
 
+# Claude Code
+.claude/
+CLAUDE.md
+
 # Spec-kit
 .specify/
 .speckit/
