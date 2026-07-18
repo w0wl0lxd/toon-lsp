@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.2] - 2026-07-20
+
+### Changed
+
+- **Breaking**: `toon_lsp::toon::verify_round_trip` and
+  `verify_round_trip_with_scratch` now return `DecodeResult<()>` instead of
+  `DecodeResult<bool>`. The previous `bool` was always `true` on the `Ok` path;
+  callers can use `.is_ok()` directly, which is more idiomatic.
+
+### Fixed
+
+- Removed a duplicate `### Fixed` header in this changelog.
+
+## [0.7.1] - 2026-07-19
 
 ### Added
 
@@ -45,9 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Hexadecimal literals quoted correctly**: `is_toon_number` now recognizes
   `0x`/`0X`-prefixed integer literals as numbers, so `emit_scalar_string`
   quotes them and the encoder round-trips values like `"0x0"` losslessly.
-
-### Fixed
-
 - **Code action placeholder**: the always-on "Sort Object Keys Alphabetically"
   source action was a no-op stub (it advertised the action but produced no
   edit). It now emits a real `WorkspaceEdit` that reorders the entries of

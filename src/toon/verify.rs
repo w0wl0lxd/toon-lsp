@@ -23,7 +23,7 @@ use crate::toon::{ToonConfig, encode_into};
 /// # Errors
 /// Returns [`DecodeError`] if the text cannot be matched against the expected
 /// value (currently this is reported as a generic mismatch).
-pub fn verify_round_trip(text: &str, expected: &Value, config: &ToonConfig) -> DecodeResult<bool> {
+pub fn verify_round_trip(text: &str, expected: &Value, config: &ToonConfig) -> DecodeResult<()> {
     let mut scratch = String::new();
     verify_round_trip_with_scratch(text, expected, config, &mut scratch)
 }
@@ -43,12 +43,12 @@ pub fn verify_round_trip_with_scratch(
     expected: &Value,
     config: &ToonConfig,
     scratch: &mut String,
-) -> DecodeResult<bool> {
+) -> DecodeResult<()> {
     scratch.clear();
     encode_into(expected, config, scratch)
         .map_err(|e| DecodeError::new(format!("encode failed during verify: {e}")))?;
     if text == scratch.as_str() {
-        Ok(true)
+        Ok(())
     } else {
         Err(DecodeError::new("TOON text does not match canonical encoding of expected value"))
     }
@@ -67,7 +67,7 @@ mod tests {
         let mut scratch = String::new();
         assert!(
             verify_round_trip_with_scratch(&out, &value, &ToonConfig::default(), &mut scratch)
-                .unwrap()
+                .is_ok()
         );
     }
 
@@ -95,7 +95,7 @@ mod tests {
         let mut scratch = String::new();
         assert!(
             verify_round_trip_with_scratch(&out, &value, &ToonConfig::default(), &mut scratch)
-                .unwrap()
+                .is_ok()
         );
     }
 }
