@@ -36,14 +36,37 @@ fn is_toon_number(s: &str) -> bool {
     if s.is_empty() || s == "-" || s == "+" || s == "." {
         return false;
     }
-    let lower = s.to_ascii_lowercase();
-    if matches!(
-        lower.as_str(),
-        "inf" | "+inf" | "-inf" | "infinity" | "+infinity" | "-infinity" | "nan" | "+nan" | "-nan"
-    ) {
+    if is_non_finite_literal(s) {
         return false;
     }
+    if is_hex_literal(s) {
+        return true;
+    }
     s.parse::<f64>().is_ok()
+}
+
+/// Returns `true` when `s` would be parsed as a TOON hexadecimal integer by the
+/// decoder (`-?0[xX][0-9a-fA-F]+`).
+fn is_hex_literal(s: &str) -> bool {
+    let body = s.strip_prefix('-').unwrap_or(s);
+    let Some(hex) = body.strip_prefix("0x").or_else(|| body.strip_prefix("0X")) else {
+        return false;
+    };
+    !hex.is_empty() && hex.bytes().all(|b| b.is_ascii_hexdigit())
+}
+
+/// Case-insensitive check for `inf`/`infinity`/`nan` with optional leading sign.
+/// Avoids allocating a lowercased `String`.
+fn is_non_finite_literal(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    let body = if let Some(&b'+' | &b'-') = bytes.first() { &bytes[1..] } else { bytes };
+    if body.eq_ignore_ascii_case(b"inf") || body.eq_ignore_ascii_case(b"infinity") {
+        return true;
+    }
+    if body.eq_ignore_ascii_case(b"nan") {
+        return true;
+    }
+    false
 }
 
 /// Returns `true` if `s` must be quoted to emit unambiguously under `delim`.
@@ -174,6 +197,9 @@ mod tests {
         assert!(needs_quotes("true", Delimiter::Comma));
         assert!(needs_quotes("42", Delimiter::Comma));
         assert!(needs_quotes("-1.5", Delimiter::Comma));
+        assert!(needs_quotes("0x0", Delimiter::Comma));
+        assert!(needs_quotes("-0xBEEF", Delimiter::Comma));
+        assert!(!needs_quotes("0xG", Delimiter::Comma));
     }
 
     #[test]

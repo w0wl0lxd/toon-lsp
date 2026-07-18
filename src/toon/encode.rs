@@ -4,6 +4,9 @@
 //! through the shared [`crate::toon::emit`] core. Object key order is preserved
 //! (the crate enables `serde_json`'s `preserve_order` feature).
 
+use std::borrow::Cow;
+use std::fmt::Write as _;
+
 use serde_json::{Map, Value};
 
 use crate::toon::emit::{Delimiter, emit_json_scalar, emit_scalar_string};
@@ -30,32 +33,52 @@ pub fn encode_with_indent(value: &Value, indent: usize) -> EncodeResult<String> 
 /// Returns [`crate::toon::EncodeError`] if `value` contains something with no
 /// TOON representation.
 pub fn encode_with_config(value: &Value, config: &crate::toon::ToonConfig) -> EncodeResult<String> {
-    let transformed = if config.flatten_keys {
-        crate::toon::fold::flatten_keys(value)
-    } else if config.fold_keys {
-        crate::toon::fold::fold_keys(value)
-    } else {
-        value.clone()
-    };
-    let value = &transformed;
     let mut out = String::new();
+    encode_into(value, config, &mut out)?;
+    Ok(out)
+}
+
+/// Encodes `value` as TOON into the supplied `out` buffer, appending starting at
+/// `out.len()` and without clearing `out`.
+///
+/// When `config.fold_keys` and `config.flatten_keys` are both `false` (the
+/// default) and `out` has sufficient capacity, this performs no heap
+/// allocations on the encode path.
+///
+/// # Errors
+/// Returns [`crate::toon::EncodeError`] if `value` contains something with no
+/// TOON representation. If `out` has insufficient capacity, `out` may be
+/// reallocated by `String` growth.
+pub fn encode_into(
+    value: &Value,
+    config: &crate::toon::ToonConfig,
+    out: &mut String,
+) -> EncodeResult<()> {
+    let value_to_encode: Cow<'_, Value> = if config.flatten_keys {
+        Cow::Owned(crate::toon::fold::flatten_keys(value))
+    } else if config.fold_keys {
+        Cow::Owned(crate::toon::fold::fold_keys(value))
+    } else {
+        Cow::Borrowed(value)
+    };
+
     let delim = config.delimiter;
     let indent = config.indent;
-    match value {
-        Value::Object(map) => encode_object(&mut out, map, 0, indent, delim)?,
+    match value_to_encode.as_ref() {
+        Value::Object(map) => encode_object(out, map, 0, indent, delim)?,
         Value::Array(arr) => {
             if arr.is_empty() {
                 out.push_str("[]\n");
             } else {
-                encode_array_body(&mut out, arr, 0, indent, delim)?;
+                encode_array_body(out, arr, 0, indent, delim)?;
             }
         }
         scalar => {
-            let _ = emit_json_scalar(&mut out, scalar, delim);
+            let _ = emit_json_scalar(out, scalar, delim);
             out.push('\n');
         }
     }
-    Ok(out)
+    Ok(())
 }
 
 fn push_indent(out: &mut String, level: usize, indent: usize) {
@@ -122,7 +145,7 @@ fn encode_array_body(
 ) -> EncodeResult<()> {
     if arr.iter().all(is_scalar) {
         out.push('[');
-        out.push_str(&arr.len().to_string());
+        let _ = write!(out, "{}", arr.len());
         out.push_str("]:");
         if !arr.is_empty() {
             out.push(' ');
@@ -134,54 +157,56 @@ fn encode_array_body(
             }
         }
         out.push('\n');
-    } else if let Some(fields) = tabular_fields(arr) {
-        emit_tabular(out, arr, &fields, level, indent, delim);
+    } else if let Some(first) = arr.first().and_then(|v| v.as_object()).filter(|m| !m.is_empty())
+        && first.values().all(is_scalar)
+        && arr.iter().all(|v| is_uniform_object(v, first))
+    {
+        // Tabular form. Avoid allocating a Vec<String> for field names by
+        // iterating the first object's keys directly for the header and each
+        // row.
+        emit_tabular(out, arr, first, level, indent, delim);
     } else {
         out.push('[');
-        out.push_str(&arr.len().to_string());
+        let _ = write!(out, "{}", arr.len());
         out.push_str("]:\n");
         encode_expanded_items(out, arr, level + 1, indent, delim)?;
     }
     Ok(())
 }
 
-/// Returns the ordered field list if `arr` qualifies for TOON tabular emission:
-/// non-empty, every element an object with an identical key set (field order
-/// taken from the first element), and every value a scalar.
-fn tabular_fields(arr: &[Value]) -> Option<Vec<String>> {
-    let Some(Value::Object(first)) = arr.first() else {
-        return None;
+/// Returns `true` when `value` is a uniform tabular object matching `first`:
+/// same field set and all scalar values. Key order is not required to match;
+/// emission uses `first`'s order and looks up values in each row.
+fn is_uniform_object(value: &Value, first: &Map<String, Value>) -> bool {
+    let Some(map) = value.as_object() else {
+        return false;
     };
-    if first.is_empty() || first.values().any(|v| !is_scalar(v)) {
-        return None;
+    if map.len() != first.len() {
+        return false;
     }
-    let fields: Vec<String> = first.keys().cloned().collect();
-    for item in &arr[1..] {
-        let Value::Object(map) = item else {
-            return None;
+    for field in first.keys() {
+        let Some(v) = map.get(field) else {
+            return false;
         };
-        if map.len() != fields.len() || map.values().any(|v| !is_scalar(v)) {
-            return None;
-        }
-        if fields.iter().any(|f| !map.contains_key(f)) {
-            return None;
+        if !is_scalar(v) {
+            return false;
         }
     }
-    Some(fields)
+    true
 }
 
 fn emit_tabular(
     out: &mut String,
     arr: &[Value],
-    fields: &[String],
+    first: &Map<String, Value>,
     level: usize,
     indent: usize,
     delim: Delimiter,
 ) {
     out.push('[');
-    out.push_str(&arr.len().to_string());
+    let _ = write!(out, "{}", arr.len());
     out.push_str("]{");
-    for (i, field) in fields.iter().enumerate() {
+    for (i, field) in first.keys().enumerate() {
         if i > 0 {
             out.push(delim.as_char());
         }
@@ -193,7 +218,7 @@ fn emit_tabular(
             continue;
         };
         push_indent(out, level + 1, indent);
-        for (i, field) in fields.iter().enumerate() {
+        for (i, field) in first.keys().enumerate() {
             if i > 0 {
                 out.push(delim.as_char());
             }
@@ -344,5 +369,24 @@ mod tests {
         ]))
         .unwrap();
         assert!(out.contains("members[2]{id,n}:"), "nested array field should be tabular: {out}");
+    }
+
+    #[test]
+    fn encode_into_appends_without_clearing() {
+        let mut out = String::from("prefix\n");
+        encode_into(&json!({"k":"v"}), &crate::toon::ToonConfig::default(), &mut out).unwrap();
+        assert_eq!(out, "prefix\nk: v\n");
+    }
+
+    #[test]
+    fn encode_into_matches_encode_with_config() {
+        let value = json!({
+            "users": [{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}]
+        });
+        let config = crate::toon::ToonConfig::default();
+        let owned = encode_with_config(&value, &config).unwrap();
+        let mut into = String::new();
+        encode_into(&value, &config, &mut into).unwrap();
+        assert_eq!(owned, into);
     }
 }
