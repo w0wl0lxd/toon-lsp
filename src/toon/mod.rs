@@ -5,12 +5,14 @@ pub mod emit;
 pub mod encode;
 pub mod error;
 pub mod fold;
+pub mod verify;
 
 pub use decode::{decode, decode_with_config};
 pub use emit::Delimiter;
-pub use encode::{encode, encode_with_config, encode_with_indent};
+pub use encode::{encode, encode_into, encode_with_config, encode_with_indent};
 pub use error::{DecodeError, DecodeResult, EncodeError, EncodeResult};
 pub use fold::{expand_paths, flatten_keys, fold_keys};
+pub use verify::{verify_round_trip, verify_round_trip_with_scratch};
 
 /// Configuration options for the TOON encoder/decoder.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

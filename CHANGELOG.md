@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-07-20
+
+### Changed
+
+- **Breaking**: `toon_lsp::toon::verify_round_trip` and
+  `verify_round_trip_with_scratch` now return `DecodeResult<()>` instead of
+  `DecodeResult<bool>`. The previous `bool` was always `true` on the `Ok` path;
+  callers can use `.is_ok()` directly, which is more idiomatic.
+
+### Fixed
+
+- Removed a duplicate `### Fixed` header in this changelog.
+
+## [0.7.1] - 2026-07-19
+
+### Added
+
+- `toon_lsp::toon::encode_into(value, config, out)` writes TOON text into a
+  caller-provided `&mut String` without clearing it. This is the zero-allocation
+  encode surface: no heap allocations occur when the output buffer has enough
+  capacity and `fold_keys`/`flatten_keys` are disabled.
+- `toon_lsp::toon::verify_round_trip(text, expected, config)` and
+  `verify_round_trip_with_scratch(text, expected, config, scratch)` check that a
+  TOON text is the canonical encoding of an expected `serde_json::Value` by
+  re-encoding the expected value and comparing. The `with_scratch` variant is
+  allocation-free when the scratch buffer is pre-sized.
+
+### Changed
+
+- `encode_with_config` no longer clones the input `Value` when no key folding
+  or flattening is requested, avoiding an unnecessary heap allocation on the
+  default path.
+- `is_toon_number` no longer allocates a lowercased `String` when checking for
+  non-finite numeric literals.
+
 ## [0.7.0] - 2026-07-17
 
 ### Added
@@ -20,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Hexadecimal literals quoted correctly**: `is_toon_number` now recognizes
+  `0x`/`0X`-prefixed integer literals as numbers, so `emit_scalar_string`
+  quotes them and the encoder round-trips values like `"0x0"` losslessly.
 - **Code action placeholder**: the always-on "Sort Object Keys Alphabetically"
   source action was a no-op stub (it advertised the action but produced no
   edit). It now emits a real `WorkspaceEdit` that reorders the entries of
