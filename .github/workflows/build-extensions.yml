@@ -178,7 +178,7 @@ jobs:
           merge-multiple: true
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Build plugin
         working-directory: editors/jetbrains
