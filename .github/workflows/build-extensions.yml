@@ -116,7 +116,7 @@ jobs:
           cache-dependency-path: 'editors/vscode/package-lock.json'
 
       - name: Download binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: toon-lsp-${{ matrix.platform }}
           path: editors/vscode/binaries/${{ matrix.platform }}/
@@ -171,7 +171,7 @@ jobs:
           cache: 'gradle'
 
       - name: Download all binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: editors/jetbrains/binaries/
           pattern: toon-lsp-*
