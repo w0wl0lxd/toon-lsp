@@ -1,7 +1,30 @@
-# TOON Language Support for Eclipse
+# TOON — Eclipse
 
-**Prerequisites**: Eclipse 2022-03+, [LSP4E plugin](https://projects.eclipse.org/projects/technology.lsp4e), `toon-lsp` in `$PATH` (`cargo install toon-lsp`).
+TOON support in Eclipse uses `toon-lsp` through LSP4E.
 
-**Setup**: Install LSP4E from Marketplace. Add a Language Server in Preferences: program `toon-lsp`, content type `.toon`. Alternatively, install the plugin JAR from releases.
+## Prerequisites
 
-See [docs/ide-support.md](../docs/ide-support.md) for all features and usage.
+* Eclipse 2022-03 or later.
+* LSP4E from the Eclipse Marketplace.
+* `toon-lsp` on your `PATH`. Install it with `cargo install toon-lsp`.
+
+## Setup
+
+Install LSP4E and add the language server. Or install the plugin JAR.
+
+Option 1: LSP4E Marketplace setup:
+
+1. Install LSP4E from Help → Eclipse Marketplace.
+2. Open Window → Preferences → Language Servers.
+3. Add a language server. Set the program to `toon-lsp` and the content type to `.toon`.
+4. Restart Eclipse and open a `.toon` file.
+
+Option 2: Plugin JAR:
+
+1. Download the plugin JAR from [Releases](https://github.com/w0wl0lxd/toon-lsp/releases).
+2. Copy the JAR into the `dropins` folder of your Eclipse install.
+3. Restart Eclipse.
+
+## More info
+
+See [IDE support](../../docs/ide-support.md) for all features and usage.

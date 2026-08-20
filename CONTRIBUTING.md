@@ -1,98 +1,64 @@
 # Contributing to toon-lsp
 
-Thank you for your interest in contributing to toon-lsp!
-
-## Developer Certificate of Origin (DCO)
-
-This project uses the [Developer Certificate of Origin](DCO.txt) (DCO) to ensure that all contributions can be legally incorporated into the project under its dual license (AGPL-3.0-only + Commercial).
-
-### What is DCO?
-
-The DCO is a lightweight way for contributors to certify that they have the right to submit their contribution. It was created by the Linux Foundation and is used by many open source projects.
-
-### How to Sign Off
-
-Every commit must include a `Signed-off-by` line in the commit message:
-
+## DCO
+This project requires the [Developer Certificate of Origin](DCO.txt) (DCO).
+All contributions fall under the dual license (AGPL-3.0-only + Commercial).
+The DCO certifies you have the right to submit. We need it to distribute your code under both licenses.
+### Sign off
+Add `Signed-off-by` to every commit:
 ```
 feat(parser): Add support for nested arrays
 
 Signed-off-by: Your Name <your.email@example.com>
 ```
-
-You can add this automatically by using the `-s` flag with `git commit`:
-
+Add it with `git commit -s`:
 ```bash
 git commit -s -m "feat(parser): Add support for nested arrays"
 ```
 
-### Why DCO?
+## What we accept
+- **Bug fixes** - fix existing behavior
+- **Docs** - improve docs, examples, comments
+- **Tests** - add coverage
+- **Performance** - optimize with benchmarks
 
-Because toon-lsp is dual-licensed (AGPL-3.0-only for open source, commercial for proprietary use), we need to ensure that all contributions can be distributed under both licenses. The DCO provides a simple, legally-binding way for contributors to certify they have this right.
+## Discuss first
+Open an issue or discussion before you start:
+- **New features** - align on design
+- **Breaking changes** - coordinate with release plan
+- **Large refactors** - agree on approach
 
-## Contribution Guidelines
+## Code style
+- Run `cargo fmt` before you commit
+- Run `cargo clippy -- -D warnings` and fix all warnings
+- Add tests for new behavior
+- Update docs when behavior changes
 
-### What We Accept
+## Git hooks (optional)
+`.githooks/` has `pre-commit` (runs `cargo fmt` + `cargo clippy`) and `commit-msg` (checks DCO).
+Enable once per clone: `git config core.hooksPath .githooks`
 
-- **Bug fixes**: Issues with existing functionality
-- **Documentation**: Improvements to docs, examples, and comments
-- **Tests**: Additional test coverage
-- **Performance**: Optimizations with benchmarks
-
-### What Requires Discussion First
-
-Please open an issue or discussion before working on:
-
-- **New features**: Let's align on design before implementation
-- **Breaking changes**: Need to coordinate with release planning
-- **Large refactors**: Discuss approach before investing time
-
-### Code Style
-
-- Run `cargo fmt` before committing
-- Run `cargo clippy -- -D warnings` to check for lints
-- Add tests for new functionality
-- Update documentation as needed
-
-### Local Git Hooks (optional)
-
-`.githooks/` ships a `pre-commit` (runs `cargo fmt` + `cargo clippy`) and a
-`commit-msg` (enforces the DCO trailer) hook. Enable them once per clone:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-### Commit Messages
-
+## Commit messages
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
 ```
 <type>(<scope>): <description>
 
-[optional body]
+[body]
 
 Signed-off-by: Your Name <your.email@example.com>
 ```
+Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore` / Scopes: `scanner`, `parser`, `ast`, `lsp`, `docs`
 
-Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
+## Pull requests
+1. Fork the repo and branch from `main`
+2. Add DCO sign-off to every commit
+3. Run `cargo test` and `cargo clippy -- -D warnings`
+4. Open a pull request
 
-Scopes: `scanner`, `parser`, `ast`, `lsp`, `docs`
-
-### Pull Request Process
-
-1. Fork the repository
-2. Create a feature branch from `main`
-3. Make your changes with DCO sign-off on all commits
-4. Run tests: `cargo test`
-5. Run lints: `cargo clippy -- -D warnings`
-6. Submit a pull request
-
-### Questions?
-
-- Open a [GitHub Discussion](https://github.com/w0wl0lxd/toon-lsp/discussions)
+## Questions
+- [GitHub Discussions](https://github.com/w0wl0lxd/toon-lsp/discussions)
 - Email: w0wl0lxd@tuta.com
 
 ## License
-
-By contributing to toon-lsp, you agree that your contributions will be licensed under the project's dual license (AGPL-3.0-only for open source distribution, with the option for commercial licensing). See [LICENSING.md](LICENSING.md) for details.
+You agree to license your contributions under the dual license.
+See [LICENSING.md](LICENSING.md) for details.
