@@ -15,14 +15,12 @@
 
 //! # toon-lsp
 //!
-//! A Language Server Protocol (LSP) implementation for TOON (Token-Oriented Object Notation).
+//! TOON is a compact encoding of the JSON data model built for LLM prompts.
 //!
-//! TOON is a compact, human-readable encoding of the JSON data model designed for LLM prompts.
-//! This crate provides:
-//!
-//! - **AST with source positions** - Full abstract syntax tree with span information
-//! - **Parser** - TOON parser that produces positioned AST nodes
-//! - **LSP Server** - Complete language server with diagnostics, symbols, and more
+//! This crate parses TOON into an AST that tracks spans and recovers from errors.
+//! The same tree feeds an LSP server built on tower-lsp and a CLI that can encode,
+//! decode, check, format, and inspect documents. Run the binary with no arguments
+//! to start the server.
 //!
 //! ## Architecture
 //!
@@ -43,36 +41,20 @@
 //!
 //! ```rust
 //! use toon_lsp::{parse, AstNode};
-//!
-//! let source = "user:\n  name: Alice\n  age: 30";
-//! let ast = parse(source).expect("valid TOON");
-//!
-//! // Every AST node carries source positions (Span)
-//! let AstNode::Document { children, span } = &ast else { return };
-//! assert_eq!(span.start.line, 0); // 0-indexed
-//!
-//! // Walk objects via entries
-//! for node in children {
-//!     if let AstNode::Object { entries, .. } = node {
-//!         assert_eq!(entries[0].key, "user");
-//!     }
-//! }
+//! let ast = parse("user:\n  name: Alice\n  age: 30").unwrap();
+//! let AstNode::Document { children, .. } = &ast else { return };
+//! let AstNode::Object { entries, .. } = &children[0] else { return };
+//! assert_eq!(entries[0].key, "user");
 //! ```
 //!
-//! **Error recovery for IDEs**: parse succeeds even with syntax errors:
+//! Recover from errors and keep a partial AST for IDE features:
 //!
 //! ```rust
 //! use toon_lsp::parse_with_errors;
-//!
-//! let source = "config:\n  debug: true\n  port: 8080";
-//! let (ast, errors) = parse_with_errors(source);
-//!
-//! // Partial AST available for IDE features even with errors
+//! let (ast, errors) = parse_with_errors("config:\n  debug: true");
 //! assert!(ast.is_some());
-//!
-//! // Errors carry spans for diagnostic rendering
 //! for err in &errors {
-//!     let _ = (err.span.start.line, err.kind.clone());
+//!     eprintln!("L{}: {}", err.span.start.line + 1, err.kind);
 //! }
 //! ```
 

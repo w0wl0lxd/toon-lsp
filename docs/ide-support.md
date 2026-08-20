@@ -1,407 +1,84 @@
 # IDE Support
 
-This document provides detailed setup instructions for all supported editors and IDEs.
+toon-lsp implements 18 LSP features: diagnostics, hover, completions, go to definition, find references, rename, and formatting. The other 11 are semantic tokens, document symbols, code actions, code lens, document highlight, document link, folding range, inlay hints, linked editing, selection range, and workspace symbols. Each editor exposes them through its LSP client. You need toon-lsp on PATH unless bundled (VS Code, Zed, JetBrains). Install it with `cargo install toon-lsp` or download a binary from releases.
 
-## Feature Matrix
+## Eclipse
 
-| Feature | VS Code | Neovim | Zed | Sublime | JetBrains | Helix | Emacs | Vim | Kate | Eclipse |
-|---------|---------|--------|-----|---------|-----------|-------|-------|-----|------|---------|
-| Diagnostics | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Hover | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Completions | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Go to Definition | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Find References | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Rename Symbol | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Formatting | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Semantic Tokens | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Document Symbols | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Code Actions | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Code Lens | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Document Highlight | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Document Link | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Folding Range | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Inlay Hints | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Linked Editing | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Selection Range | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Workspace Symbols | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+Requires Eclipse 2022-03+ and LSP4E. Install LSP4E from Marketplace, then add a language server with program `toon-lsp` for `*.toon`. The plugin registers `org.eclipse.lsp4e.languageServer` with content type `toon`. More in [Eclipse README](../editors/eclipse/README.md).
 
-> The `toon-lsp` server implements every capability in the table above. Each editor surfaces them through its own LSP client.
+## Emacs
 
-## Priority 1 Editors (Full Support)
+Requires Emacs 27.1+, `toon-lsp` on PATH, and lsp-mode or eglot. For eglot add the line below. For lsp-mode load `toon-lsp.el` and hook `toon-mode` to `lsp`. More in [Emacs README](../editors/emacs/README.md).
 
-### VS Code
-
-**Install Method:** Marketplace Extension (with bundled binary)
-
-1. Install from VS Marketplace:
-   ```bash
-   code --install-extension toon-lang.toon-lsp
-   ```
-
-2. Or install from VSIX:
-   ```bash
-   code --install-extension toon-lsp-0.4.0-win32-x64.vsix
-   ```
-
-**Features:**
-- Bundled toon-lsp binary (no separate installation needed)
-- Platform-specific VSIX packages
-- TextMate grammar for syntax highlighting
-- Full LSP integration
-
-**Configuration:**
-```json
-{
-  "toon-lsp.path": "/custom/path/to/toon-lsp",
-  "toon-lsp.trace.server": "verbose"
-}
+```elisp
+(add-to-list 'eglot-server-programs '(toon-mode . ("toon-lsp")))
 ```
 
-See: [editors/vscode/README.md](../editors/vscode/README.md)
+## Helix
 
----
-
-### Neovim
-
-**Install Method:** nvim-lspconfig
-
-**Prerequisites:**
-- Neovim 0.8+
-- nvim-lspconfig
-- toon-lsp in PATH
-
-**Quick Setup:**
-```lua
-require('lspconfig').toon_lsp.setup{}
-```
-
-**Full Setup with Keybindings:**
-```lua
-local lspconfig = require('lspconfig')
-
-lspconfig.toon_lsp.setup{
-  on_attach = function(client, bufnr)
-    local opts = { buffer = bufnr }
-    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-    vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
-    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
-  end
-}
-```
-
-See: [editors/neovim/README.md](../editors/neovim/README.md)
-
----
-
-### Zed
-
-**Install Method:** Zed Extension
-
-1. Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
-2. Search for "Extensions: Install Extension"
-3. Search for "TOON" and install
-
-**Manual Installation:**
-```bash
-# Clone to Zed extensions directory
-git clone https://github.com/toon-format/toon-lsp-zed ~/.config/zed/extensions/toon
-```
-
-**Features:**
-- Native tree-sitter highlighting
-- Full LSP integration
-- Zed-native experience
-
-See: [editors/zed/README.md](../editors/zed/README.md)
-
----
-
-## Priority 2 Editors
-
-### Sublime Text
-
-**Install Method:** LSP + Syntax Package
-
-**Prerequisites:**
-- Package Control
-- LSP package
-- toon-lsp in PATH
-
-**Setup:**
-1. Install LSP package via Package Control
-2. Open Preferences > Package Settings > LSP > Settings
-3. Add configuration:
-
-```json
-{
-  "clients": {
-    "toon-lsp": {
-      "enabled": true,
-      "command": ["toon-lsp"],
-      "selector": "source.toon"
-    }
-  }
-}
-```
-
-See: [editors/sublime/README.md](../editors/sublime/README.md)
-
----
-
-### JetBrains IDEs
-
-**Supported IDEs:** IntelliJ IDEA, WebStorm, PyCharm, GoLand, CLion, Rider, PhpStorm, RubyMine
-
-**Install Method:** JetBrains Marketplace Plugin
-
-1. Open Settings/Preferences
-2. Go to Plugins > Marketplace
-3. Search for "TOON Language"
-4. Install and restart IDE
-
-**Features:**
-- LSP4IJ integration
-- TextMate grammar highlighting
-- Bundled toon-lsp binary
-- All JetBrains IDE features
-
-See: [editors/jetbrains/README.md](../editors/jetbrains/README.md)
-
----
-
-### Helix
-
-**Install Method:** Configuration file
-
-**Prerequisites:**
-- Helix 23.10+
-- toon-lsp in PATH
-
-**Setup:**
-Add to `~/.config/helix/languages.toml`:
+Requires Helix 23.05+ and `toon-lsp` on PATH. Copy the blocks below into `~/.config/helix/languages.toml`. More in [Helix README](../editors/helix/README.md).
 
 ```toml
 [[language]]
 name = "toon"
 scope = "source.toon"
 file-types = ["toon"]
-roots = []
-comment-token = "#"
-indent = { tab-width = 2, unit = "  " }
 language-servers = ["toon-lsp"]
-
 [language-server.toon-lsp]
 command = "toon-lsp"
 ```
 
-See: [editors/helix/README.md](../editors/helix/README.md)
+## JetBrains
 
----
+Supports IntelliJ IDEA, WebStorm, PyCharm, PhpStorm, RubyMine, CLion, GoLand, Rider, and DataGrip. Install "TOON Language" from Plugins Marketplace. The plugin bundles `toon-lsp` and needs no PATH setup. More in [JetBrains README](../editors/jetbrains/README.md).
 
-## Priority 3 Editors
+## Kate
 
-### Emacs
+Requires Kate 21.08+ or KDevelop 5.7+ and `toon-lsp` on PATH. Add the JSON below in Settings > Configure Kate > LSP Client > User Server Settings. More in [Kate README](../editors/kate/README.md).
 
-**Install Method:** Elisp package (lsp-mode or eglot)
-
-**With lsp-mode:**
-```elisp
-(use-package toon-mode
-  :load-path "path/to/editors/emacs"
-  :mode "\\.toon\\'"
-  :hook (toon-mode . lsp-deferred))
-
-(use-package lsp-mode
-  :config
-  (add-to-list 'lsp-language-id-configuration '(toon-mode . "toon"))
-  (lsp-register-client
-   (make-lsp-client
-    :new-connection (lsp-stdio-connection '("toon-lsp"))
-    :activation-fn (lsp-activate-on "toon")
-    :server-id 'toon-lsp)))
+```json
+"command": ["toon-lsp"],
+"highlightingModeRegex": "^TOON$"
 ```
 
-**With eglot (Emacs 29+):**
-```elisp
-(add-to-list 'eglot-server-programs '(toon-mode . ("toon-lsp")))
-(add-hook 'toon-mode-hook 'eglot-ensure)
+## Neovim
+
+Requires Neovim 0.8+, nvim-lspconfig, and `toon-lsp` on PATH. Register the server with the line below. More in [Neovim README](../editors/neovim/README.md).
+
+```lua
+require('lspconfig').toon_lsp.setup{}
 ```
 
-See: [editors/emacs/README.md](../editors/emacs/README.md)
+## Notepad++
 
----
+No LSP support, highlighting only. Import `toon-udl.xml` via Language > User Defined Language > Define your language > Import. More in [Notepad++ README](../editors/notepad++/README.md).
 
-### Vim
+## Sublime Text
 
-**Install Method:** vim-lsp or coc.nvim
+Requires Sublime Text 4+, LSP package, and `toon-lsp` on PATH. Add the client config below via Preferences > Package Settings > LSP > Settings. More in [Sublime README](../editors/sublime/README.md).
 
-**With vim-lsp:**
+```json
+"command": ["toon-lsp"],
+"selector": "source.toon"
+```
+
+## Vim
+
+Requires Vim 8.0+ and `toon-lsp` on PATH, with vim-lsp or coc.nvim. More in [Vim README](../editors/vim/README.md).
+
 ```vim
-if executable('toon-lsp')
-  au User lsp_setup call lsp#register_server({
-    \ 'name': 'toon-lsp',
-    \ 'cmd': {server_info->['toon-lsp']},
-    \ 'allowlist': ['toon'],
-    \ })
-endif
+'cmd': {server_info->['toon-lsp']},
+'allowlist': ['toon'],
 ```
 
-**With coc.nvim:**
-Add to `coc-settings.json`:
-```json
-{
-  "languageserver": {
-    "toon": {
-      "command": "toon-lsp",
-      "filetypes": ["toon"],
-      "rootPatterns": [".git"]
-    }
-  }
-}
-```
+## VS Code
 
-See: [editors/vim/README.md](../editors/vim/README.md)
-
----
-
-## Priority 4 Editors (Basic Support)
-
-### Kate / KDevelop
-
-**Install Method:** LSP Client configuration
-
-**Prerequisites:**
-- Kate 21.08+ or KDevelop 5.7+
-- toon-lsp in PATH
-
-**Setup:**
-1. Go to Settings > Configure Kate > LSP Client
-2. Add to User Server Settings:
+Install "TOON Language" from the VS Code Marketplace. The extension bundles `toon-lsp` and needs no PATH setup. Override the binary path with `toon-lsp.path` if needed. More in [VS Code README](../editors/vscode/README.md).
 
 ```json
-{
-  "servers": {
-    "toon": {
-      "command": ["toon-lsp"],
-      "rootIndicationFileNames": [".git"],
-      "highlightingModeRegex": "^TOON$"
-    }
-  }
-}
+"toon-lsp.path": "/custom/path/to/toon-lsp"
 ```
 
-See: [editors/kate/README.md](../editors/kate/README.md)
+## Zed
 
----
-
-### Eclipse
-
-**Install Method:** LSP4E plugin
-
-**Prerequisites:**
-- Eclipse 2022-03+
-- LSP4E plugin
-- toon-lsp in PATH
-
-**Setup:**
-1. Install LSP4E from Eclipse Marketplace
-2. Configure language server in Preferences > Language Servers
-3. Add toon-lsp for `.toon` files
-
-See: [editors/eclipse/README.md](../editors/eclipse/README.md)
-
----
-
-### Notepad++
-
-**Note:** Notepad++ does not support LSP. Only syntax highlighting is available.
-
-**Install Method:** User Defined Language
-
-1. Download `toon-udl.xml`
-2. Language > User Defined Language > Define your language...
-3. Import `toon-udl.xml`
-4. Restart Notepad++
-
-**Available Features:**
-- Comment highlighting
-- String highlighting
-- Keyword highlighting (true, false, null)
-- Number highlighting
-
-**Not Available:**
-- Error diagnostics
-- Hover information
-- Go to definition
-- Find references
-- Rename symbol
-- Formatting
-
-For full LSP support, consider using a different editor.
-
-See: [editors/notepad++/README.md](../editors/notepad++/README.md)
-
----
-
-## Installing toon-lsp
-
-All editors (except VS Code and JetBrains with bundled binaries) require toon-lsp in PATH.
-
-### Via Cargo (Recommended)
-
-```bash
-cargo install toon-lsp
-```
-
-### From GitHub Releases
-
-Download the appropriate binary for your platform:
-- `toon-lsp-x86_64-pc-windows-msvc.exe` (Windows x64)
-- `toon-lsp-x86_64-apple-darwin` (macOS x64)
-- `toon-lsp-aarch64-apple-darwin` (macOS ARM64)
-- `toon-lsp-x86_64-unknown-linux-gnu` (Linux x64)
-
-### From Source
-
-```bash
-git clone https://github.com/toon-format/toon-lsp
-cd toon-lsp
-cargo build --release
-# Binary at target/release/toon-lsp
-```
-
----
-
-## Troubleshooting
-
-### LSP not starting
-
-1. Verify toon-lsp is installed: `toon-lsp --version`
-2. Verify toon-lsp is in PATH: `which toon-lsp` (Unix) or `where toon-lsp` (Windows)
-3. Check editor's LSP logs for errors
-
-### No syntax highlighting
-
-- VS Code/Sublime/JetBrains: TextMate grammar should load automatically
-- Neovim/Helix/Zed: Requires tree-sitter grammar
-- Ensure file has `.toon` extension
-
-### Diagnostics not appearing
-
-1. Check file is saved (some editors only diagnose saved files)
-2. Verify LSP server is running (check status bar or logs)
-3. Test with a known-invalid file
-
-### Performance issues
-
-For large files (>10MB), consider:
-- Increasing editor's LSP timeout
-- Checking CPU usage during parsing
-- Filing an issue with performance profile
-
----
-
-## License
-
-AGPL-3.0-only with commercial licensing available. See [LICENSING.md](../LICENSING.md).
+Install "TOON" from Zed Extensions. The extension bundles `toon-lsp` and needs no PATH setup. Its `extension.toml` sets `id = "toon"` and `[language_servers.toon-lsp]` with `languages = ["TOON"]`. More in [Zed README](../editors/zed/README.md).

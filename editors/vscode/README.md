@@ -1,7 +1,12 @@
-# TOON Language Support for VS Code
+# TOON — VS Code
 
-**Install**: Search "TOON Language" in VS Code Marketplace, or install `.vsix` from [Releases](https://github.com/toon-format/toon-lsp/releases). The LSP binary is bundled.
+Install: search "TOON Language" in the Marketplace, or run `code --install-extension toon-lang.toon-lsp`. You can also install the VSIX from [Releases](https://github.com/w0wl0lxd/toon-lsp/releases).
+The extension bundles toon-lsp. You need no PATH setup.
 
-**Configure**: Set `toon-lsp.path` for a custom binary path, `toon-lsp.formatting.tabSize` (default 2).
+Configure only if you use a custom binary:
+```json
+{ "toon-lsp.path": "/path/to/toon-lsp" }
+```
 
-See [docs/ide-support.md](../docs/ide-support.md) for all features and usage.
+Verify: open a `.toon` file and check that diagnostics appear.
+See [IDE support](../../docs/ide-support.md) for more.
