@@ -223,7 +223,11 @@ mod tests {
     #[test]
     fn no_action_when_sorted() {
         let source = "apple: 2\nbanana: 1\ncherry: 3";
-        assert!(actions_for(source, 0, 0).is_empty());
+        assert!(
+            actions_for(source, 0, 0).is_empty(),
+            "expected actions_for(source, 0, 0) to be empty, got {:?}",
+            actions_for(source, 0, 0)
+        );
     }
 
     #[test]
@@ -253,7 +257,11 @@ mod tests {
     #[test]
     fn no_action_for_single_key() {
         let source = "only: 1";
-        assert!(actions_for(source, 0, 0).is_empty());
+        assert!(
+            actions_for(source, 0, 0).is_empty(),
+            "expected actions_for(source, 0, 0) to be empty, got {:?}",
+            actions_for(source, 0, 0)
+        );
     }
 
     #[test]
