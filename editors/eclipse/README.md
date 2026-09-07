@@ -10,19 +10,25 @@ TOON support in Eclipse uses `toon-lsp` through LSP4E.
 
 ## Setup
 
-Install LSP4E and add the language server:
+LSP4E binds a language server to a *content type*, so you create the content type
+first and point LSP4E at it second.
 
 1. Install LSP4E from Help → Eclipse Marketplace.
-2. Open Window → Preferences → Language Servers.
-3. Add a language server. Set the program to `toon-lsp`. For the content type, select
-   **TOON File** — the content type this plugin registers as `org.toon.contenttype` for
-   the `toon` file extension (`plugin.xml`). Do not enter `toon` or `.toon` directly:
-   `toon` is the LSP language id and `.toon` is a file suffix, neither of which is a
-   content type.
+2. Open Window → Preferences → General → Content Types. Click **Add Root…** and name
+   the new type `TOON File`. With it selected, click **Add…** under File Associations
+   and enter `*.toon`.
+3. Open Window → Preferences → Language Servers and add a language server. Set the
+   program to `toon-lsp` and the content type to the **TOON File** type from step 2.
+   Do not enter `toon` or `.toon` here: `toon` is the LSP language id and `.toon` is a
+   file suffix, and neither is a content type.
 4. Restart Eclipse and open a `.toon` file.
 
-There is no prebuilt plugin JAR. No release workflow builds or publishes one, so install
-through LSP4E as above, or build the plugin from `plugin.xml` yourself.
+## About `plugin.xml`
+
+`plugin.xml` in this directory is a reference for a packaged Eclipse plugin that would
+register the same content type as `org.toon.contenttype`. It is not a buildable plugin
+project on its own — there is no manifest, no build files and no published JAR — so do
+not expect installing LSP4E to provide `TOON File`. Step 2 is the supported route.
 
 ## More info
 

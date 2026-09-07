@@ -1,17 +1,30 @@
 # TOON — Zed
 
-TOON language support for Zed. The extension bundles the `toon-lsp` binary. You need no PATH setup.
+TOON language support for Zed.
+
+## Prerequisites
+
+`toon-lsp` on your `PATH`. Install it with `cargo install toon-lsp`, or download a
+release binary and put it on your `PATH`.
+
+This extension is declarative: it is an `extension.toml` and a grammar, with no Rust
+code. Only a Rust extension can download or bundle a language server binary, so Zed
+resolves `toon-lsp` from your `PATH`.
 
 ## Install
 
 1. Open Zed.
 2. Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Linux and Windows) and run
-   `Extensions: Install Extension`.
+   `zed: extensions`.
 3. Search for `TOON` and install it.
 
-Zed downloads the bundled `toon-lsp` binary with the extension. You need no extra install.
+## Install from this repository
 
-Alternative install: clone this repo to `~/.config/zed/extensions/toon` for local development.
+1. Clone this repository anywhere you like.
+2. Run `zed: install dev extension` and select the `editors/zed` directory.
+
+Copying the directory into `~/.config/zed/extensions/` does not register it; Zed loads
+dev extensions only through that action.
 
 ## Verify
 

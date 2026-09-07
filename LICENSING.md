@@ -39,8 +39,8 @@ This page is a summary, not legal advice. The [LICENSE](LICENSE) and
 
 | Tier | Model | Price | Includes |
 |------|-------|-------|----------|
-| **Standard** | Perpetual | $99 one-time | 1 developer, 1.x updates, community support |
-| **Team** | Perpetual | $399 one-time | Up to 10 developers, 1.x updates |
+| **Standard** | Perpetual | $99 one-time | 1 developer, updates within the major version you buy, community support |
+| **Team** | Perpetual | $399 one-time | Up to 10 developers, updates within the major version you buy |
 | **Enterprise** | Subscription | $999/year | Unlimited developers, all updates, priority email support |
 
 **All commercial licenses include:**
@@ -64,5 +64,7 @@ A: Yes. Internal use without distribution does not trigger AGPL.
 **Q: Do I need a commercial license for a VS Code extension?**
 A: No if your extension is AGPL-compatible open source. Yes if it is proprietary.
 **Q: Do we need a commercial license as a cloud IDE provider?**
-A: Yes. Providing toon-lsp over a network triggers AGPL Section 13.
+A: Yes, as a matter of this project's licensing policy for proprietary cloud use. That
+is a policy requirement, not an AGPL trigger: as stated above, Section 13 applies only
+when you *modify* toon-lsp and let users interact with the modified version remotely.
 Not sure which license fits? Email w0wl0lxd@tuta.com.
