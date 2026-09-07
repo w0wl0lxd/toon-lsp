@@ -51,8 +51,11 @@
 //!
 //! ```rust
 //! use toon_lsp::parse_with_errors;
-//! let (ast, errors) = parse_with_errors("config:\n  debug: true");
+//! // `age` has no colon, so the parser records an error and still returns a
+//! // partial AST -- which is what an IDE needs.
+//! let (ast, errors) = parse_with_errors("name: Alice\nage");
 //! assert!(ast.is_some());
+//! assert!(!errors.is_empty(), "expected errors to be non-empty");
 //! for err in &errors {
 //!     eprintln!("L{}: {}", err.span.start.line + 1, err.kind);
 //! }

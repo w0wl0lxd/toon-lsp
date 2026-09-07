@@ -1,10 +1,12 @@
 # IDE Support
 
-toon-lsp implements 18 LSP features: diagnostics, hover, completions, go to definition, find references, rename, and formatting. The other 11 are semantic tokens, document symbols, code actions, code lens, document highlight, document link, folding range, inlay hints, linked editing, selection range, and workspace symbols. Each editor exposes them through its LSP client. You need toon-lsp on PATH unless bundled (VS Code, Zed, JetBrains). Install it with `cargo install toon-lsp` or download a binary from releases.
+toon-lsp implements 18 LSP features: diagnostics, hover, completions, go to definition, find references, rename, and formatting. The other 11 are semantic tokens, document symbols, code actions, code lens, document highlight, document link, folding range, inlay hints, linked editing, selection range, and workspace symbols. toon-lsp provides these features; what you actually get depends on the editor client. Editors with an LSP client expose all 18. Notepad++ has no LSP client and gets syntax highlighting only. You need toon-lsp on PATH unless bundled (VS Code, Zed, JetBrains). Install it with `cargo install toon-lsp` or download a binary from releases.
 
 ## Eclipse
 
-Requires Eclipse 2022-03+ and LSP4E. Install LSP4E from Marketplace, then add a language server with program `toon-lsp` for `*.toon`. The plugin registers `org.eclipse.lsp4e.languageServer` with content type `toon`. More in [Eclipse README](../editors/eclipse/README.md).
+Requires Eclipse 2022-03+ and LSP4E. Install LSP4E from Marketplace, then add a language server with program `toon-lsp` for `*.toon`. The plugin registers `org.eclipse.lsp4e.languageServer` against the content type
+`org.toon.contenttype`, shown as **TOON File**; select that rather than typing `toon`
+or `.toon`. More in [Eclipse README](../editors/eclipse/README.md).
 
 ## Emacs
 
@@ -36,9 +38,18 @@ Supports IntelliJ IDEA, WebStorm, PyCharm, PhpStorm, RubyMine, CLion, GoLand, Ri
 
 Requires Kate 21.08+ or KDevelop 5.7+ and `toon-lsp` on PATH. Add the JSON below in Settings > Configure Kate > LSP Client > User Server Settings. More in [Kate README](../editors/kate/README.md).
 
+The complete file is [`editors/kate/toon.json`](../editors/kate/toon.json):
+
 ```json
-"command": ["toon-lsp"],
-"highlightingModeRegex": "^TOON$"
+{
+  "servers": {
+    "toon": {
+      "command": ["toon-lsp"],
+      "rootIndicationFileNames": [".git", ".toon"],
+      "highlightingModeRegex": "^TOON$"
+    }
+  }
+}
 ```
 
 ## Neovim
@@ -57,18 +68,36 @@ No LSP support, highlighting only. Import `toon-udl.xml` via Language > User Def
 
 Requires Sublime Text 4+, LSP package, and `toon-lsp` on PATH. Add the client config below via Preferences > Package Settings > LSP > Settings. More in [Sublime README](../editors/sublime/README.md).
 
+The complete file is
+[`editors/sublime/LSP-toon.sublime-settings`](../editors/sublime/LSP-toon.sublime-settings):
+
 ```json
-"command": ["toon-lsp"],
-"selector": "source.toon"
+{
+  "clients": {
+    "toon-lsp": {
+      "enabled": true,
+      "command": ["toon-lsp"],
+      "selector": "source.toon"
+    }
+  }
+}
 ```
 
 ## Vim
 
 Requires Vim 8.0+ and `toon-lsp` on PATH, with vim-lsp or coc.nvim. More in [Vim README](../editors/vim/README.md).
 
+The complete file is
+[`editors/vim/vim-lsp-toon.vim`](../editors/vim/vim-lsp-toon.vim):
+
 ```vim
-'cmd': {server_info->['toon-lsp']},
-'allowlist': ['toon'],
+if executable('toon-lsp')
+  au User lsp_setup call lsp#register_server({
+    \ 'name': 'toon-lsp',
+    \ 'cmd': {server_info->['toon-lsp']},
+    \ 'allowlist': ['toon'],
+    \ })
+endif
 ```
 
 ## VS Code

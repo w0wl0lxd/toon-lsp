@@ -29,7 +29,7 @@ service:
 }
 ```
 
-TOON is about 9% smaller on text heavy docs, see [Benchmarks](#benchmarks).
+TOON is about 9% smaller on text-heavy docs, see [Benchmarks](#benchmarks).
 
 ## Install
 
@@ -101,7 +101,7 @@ toon-lsp format --check config.toon; toon-lsp graph config.toon -o graph.mmd
 ```rust
 use toon_lsp::parse_with_errors;
 let (ast, errors) = parse_with_errors("user:\n  name: Alice\n  age: 30");
-if let Some(ast) = &ast { /* walk AstNode, or resolve with toon_lsp::resolve::resolve(&ast, "user.name") */ }
+if let Some(ast) = &ast { /* walk AstNode, or resolve with toon_lsp::resolve::resolve(ast, "user.name") */ }
 for e in &errors { eprintln!("L{}: {}", e.span.start.line + 1, e.kind); }
 ```
 
@@ -137,7 +137,7 @@ Compact config (short keys and numbers):
 
 ## Development
 
-Requires Rust 1.85 plus, toolchain pinned in `rust-toolchain.toml`.
+Requires the nightly Rust toolchain, pinned in `rust-toolchain.toml`.
 
 ```bash
 cargo test && cargo clippy --all-features -- -D warnings && cargo fmt --all -- --check

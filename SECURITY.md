@@ -19,4 +19,4 @@ Reports of particular interest for `toon-lsp`:
 
 ## Supported Versions
 
-Only the latest published release (0.7.x) receives security fixes.
+Only the latest published release in the 0.7.x series receives security fixes. Earlier 0.7.x patch releases do not receive backported fixes; upgrade to the latest patch release.

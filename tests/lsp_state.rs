@@ -10,7 +10,11 @@ fn test_document_state_new() {
     assert_eq!(state.text(), text);
     assert_eq!(state.version(), 1);
     assert!(state.ast().is_some());
-    assert!(state.errors().is_empty());
+    assert!(
+        state.errors().is_empty(),
+        "expected state.errors() to be empty, got {:?}",
+        state.errors()
+    );
 }
 
 #[test]
@@ -19,7 +23,7 @@ fn test_document_state_with_errors() {
     let state = DocumentState::new(text.to_string(), 1);
 
     assert_eq!(state.text(), text);
-    assert!(!state.errors().is_empty());
+    assert!(!state.errors().is_empty(), "expected state.errors() to be non-empty");
 }
 
 #[test]
@@ -36,21 +40,29 @@ fn test_document_state_update() {
 #[test]
 fn test_document_state_update_introduces_error() {
     let mut state = DocumentState::new("name: Alice".to_string(), 1);
-    assert!(state.errors().is_empty());
+    assert!(
+        state.errors().is_empty(),
+        "expected state.errors() to be empty, got {:?}",
+        state.errors()
+    );
 
     state.update("name".to_string(), 2); // Now invalid
 
-    assert!(!state.errors().is_empty());
+    assert!(!state.errors().is_empty(), "expected state.errors() to be non-empty");
 }
 
 #[test]
 fn test_document_state_update_fixes_error() {
     let mut state = DocumentState::new("name".to_string(), 1);
-    assert!(!state.errors().is_empty());
+    assert!(!state.errors().is_empty(), "expected state.errors() to be non-empty");
 
     state.update("name: Alice".to_string(), 2); // Now valid
 
-    assert!(state.errors().is_empty());
+    assert!(
+        state.errors().is_empty(),
+        "expected state.errors() to be empty, got {:?}",
+        state.errors()
+    );
 }
 
 #[test]
@@ -59,7 +71,11 @@ fn test_document_state_empty_document() {
 
     assert_eq!(state.text(), "");
     // Empty document should parse successfully (no keys is valid)
-    assert!(state.errors().is_empty());
+    assert!(
+        state.errors().is_empty(),
+        "expected state.errors() to be empty, got {:?}",
+        state.errors()
+    );
 }
 
 #[test]
@@ -72,7 +88,11 @@ fn test_document_state_nested_structure() {
     let state = DocumentState::new(text.to_string(), 1);
 
     assert!(state.ast().is_some());
-    assert!(state.errors().is_empty());
+    assert!(
+        state.errors().is_empty(),
+        "expected state.errors() to be empty, got {:?}",
+        state.errors()
+    );
 }
 
 #[test]
@@ -84,7 +104,11 @@ fn test_document_state_array() {
     let state = DocumentState::new(text.to_string(), 1);
 
     assert!(state.ast().is_some());
-    assert!(state.errors().is_empty());
+    assert!(
+        state.errors().is_empty(),
+        "expected state.errors() to be empty, got {:?}",
+        state.errors()
+    );
 }
 
 #[test]
@@ -93,7 +117,7 @@ fn test_document_state_multiple_errors() {
     let state = DocumentState::new(text.to_string(), 1);
 
     // Should have multiple errors
-    assert!(!state.errors().is_empty());
+    assert!(!state.errors().is_empty(), "expected state.errors() to be non-empty");
 }
 
 #[test]
@@ -104,5 +128,5 @@ fn test_document_state_partial_parse() {
 
     // Should have partial AST and errors
     assert!(state.ast().is_some());
-    assert!(!state.errors().is_empty());
+    assert!(!state.errors().is_empty(), "expected state.errors() to be non-empty");
 }

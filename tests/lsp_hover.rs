@@ -217,7 +217,7 @@ mod hover_empty_space {
         // Depends on implementation - either is acceptable
         if let Some(h) = hover {
             // If we get hover, it should have some content
-            assert!(!h.contents.is_empty());
+            assert!(!h.contents.is_empty(), "expected h.contents to be non-empty");
         }
     }
 

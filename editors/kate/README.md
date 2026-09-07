@@ -12,18 +12,18 @@ TOON support in Kate uses `toon-lsp` for diagnostics, formatting, hover, and mor
 1. Open Settings → Configure Kate → LSP Client → User Server Settings.
 2. Add the JSON below. This file lives at `toon.json` in this directory.
 
-```json
-{
-  "servers": {
-    "toon": {
-      "command": ["toon-lsp"],
-      "url": "https://github.com/toon-format/toon-lsp",
-      "rootIndicationFileNames": [".git", ".toon"],
-      "highlightingModeRegex": "^TOON$"
-    }
-  }
-}
-```
+   ```json
+   {
+     "servers": {
+       "toon": {
+         "command": ["toon-lsp"],
+         "url": "https://github.com/w0wl0lxd/toon-lsp",
+         "rootIndicationFileNames": [".git", ".toon"],
+         "highlightingModeRegex": "^TOON$"
+       }
+     }
+   }
+   ```
 
 3. Save the settings and restart Kate.
 

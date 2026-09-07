@@ -131,7 +131,7 @@ mod tests {
 
         // Position on value, not key
         let highlights = collect_document_highlights(&ast, source, 0, 7);
-        assert!(highlights.is_empty());
+        assert!(highlights.is_empty(), "expected highlights to be empty, got {:?}", highlights);
     }
 
     #[test]

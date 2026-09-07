@@ -126,7 +126,7 @@ mod completion_with_errors {
         let (ast, errors) = parse_with_errors(source);
 
         // Should still be able to provide completions even with errors
-        assert!(!errors.is_empty());
+        assert!(!errors.is_empty(), "expected errors to be non-empty");
 
         if let Some(ast) = ast {
             let completions = get_completions_at_position(&ast, source, 1, 3);

@@ -274,7 +274,7 @@ mod tests {
     #[test]
     fn test_errors_to_diagnostics_empty() {
         let diags = errors_to_diagnostics(&[], "");
-        assert!(diags.is_empty());
+        assert!(diags.is_empty(), "expected diags to be empty, got {:?}", diags);
     }
 
     #[test]

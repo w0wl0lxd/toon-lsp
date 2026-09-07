@@ -551,7 +551,7 @@ mod tests {
         let report = generate_diagnostics(content, "test.toon", false, Severity::Error).unwrap();
 
         assert_eq!(report.file, "test.toon");
-        assert!(!report.diagnostics.is_empty());
+        assert!(!report.diagnostics.is_empty(), "expected report.diagnostics to be non-empty");
         assert!(report.summary.errors > 0);
     }
 
@@ -560,7 +560,7 @@ mod tests {
         let content = "key: [unclosed\n";
         let report = generate_diagnostics(content, "test.toon", true, Severity::Error).unwrap();
 
-        assert!(!report.diagnostics.is_empty());
+        assert!(!report.diagnostics.is_empty(), "expected report.diagnostics to be non-empty");
         let diag = &report.diagnostics[0];
         assert!(diag.context.is_some());
         assert_eq!(diag.context.as_ref().unwrap(), "key: [unclosed");
@@ -653,7 +653,7 @@ mod tests {
 
         // Test filtering with Error level (should include errors)
         let report = generate_diagnostics(content, "test.toon", false, Severity::Error).unwrap();
-        assert!(!report.diagnostics.is_empty());
+        assert!(!report.diagnostics.is_empty(), "expected report.diagnostics to be non-empty");
 
         // Currently all ParseErrors are mapped to Error severity
         // When we add warnings/hints, this test will verify filtering works

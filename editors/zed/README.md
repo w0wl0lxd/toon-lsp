@@ -5,7 +5,8 @@ TOON language support for Zed. The extension bundles the `toon-lsp` binary. You 
 ## Install
 
 1. Open Zed.
-2. Press `Cmd+Shift+P` and run `Extensions: Install Extension`.
+2. Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Linux and Windows) and run
+   `Extensions: Install Extension`.
 3. Search for `TOON` and install it.
 
 Zed downloads the bundled `toon-lsp` binary with the extension. You need no extra install.

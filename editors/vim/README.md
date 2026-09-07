@@ -6,13 +6,15 @@ TOON support in Vim uses `toon-lsp` for diagnostics, formatting, hover, and more
 
 * Vim 8.0+ or Neovim.
 * `toon-lsp` on your `PATH`. Install it with `cargo install toon-lsp`.
-* One LSP client: [vim-lsp](https://github.com/prabirshrestha/vim-lsp), [coc.nvim](https://github.com/neoclide/coc.nvim), or [ALE](https://github.com/dense-analysis/ale).
+* One LSP client: [vim-lsp](https://github.com/prabirshrestha/vim-lsp) or [coc.nvim](https://github.com/neoclide/coc.nvim).
 
 ## Setup
 
 ### Filetype detection
 
-Add filetype detection for `*.toon` files. Copy `ftdetect/toon.vim` to `~/.vim/ftdetect/toon.vim` or add this line to your `vimrc`:
+Add filetype detection for `*.toon` files. Copy `ftdetect/toon.vim` to
+`~/.vim/ftdetect/toon.vim` for Vim, or `~/.config/nvim/ftdetect/toon.vim` for Neovim.
+Or add this line to your `vimrc` (or `init.vim`):
 
 ```vim
 autocmd BufNewFile,BufRead *.toon set filetype=toon
@@ -49,7 +51,9 @@ Add this to your `coc-settings.json` after you install [coc.nvim](https://github
 }
 ```
 
-For ALE, set `let g:ale_linters = {'toon': ['toon-lsp']}` and keep `toon-lsp` on your `PATH`.
+ALE is not supported. `g:ale_linters` only selects linters that are already registered
+with `ale#linter#Define()`, and this repository defines no ALE linter for `toon`, so
+`let g:ale_linters = {'toon': ['toon-lsp']}` selects nothing. Use vim-lsp or coc.nvim.
 
 ## Verify
 

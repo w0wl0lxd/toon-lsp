@@ -454,7 +454,11 @@ mod tests {
         assert_eq!(symbols.len(), 1);
         assert_eq!(symbols[0].name, "items");
         assert_eq!(symbols[0].kind, SymbolKind::Array);
-        assert!(symbols[0].children.is_empty()); // String items have no symbols
+        assert!(
+            symbols[0].children.is_empty(),
+            "expected symbols[0].children to be empty, got {:?}",
+            symbols[0].children
+        ); // String items have no symbols
     }
 
     #[test]
