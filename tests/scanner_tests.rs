@@ -408,7 +408,7 @@ mod property_tests {
         #[test]
         fn always_ends_with_eof(input in "\\PC*") {
             let tokens = scan_tokens(&input);
-            assert!(!tokens.is_empty());
+            assert!(!tokens.is_empty(), "expected tokens to be non-empty");
             assert!(matches!(tokens.last().unwrap().kind, TokenKind::Eof));
         }
 

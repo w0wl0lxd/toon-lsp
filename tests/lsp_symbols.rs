@@ -191,7 +191,7 @@ mod empty_document {
 
         let symbols = ast_to_document_symbols(&ast, source);
 
-        assert!(symbols.is_empty());
+        assert!(symbols.is_empty(), "expected symbols to be empty, got {:?}", symbols);
     }
 
     #[test]
@@ -202,7 +202,7 @@ mod empty_document {
 
         let symbols = ast_to_document_symbols(&ast, source);
 
-        assert!(symbols.is_empty());
+        assert!(symbols.is_empty(), "expected symbols to be empty, got {:?}", symbols);
     }
 
     #[test]
@@ -213,7 +213,7 @@ mod empty_document {
         // Even if parsing fails or produces no AST, symbols should be empty
         if let Some(ast) = ast {
             let symbols = ast_to_document_symbols(&ast, source);
-            assert!(symbols.is_empty());
+            assert!(symbols.is_empty(), "expected symbols to be empty, got {:?}", symbols);
         }
     }
 }

@@ -949,7 +949,7 @@ pub fn parse(source: &str) -> Result<AstNode, ParseError> {
 ///
 /// let (ast, errors) = parse_with_errors("name Alice\nage: 30");
 /// assert!(ast.is_some()); // Partial AST with valid portions
-/// assert!(!errors.is_empty()); // Contains error for missing colon
+/// assert!(!errors.is_empty(), "expected errors to be non-empty"); // Contains error for missing colon
 /// ```
 ///
 /// # Multiple errors
@@ -1202,7 +1202,7 @@ mod security_tests {
 
         let (_ast, errors) = parse_with_errors(&input);
         // Should fail on depth limit
-        assert!(!errors.is_empty());
+        assert!(!errors.is_empty(), "expected errors to be non-empty");
         assert!(
             errors.iter().any(|e| e.kind == ParseErrorKind::MaxDepthExceeded),
             "Expected MaxDepthExceeded error, got: {:?}",

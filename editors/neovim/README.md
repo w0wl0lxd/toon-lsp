@@ -1,7 +1,23 @@
-# TOON Language Support for Neovim
+# TOON — Neovim
 
-**Prerequisites**: Neovim 0.8+, `toon-lsp` in `$PATH` (`cargo install toon-lsp`), nvim-lspconfig.
+Requires Neovim 0.8+, nvim-lspconfig, and `toon-lsp` on `PATH`. Install the server with
+`cargo install toon-lsp`.
 
-**Setup**: See `lua/lspconfig/configs/toon_lsp.lua` and register with `lspconfig.toon_lsp.setup({})`.
+nvim-lspconfig does not ship a `toon_lsp` definition, so copy the two files from this
+directory into your Neovim runtime path first:
 
-See [docs/ide-support.md](../docs/ide-support.md) for all features and usage.
+```sh
+mkdir -p ~/.config/nvim/lua/lspconfig/configs ~/.config/nvim/ftdetect
+cp editors/neovim/lua/lspconfig/configs/toon_lsp.lua ~/.config/nvim/lua/lspconfig/configs/
+cp editors/neovim/ftdetect/toon.lua ~/.config/nvim/ftdetect/
+```
+
+Then add this to your config:
+
+```lua
+require('lspconfig').toon_lsp.setup{}
+```
+
+Optional `on_attach`: bind `gd`, `K`, `gr`, `<leader>rn` to definition, hover, references, rename.
+Verify: run `:LspInfo` or `:checkhealth`, then open a `.toon` file.
+See [IDE support](../../docs/ide-support.md) for all features.

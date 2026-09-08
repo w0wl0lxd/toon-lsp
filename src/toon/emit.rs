@@ -327,6 +327,6 @@ mod tests {
         assert_eq!(s, "true");
         let mut s2 = String::new();
         assert!(!emit_json_scalar(&mut s2, &serde_json::json!({"a":1}), Delimiter::Comma));
-        assert!(s2.is_empty());
+        assert!(s2.is_empty(), "expected s2 to be empty, got {:?}", s2);
     }
 }
