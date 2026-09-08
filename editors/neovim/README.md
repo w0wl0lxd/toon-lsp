@@ -7,6 +7,7 @@ nvim-lspconfig does not ship a `toon_lsp` definition, so copy the two files from
 directory into your Neovim runtime path first:
 
 ```sh
+mkdir -p ~/.config/nvim/lua/lspconfig/configs ~/.config/nvim/ftdetect
 cp editors/neovim/lua/lspconfig/configs/toon_lsp.lua ~/.config/nvim/lua/lspconfig/configs/
 cp editors/neovim/ftdetect/toon.lua ~/.config/nvim/ftdetect/
 ```
