@@ -19,7 +19,7 @@ path = "src/lib.rs"
 # large TUI/highlighting tree (syntect→bincode, ratatui→paste, arboard, clap,
 # tiktoken-rs, …) that we do not use; disabling it removes those transitive
 # deps and their unmaintained-crate advisories.
-toon-format = { version = "0.5", default-features = false }
+toon-format = { version = "0.6", default-features = false }
 
 # LSP Framework
 tower-lsp = "0.20"
