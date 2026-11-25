@@ -208,7 +208,7 @@ mod tests {
 
         let hints = collect_inlay_hints(&ast, source, None);
         // Should have at least one hint for the nested object
-        assert!(!hints.is_empty());
+        assert!(!hints.is_empty(), "expected hints to be non-empty");
     }
 
     #[test]
@@ -219,7 +219,7 @@ mod tests {
 
         let hints = collect_inlay_hints(&ast, source, None);
         // Should have a hint for the array
-        assert!(!hints.is_empty());
+        assert!(!hints.is_empty(), "expected hints to be non-empty");
     }
 
     #[test]
@@ -229,7 +229,7 @@ mod tests {
         let ast = ast.expect("should parse");
 
         let hints = collect_inlay_hints(&ast, source, None);
-        assert!(hints.is_empty());
+        assert!(hints.is_empty(), "expected hints to be empty, got {:?}", hints);
     }
 
     #[test]
@@ -240,7 +240,7 @@ mod tests {
 
         let hints = collect_inlay_hints(&ast, source, None);
         // Simple string value should not produce hints
-        assert!(hints.is_empty());
+        assert!(hints.is_empty(), "expected hints to be empty, got {:?}", hints);
     }
 
     #[test]

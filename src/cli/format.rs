@@ -104,7 +104,7 @@ mod tests {
     fn test_format_simple_toon() {
         let content = "key: value\n";
         let (ast, errors) = parser::parse_with_errors(content);
-        assert!(errors.is_empty());
+        assert!(errors.is_empty(), "expected errors to be empty, got {:?}", errors);
         let ast_node = ast.unwrap();
 
         let options = ToonFormattingOptions::default();
@@ -118,7 +118,7 @@ mod tests {
         // Content without space after colon - parser may still handle it
         let content = "key: value\n";
         let (ast, errors) = parser::parse_with_errors(content);
-        assert!(errors.is_empty());
+        assert!(errors.is_empty(), "expected errors to be empty, got {:?}", errors);
         let ast_node = ast.unwrap();
 
         let options = ToonFormattingOptions::default();
@@ -131,7 +131,7 @@ mod tests {
     fn test_format_with_custom_indent() {
         let content = "server:\n  host: localhost\n";
         let (ast, errors) = parser::parse_with_errors(content);
-        assert!(errors.is_empty());
+        assert!(errors.is_empty(), "expected errors to be empty, got {:?}", errors);
         let ast_node = ast.unwrap();
 
         let options = ToonFormattingOptions { indent_size: 4 };
@@ -145,7 +145,7 @@ mod tests {
         // TOON spec prohibits tabs, so formatting always uses spaces
         let content = "server:\n  host: localhost\n";
         let (ast, errors) = parser::parse_with_errors(content);
-        assert!(errors.is_empty());
+        assert!(errors.is_empty(), "expected errors to be empty, got {:?}", errors);
         let ast_node = ast.unwrap();
 
         let options = ToonFormattingOptions { indent_size: 2 };

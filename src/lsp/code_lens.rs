@@ -80,7 +80,7 @@ mod tests {
 
         let lenses = collect_code_lenses(&ast, source, &uri);
         // Should have a lens for "name" (2 references)
-        assert!(!lenses.is_empty());
+        assert!(!lenses.is_empty(), "expected lenses to be non-empty");
 
         let name_lens = lenses.iter().find(|l| {
             l.data.as_ref().and_then(|d| d.get("key")).and_then(|v| v.as_str()) == Some("name")
@@ -98,7 +98,7 @@ mod tests {
 
         let lenses = collect_code_lenses(&ast, source, &uri);
         // Single-use keys should not have lenses
-        assert!(lenses.is_empty());
+        assert!(lenses.is_empty(), "expected lenses to be empty, got {:?}", lenses);
     }
 
     #[test]
@@ -109,7 +109,7 @@ mod tests {
         let ast = ast.expect("should parse");
 
         let lenses = collect_code_lenses(&ast, source, &uri);
-        assert!(lenses.is_empty());
+        assert!(lenses.is_empty(), "expected lenses to be empty, got {:?}", lenses);
     }
 
     #[test]
@@ -120,7 +120,7 @@ mod tests {
         let ast = ast.expect("should parse");
 
         let lenses = collect_code_lenses(&ast, source, &uri);
-        assert!(!lenses.is_empty());
+        assert!(!lenses.is_empty(), "expected lenses to be non-empty");
 
         let id_lens = lenses.iter().find(|l| {
             l.data.as_ref().and_then(|d| d.get("key")).and_then(|v| v.as_str()) == Some("id")

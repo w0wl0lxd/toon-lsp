@@ -120,7 +120,7 @@ mod tests {
         let ast = ast.expect("should parse");
 
         let links = collect_document_links(&ast, source);
-        assert!(links.is_empty());
+        assert!(links.is_empty(), "expected links to be empty, got {:?}", links);
     }
 
     #[test]

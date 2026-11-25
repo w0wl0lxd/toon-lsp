@@ -2,7 +2,7 @@
   "servers": {
     "toon": {
       "command": ["toon-lsp"],
-      "url": "https://github.com/toon-format/toon-lsp",
+      "url": "https://github.com/w0wl0lxd/toon-lsp",
       "rootIndicationFileNames": [".git", ".toon"],
       "highlightingModeRegex": "^TOON$"
     }

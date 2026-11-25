@@ -97,7 +97,7 @@ mod no_key_at_position {
         let locations = get_definition_at_position(&ast, source, 0, 7);
 
         // No definition for values
-        assert!(locations.is_empty());
+        assert!(locations.is_empty(), "expected locations to be empty, got {:?}", locations);
     }
 
     #[test]
@@ -109,7 +109,7 @@ mod no_key_at_position {
         // Position on empty line
         let locations = get_definition_at_position(&ast, source, 1, 0);
 
-        assert!(locations.is_empty());
+        assert!(locations.is_empty(), "expected locations to be empty, got {:?}", locations);
     }
 
     #[test]
@@ -121,7 +121,7 @@ mod no_key_at_position {
         // Position past end
         let locations = get_definition_at_position(&ast, source, 10, 0);
 
-        assert!(locations.is_empty());
+        assert!(locations.is_empty(), "expected locations to be empty, got {:?}", locations);
     }
 
     #[test]
@@ -131,7 +131,7 @@ mod no_key_at_position {
 
         if let Some(ast) = ast {
             let locations = get_definition_at_position(&ast, source, 0, 0);
-            assert!(locations.is_empty());
+            assert!(locations.is_empty(), "expected locations to be empty, got {:?}", locations);
         }
     }
 }

@@ -108,6 +108,6 @@ mod tests {
 
         let ranges = collect_folding_ranges(&ast);
         // Should have at least one folding range for the nested object
-        assert!(!ranges.is_empty());
+        assert!(!ranges.is_empty(), "expected ranges to be non-empty");
     }
 }

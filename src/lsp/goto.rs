@@ -163,7 +163,7 @@ mod tests {
         let ast = ast.expect("should parse");
 
         let locations = get_definition_at_position(&ast, source, 0, 8);
-        assert!(locations.is_empty());
+        assert!(locations.is_empty(), "expected locations to be empty, got {:?}", locations);
     }
 
     #[test]

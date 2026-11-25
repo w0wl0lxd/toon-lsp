@@ -4,74 +4,67 @@
 > 1. GNU Affero General Public License v3.0 (AGPL-3.0-only) - See [LICENSE](LICENSE)
 > 2. Commercial License - See [COMMERCIAL-LICENSE.txt](COMMERCIAL-LICENSE.txt)
 
----
-
 ## Dual Licensing
 
-toon-lsp is available under two licensing options:
+### 1. Open-Source License (AGPL-3.0-only)
 
-### 1. Open Source License (AGPL-3.0-only)
-
-For open source projects and individual developers, toon-lsp is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+For open-source projects and individual developers, toon-lsp uses the [GNU Affero General Public License v3.0](LICENSE).
 
 **You can use AGPL-3.0 if:**
-- You're using it locally for personal/internal development
+- You use it locally for personal or internal development
 - Your project is also open source under an AGPL-compatible license
-- You comply with AGPL requirements (source disclosure for network services)
+- You comply with the AGPL, including Section 13: if you *modify* toon-lsp and let users
+  interact with the modified version remotely over a network, you must offer those users
+  the Corresponding Source of your modified version at no charge. Running an unmodified
+  toon-lsp behind a network service does not trigger Section 13.
 
 ### 2. Commercial License
 
 For organizations that cannot comply with AGPL terms, commercial licenses are available.
 
-**You need a commercial license if:**
-- You're embedding toon-lsp in proprietary software
-- You're providing toon-lsp as part of a closed-source cloud service
+The list below is this project's licensing policy, not a restatement of AGPL obligations.
+The AGPL itself never requires a paid licence; a commercial licence is the alternative this
+project offers when the AGPL's copyleft terms do not suit you.
+
+**Buy a commercial license if:**
+- You embed toon-lsp in proprietary software
+- You provide toon-lsp as part of a closed-source cloud service
 - Your legal team prohibits AGPL dependencies
 - You want to avoid copyleft source disclosure requirements
+
+This page is a summary, not legal advice. The [LICENSE](LICENSE) and
+[COMMERCIAL-LICENSE.txt](COMMERCIAL-LICENSE.txt) texts govern; consult your own counsel.
 
 ## Commercial License Tiers
 
 | Tier | Model | Price | Includes |
 |------|-------|-------|----------|
-| **Standard** | Perpetual | $99 one-time | 1 developer, v1.x updates, community support |
-| **Team** | Perpetual | $399 one-time | Up to 10 developers, v1.x updates |
+| **Standard** | Perpetual | $99 one-time | 1 developer, updates within the major version you buy, community support |
+| **Team** | Perpetual | $399 one-time | Up to 10 developers, updates within the major version you buy |
 | **Enterprise** | Subscription | $999/year | Unlimited developers, all updates, priority email support |
 
 **All commercial licenses include:**
 - Perpetual or subscription rights to use in proprietary products
-- No copyleft/source disclosure requirements
+- No copyleft or source disclosure requirements
 - License to distribute as part of your product
 - Bug fixes and minor updates for the licensed version
 
-**Perpetual licenses** (Standard and Team) are valid forever for the major version purchased (v1.x). When v2.0 releases, you can continue using v1.x or purchase a new license for v2.x.
-
-**Enterprise subscriptions** include all versions released during your subscription term plus priority email support.
+Perpetual covers the major version you purchase. The current release is 0.7.21, so a
+perpetual licence bought today covers the 0.x series; 1.x coverage begins with the 1.0
+release. Enterprise covers all versions released during your subscription.
 
 ## Contact
 
-For commercial licensing inquiries:
-- **Email**: w0wl0lxd@tuta.com
-- **GitHub**: [Open a Discussion with "licensing" label](https://github.com/w0wl0lxd/toon-lsp/discussions)
+For commercial licensing inquiries: **w0wl0lxd@tuta.com**
 
 ## FAQ
 
-**Q: Can I use this in my company's internal tools?**
-A: Yes, internal use without distribution doesn't trigger AGPL.
-
-**Q: I'm building a VS Code extension, do I need commercial?**
-A: If your extension is open source (AGPL-compatible), no. If proprietary, yes.
-
-**Q: We're a cloud IDE provider, do we need commercial?**
-A: Yes, network service provision triggers AGPL Section 13.
-
-**Q: What if I'm unsure which license I need?**
-A: Email w0wl0lxd@tuta.com or open a GitHub Discussion - I'll help you figure it out.
-
-**Q: Do you offer discounts for startups/education?**
-A: Yes, contact me for special pricing on educational or early-stage startup use.
-
-**Q: What happens when v2.0 releases?**
-A: Perpetual license holders keep v1.x forever. Enterprise subscribers get v2.0 included. Standard/Team users can purchase a new license for v2.x or continue using v1.x.
-
-**Q: Can I upgrade from Standard to Team?**
-A: Yes, contact me and I'll credit your Standard purchase toward the Team price.
+**Q: Can I use this in internal tools at my company?**
+A: Yes. Internal use without distribution does not trigger AGPL.
+**Q: Do I need a commercial license for a VS Code extension?**
+A: No if your extension is AGPL-compatible open source. Yes if it is proprietary.
+**Q: Do we need a commercial license as a cloud IDE provider?**
+A: Yes, as a matter of this project's licensing policy for proprietary cloud use. That
+is a policy requirement, not an AGPL trigger: as stated above, Section 13 applies only
+when you *modify* toon-lsp and let users interact with the modified version remotely.
+Not sure which license fits? Email w0wl0lxd@tuta.com.

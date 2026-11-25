@@ -200,14 +200,14 @@ mod tests {
     fn test_check_valid_content() {
         let content = "key: value\n";
         let diagnostics = check_content(content, Path::new("test.toon"));
-        assert!(diagnostics.is_empty());
+        assert!(diagnostics.is_empty(), "expected diagnostics to be empty, got {:?}", diagnostics);
     }
 
     #[test]
     fn test_check_invalid_content() {
         let content = "key: [unclosed";
         let diagnostics = check_content(content, Path::new("test.toon"));
-        assert!(!diagnostics.is_empty());
+        assert!(!diagnostics.is_empty(), "expected diagnostics to be non-empty");
     }
 
     #[test]

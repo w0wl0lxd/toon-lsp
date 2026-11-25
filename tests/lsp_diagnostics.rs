@@ -35,7 +35,7 @@ mod error_conversion {
         let diagnostics = errors_to_diagnostics(&errors, source);
 
         // Should have errors for missing colons
-        assert!(!diagnostics.is_empty());
+        assert!(!diagnostics.is_empty(), "expected diagnostics to be non-empty");
         for diag in &diagnostics {
             assert_eq!(diag.severity, Some(DiagnosticSeverity::ERROR));
             assert_eq!(diag.source, Some("toon-lsp".to_string()));
@@ -54,7 +54,7 @@ mod error_conversion {
         let diagnostic = error_to_diagnostic(&error, source);
 
         // Message should include the error info
-        assert!(!diagnostic.message.is_empty());
+        assert!(!diagnostic.message.is_empty(), "expected diagnostic.message to be non-empty");
     }
 
     #[test]
@@ -86,7 +86,7 @@ mod did_open {
         let (_, errors) = parse_with_errors(source);
         let diagnostics = errors_to_diagnostics(&errors, source);
 
-        assert!(diagnostics.is_empty());
+        assert!(diagnostics.is_empty(), "expected diagnostics to be empty, got {:?}", diagnostics);
     }
 
     #[test]
@@ -95,7 +95,7 @@ mod did_open {
         let (_, errors) = parse_with_errors(source);
         let diagnostics = errors_to_diagnostics(&errors, source);
 
-        assert!(!diagnostics.is_empty());
+        assert!(!diagnostics.is_empty(), "expected diagnostics to be non-empty");
     }
 
     #[test]
@@ -104,7 +104,7 @@ mod did_open {
         let (_, errors) = parse_with_errors(source);
         let diagnostics = errors_to_diagnostics(&errors, source);
 
-        assert!(diagnostics.is_empty());
+        assert!(diagnostics.is_empty(), "expected diagnostics to be empty, got {:?}", diagnostics);
     }
 
     #[test]
@@ -114,7 +114,7 @@ mod did_open {
         let diagnostics = errors_to_diagnostics(&errors, source);
 
         // Should have at least one error
-        assert!(!diagnostics.is_empty());
+        assert!(!diagnostics.is_empty(), "expected diagnostics to be non-empty");
     }
 }
 
@@ -126,23 +126,27 @@ mod did_change {
     #[test]
     fn test_fixing_error_clears_diagnostics() {
         let mut state = DocumentState::new("name".to_string(), 1);
-        assert!(!state.errors().is_empty());
+        assert!(!state.errors().is_empty(), "expected state.errors() to be non-empty");
 
         state.update("name: Alice".to_string(), 2);
         let diagnostics = errors_to_diagnostics(state.errors(), state.text());
 
-        assert!(diagnostics.is_empty());
+        assert!(diagnostics.is_empty(), "expected diagnostics to be empty, got {:?}", diagnostics);
     }
 
     #[test]
     fn test_introducing_error_adds_diagnostics() {
         let mut state = DocumentState::new("name: Alice".to_string(), 1);
-        assert!(state.errors().is_empty());
+        assert!(
+            state.errors().is_empty(),
+            "expected state.errors() to be empty, got {:?}",
+            state.errors()
+        );
 
         state.update("name".to_string(), 2);
         let diagnostics = errors_to_diagnostics(state.errors(), state.text());
 
-        assert!(!diagnostics.is_empty());
+        assert!(!diagnostics.is_empty(), "expected diagnostics to be non-empty");
     }
 
     #[test]
@@ -166,6 +170,6 @@ mod did_close {
     fn test_clear_diagnostics_produces_empty_vec() {
         // When document is closed, we send empty diagnostics
         let diagnostics: Vec<tower_lsp::lsp_types::Diagnostic> = vec![];
-        assert!(diagnostics.is_empty());
+        assert!(diagnostics.is_empty(), "expected diagnostics to be empty, got {:?}", diagnostics);
     }
 }

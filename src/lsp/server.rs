@@ -937,7 +937,7 @@ mod tests {
 
         assert!(result.is_some());
         let symbols = result.unwrap();
-        assert!(!symbols.is_empty());
+        assert!(!symbols.is_empty(), "expected symbols to be non-empty");
         std::mem::forget(service);
     }
 

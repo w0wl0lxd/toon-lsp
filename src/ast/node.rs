@@ -118,7 +118,7 @@ impl AstNode {
     ///
     /// let ast = parse("name: Alice").unwrap();
     /// if let AstNode::Document { children, .. } = ast {
-    ///     assert!(!children.is_empty());
+    ///     assert!(!children.is_empty(), "expected children to be non-empty");
     /// }
     /// ```
     #[inline]
