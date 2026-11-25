@@ -70,7 +70,7 @@ fn resolve_inner<'a>(
     raw: &str,
     seen: &mut Vec<String>,
 ) -> Result<ResolvedRef<'a>, ResolveError> {
-    if seen.contains(&raw.to_string()) {
+    if seen.iter().any(|s| s == raw) {
         return Err(ResolveError::Cycle(seen.clone()));
     }
     seen.push(raw.to_string());
